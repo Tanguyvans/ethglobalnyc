@@ -202,4 +202,10 @@ THE BUY FLOW (mapped, now scripted as `pg.py buy`):
     IS the purchase. (`pg.py buy` without --confirm still stops before SENDING the
     amount, so it remains safe, but do not assume a confirm gate exists.) For a
     true preview, use Limit orders instead, or just don't send the amount.
+
+12. TRANSACTION LEDGER: root-level predictions.json holds HARD on-chain data for
+    every buy/sell (ts, shares, token id, pUSD spent/fee, avg price, tx, block).
+    Append new trades with polygun/record_trade.py <tx> --market <id> [...] — it
+    decodes the tx on-chain and is idempotent (won't double-record). As of the
+    first 3 trades: 2x France-YES + 1x Switzerland-YES, 6.1998 pUSD total spent.
 ================================================================================

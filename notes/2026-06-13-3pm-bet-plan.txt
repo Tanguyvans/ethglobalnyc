@@ -29,6 +29,15 @@ FUNDS: PolyGun available balance $31.69 pUSD (after +20 USDC top-up). Keep each
 test small ($2–$5) so we have ammo for all three legs.
 
 
+EXECUTION LOG
+-------------
+[DONE] Bet 1 (PRE-GAME): colony pick = Switzerland. Placed $2 on Switzerland
+       (market 1897048) via pg.py buy --confirm. Filled 2.38095 shares @ 84.0c.
+       tx 0x90413d805b0bd75b38b667a6e15a4b8cb300ae1ace32b5dbe20a8ff630b67eca.
+[TODO] Bet 2 (DURING, ~halftime): re-run colony, trade the gap vs live price.
+[TODO] Bet 3 (LATE, arbitrage): ClickHouse/UMA privileged-info bet.
+
+
 PRE / DURING / AFTER PLAN
 -------------------------
 PRE (now -> 19:00 UTC):
