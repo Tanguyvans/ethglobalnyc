@@ -27,6 +27,7 @@ def agent_to_state(agent: AntAgent) -> dict[str, Any]:
         "lineage_id": agent.lineage_id,
         "lineage_root_agent_id": agent.lineage_root_agent_id,
         "verified_lineage": agent.verified_lineage,
+        "world_verified": agent.world_verified,
         "world_human_id": agent.world_human_id,
         "genome": agent.genome.to_dict(),
     }
@@ -62,6 +63,7 @@ def agent_from_state(data: dict[str, Any]) -> AntAgent:
         lineage_id=str(data.get("lineage_id") or ""),
         lineage_root_agent_id=str(data.get("lineage_root_agent_id") or ""),
         verified_lineage=bool(data.get("verified_lineage") or False),
+        world_verified=bool(data.get("world_verified") or False),
         world_human_id=str(data.get("world_human_id") or ""),
         evolution_role=str(data.get("evolution_role") or ""),
         parent_genome_id=str(data.get("parent_genome_id") or ""),
@@ -127,8 +129,6 @@ def normalize_agent_lineages(agents: list[AntAgent]) -> None:
         root = agents_by_id.get(agent.lineage_root_agent_id)
         if root is not None and root is not agent:
             agent.verified_lineage = bool(agent.verified_lineage or root.verified_lineage)
-            if not agent.world_human_id:
-                agent.world_human_id = root.world_human_id
 
 
 def _validate_unique_ids(agents: list[AntAgent]) -> None:

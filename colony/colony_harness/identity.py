@@ -47,16 +47,29 @@ def build_identity_records(
     *,
     ens_parent: str,
     profile_base_url: str = "https://colony.app/ants",
+    deployment_id: str = "",
+    active: bool = True,
 ) -> dict[str, Any]:
     parent = _normalize_parent(ens_parent)
     assign_ens_names(agents, ens_parent=parent)
     by_id = {agent.agent_id: agent for agent in agents}
     records = []
     for agent in agents:
-        records.append(_agent_identity_record(agent, agents_by_id=by_id, ens_parent=parent, profile_base_url=profile_base_url))
+        records.append(
+            _agent_identity_record(
+                agent,
+                agents_by_id=by_id,
+                ens_parent=parent,
+                profile_base_url=profile_base_url,
+                deployment_id=deployment_id,
+                active=active,
+            )
+        )
     return {
         "schema_version": 1,
         "ens_parent": parent,
+        "deployment_id": deployment_id,
+        "active": active,
         "records": records,
     }
 
@@ -67,10 +80,18 @@ def write_identity_records(
     *,
     ens_parent: str,
     profile_base_url: str = "https://colony.app/ants",
+    deployment_id: str = "",
+    active: bool = True,
 ) -> Path:
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    payload = build_identity_records(agents, ens_parent=ens_parent, profile_base_url=profile_base_url)
+    payload = build_identity_records(
+        agents,
+        ens_parent=ens_parent,
+        profile_base_url=profile_base_url,
+        deployment_id=deployment_id,
+        active=active,
+    )
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return output
 
@@ -98,6 +119,8 @@ def _agent_identity_record(
     agents_by_id: dict[str, AntAgent],
     ens_parent: str,
     profile_base_url: str,
+    deployment_id: str,
+    active: bool,
 ) -> dict[str, Any]:
     ens_name = ens_name_for_agent(agent, ens_parent)
     root = _lineage_root(agent, agents_by_id)
@@ -106,10 +129,9 @@ def _agent_identity_record(
     parent_ens_name = ens_name_for_agent(parent_agent, ens_parent) if parent_agent else ""
     profile_url = f"{profile_base_url.rstrip('/')}/{agent.agent_id}.json"
     verified_lineage = bool(agent.verified_lineage or root.verified_lineage)
-    world_human_id = agent.world_human_id or root.world_human_id
-    world_status = "inherited_verified" if verified_lineage and agent.agent_id != root.agent_id else (
-        "verified_root" if verified_lineage else "unverified"
-    )
+    world_human_id = agent.world_human_id
+    world_status = agent.world_status
+    world_access_tier = agent.world_access_tier
     description = _description(agent, parent_ens_name=parent_ens_name, world_status=world_status)
     capabilities = _capabilities(agent)
     agent_context = {
@@ -120,10 +142,13 @@ def _agent_identity_record(
         "display_name": _display_name(ens_name),
         "description": description,
         "capabilities": capabilities,
+        "deployment_id": deployment_id,
+        "active": active,
         "generation": agent.generation,
         "parent": parent_ens_name,
         "lineage": root_ens_name,
         "world_status": world_status,
+        "world_access_tier": world_access_tier,
         "wallets": {
             "evm": agent.wallet_address,
             "arc_testnet": agent.wallet_address,
@@ -139,9 +164,12 @@ def _agent_identity_record(
         "agent-context": json.dumps(agent_context, sort_keys=True, separators=(",", ":")),
         "agent-endpoint[web]": profile_url,
         "com.colony.agent_id": agent.agent_id,
+        "com.colony.deployment_id": deployment_id,
+        "com.colony.active": "true" if active else "false",
         "com.colony.parent": parent_ens_name,
         "com.colony.lineage": root_ens_name,
         "com.colony.world": world_status,
+        "com.colony.world_access_tier": world_access_tier,
         "com.colony.capabilities": ",".join(capabilities),
         "com.colony.profile": profile_url,
     }
@@ -155,6 +183,8 @@ def _agent_identity_record(
             "agent_id": agent.agent_id,
             "ens_name": ens_name,
             "display_name": _display_name(ens_name),
+            "deployment_id": deployment_id,
+            "active": active,
             "generation": agent.generation,
             "parent": {
                 "agent_id": agent.parent_agent_id,
@@ -165,9 +195,14 @@ def _agent_identity_record(
                 "root_agent_id": root.agent_id,
                 "root_name": root_ens_name,
                 "verified_lineage": verified_lineage,
-                "verification_source": "world_id_root" if verified_lineage else "",
-                "verified_inherited": bool(verified_lineage and agent.agent_id != root.agent_id),
+                "verification_source": "lineage_registry" if verified_lineage else "",
                 "world_human_id": world_human_id,
+            },
+            "world": {
+                "status": world_status,
+                "access_tier": world_access_tier,
+                "verified": agent.world_verified,
+                "human_id": world_human_id,
             },
             "wallets": {
                 "evm": agent.wallet_address,
@@ -195,7 +230,7 @@ def _lineage_root(agent: AntAgent, agents_by_id: dict[str, AntAgent]) -> AntAgen
 
 
 def _description(agent: AntAgent, *, parent_ens_name: str, world_status: str) -> str:
-    status = "verified" if world_status in {"verified_root", "inherited_verified"} else "unverified"
+    status = "World verified" if world_status == "world_verified" else "standard"
     if parent_ens_name:
         return f"Gen {agent.generation} {status} ant, child of {parent_ens_name}, alive"
     return f"Gen {agent.generation} {status} lineage root, alive"
@@ -209,8 +244,8 @@ def _capabilities(agent: AntAgent) -> list[str]:
         capabilities.insert(0, f"{top_source}_scout")
     if agent.genome.herd_bias < -0.25:
         capabilities.append("contrarian")
-    if agent.verified_lineage:
-        capabilities.append("verified_lineage")
+    if agent.world_verified:
+        capabilities.extend(["world_agentkit", "premium_data", "x402_privileged"])
     return capabilities
 
 
