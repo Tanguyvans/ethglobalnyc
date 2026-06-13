@@ -180,6 +180,17 @@ write resolver records
 
 Already registered ENSv2 subnames are skipped for the create step, so the script can safely continue a partial publication run.
 For subsequent runs, this is the expected path: existing subdomains are detected, creation is skipped, and resolver records are rewritten.
+For long testnet batches, the publisher reads the `pending` nonce before each transaction and retries nonce-low sends. This is important on public Sepolia RPCs, where a previously accepted transaction can make the next locally selected nonce stale.
+
+The 200-agent demo batch published all generated Dynamic-wallet identities under `colonny.eth` on Sepolia ENSv2. Three spot checks were read back successfully:
+
+```text
+root-fable-0.colonny.eth   -> 0x3fB467e269e4C0BfdeAA99086f7854d3590A078D
+root-onyx-99.colonny.eth   -> 0x428ab0660cFfed98bBa097fcfa6Cb4EEB502891A
+root-fable-199.colonny.eth -> 0x34F32499dCE99f977B039BfD8Ff6eed403435326
+```
+
+The ENS UI can lag behind the chain index. For demos, verify with RPC reads when the UI has not indexed every subname yet.
 
 ## Premium World Agents
 

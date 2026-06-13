@@ -204,14 +204,7 @@ def create_dynamic_wallet(agent_id: str) -> dict[str, Any]:
         },
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(request, timeout=_dynamic_timeout()) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Dynamic wallet creation failed for {agent_id}: HTTP {exc.code} {body}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Dynamic wallet creation failed for {agent_id}: {exc.reason}") from exc
+    payload = _open_dynamic_wallet_request(request, agent_id=agent_id)
 
     credential = _extract_dynamic_evm_credential(payload)
     if not credential:
@@ -260,6 +253,42 @@ def _dynamic_timeout() -> float:
         return float(os.environ.get("COLONY_DYNAMIC_WALLET_TIMEOUT_SECONDS") or "30")
     except ValueError:
         return 30.0
+
+
+def _dynamic_retries() -> int:
+    try:
+        return max(0, int(os.environ.get("COLONY_DYNAMIC_WALLET_RETRIES") or "4"))
+    except ValueError:
+        return 4
+
+
+def _dynamic_retry_delay() -> float:
+    try:
+        return max(0.0, float(os.environ.get("COLONY_DYNAMIC_WALLET_RETRY_DELAY_SECONDS") or "2"))
+    except ValueError:
+        return 2.0
+
+
+def _open_dynamic_wallet_request(request: urllib.request.Request, *, agent_id: str) -> dict[str, Any]:
+    attempts = _dynamic_retries() + 1
+    delay = _dynamic_retry_delay()
+    last_error = ""
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=_dynamic_timeout()) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            last_error = f"HTTP {exc.code} {body}"
+            if exc.code < 500 or attempt >= attempts:
+                raise RuntimeError(f"Dynamic wallet creation failed for {agent_id}: {last_error}") from exc
+        except urllib.error.URLError as exc:
+            last_error = str(exc.reason)
+            if attempt >= attempts:
+                raise RuntimeError(f"Dynamic wallet creation failed for {agent_id}: {last_error}") from exc
+        if delay:
+            time.sleep(delay * attempt)
+    raise RuntimeError(f"Dynamic wallet creation failed for {agent_id}: {last_error}")
 
 
 def _extract_dynamic_evm_credential(payload: dict[str, Any]) -> dict[str, Any] | None:
