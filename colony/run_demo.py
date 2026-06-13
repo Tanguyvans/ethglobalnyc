@@ -10,7 +10,7 @@ from pathlib import Path
 from colony_harness import ColonyHarness
 from colony_harness.env import load_env_file
 from colony_harness.models import MatchContext
-from colony_harness.voice import OpenAICompatibleVoiceModel, TemplateVoiceModel
+from colony_harness.voice import TemplateVoiceModel, llm_voice_model_from_env
 
 
 DEFAULT_CONFIG = Path(__file__).parent / "config" / "example.colony.json"
@@ -36,6 +36,11 @@ def parse_args() -> argparse.Namespace:
         help="Use deterministic templates or an OpenAI-compatible LLM for debate messages.",
     )
     parser.add_argument("--env", default="colony/.env", help="Optional .env path for LLM settings.")
+    parser.add_argument(
+        "--test-voice",
+        action="store_true",
+        help="Test the configured LLM voice once and exit.",
+    )
     return parser.parse_args()
 
 
@@ -46,9 +51,30 @@ def main() -> None:
     population = config.get("population", {})
 
     if args.voice_mode == "llm":
-        voice_model = OpenAICompatibleVoiceModel.from_env()
+        voice_model = llm_voice_model_from_env()
     else:
         voice_model = TemplateVoiceModel()
+
+    if args.test_voice:
+        from colony_harness.genes import random_genome
+
+        import random
+
+        test_match = MatchContext.from_dict(config)
+        test_genome = random_genome(random.Random(7))
+        try:
+            message = voice_model.render_claim(
+                agent_name="ant-test",
+                genome=test_genome,
+                match=test_match,
+                probability=0.53,
+                direction="home",
+            )
+        except Exception as exc:
+            print(f"Voice test failed: {exc}")
+            raise SystemExit(1) from exc
+        print(message)
+        return
 
     harness = ColonyHarness(
         population_size=args.agents or int(population.get("agents", 40)),

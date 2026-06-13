@@ -16,6 +16,22 @@ def _clamp_probability(value: float) -> float:
     return min(max(value, 0.01), 0.99)
 
 
+def _normalize_public_message(agent_name: str, message: str) -> str:
+    cleaned = " ".join(message.strip().split())
+    if not cleaned or cleaned.lower() == "none":
+        raise ValueError("voice model returned an empty message")
+    if not cleaned.startswith(f"{agent_name}:"):
+        cleaned = f"{agent_name}: {cleaned}"
+    return cleaned
+
+
+def _short_voice_error(exc: Exception) -> str:
+    text = " ".join(str(exc).split())
+    if len(text) > 180:
+        return f"{text[:177]}..."
+    return text
+
+
 @dataclass
 class AntAgent:
     agent_id: str
@@ -50,7 +66,9 @@ class AntAgent:
             model_tilt = {
                 "deepseek-v3.2": 0.018,
                 "qwen-3": 0.01,
-                "minimax-m2": -0.006,
+                "MiniMax-M3": 0.012,
+                "MiniMax-M2.7": -0.002,
+                "MiniMax-M2.7-highspeed": -0.006,
                 "claude-haiku": 0.004,
                 "parametric": 0.0,
             }.get(self.genome.model, 0.0)
@@ -74,13 +92,25 @@ class AntAgent:
         confidence = min(abs(edge) * 3.0 + 0.25 + rng.random() * 0.1, 0.95)
         direction: Side = "home" if edge >= 0 else "away"
         voice = voice_model or TemplateVoiceModel()
-        message = voice.render_claim(
-            agent_name=self.name,
-            genome=self.genome,
-            match=match,
-            probability=probability,
-            direction=direction,
-        )
+        try:
+            message = voice.render_claim(
+                agent_name=self.name,
+                genome=self.genome,
+                match=match,
+                probability=probability,
+                direction=direction,
+            )
+            message = _normalize_public_message(self.name, message)
+        except Exception as exc:
+            fallback = TemplateVoiceModel()
+            message = fallback.render_claim(
+                agent_name=self.name,
+                genome=self.genome,
+                match=match,
+                probability=probability,
+                direction=direction,
+            )
+            message = f"{message} [voice fallback: {_short_voice_error(exc)}]"
 
         tags = []
         weights = self.genome.source_weights.normalized()

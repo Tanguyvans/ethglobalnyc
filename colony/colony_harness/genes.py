@@ -10,7 +10,15 @@ from typing import Literal
 
 
 Estimator = Literal["poisson", "llm"]
-ModelSpecies = Literal["deepseek-v3.2", "qwen-3", "minimax-m2", "claude-haiku", "parametric"]
+ModelSpecies = Literal[
+    "deepseek-v3.2",
+    "qwen-3",
+    "MiniMax-M3",
+    "MiniMax-M2.7",
+    "MiniMax-M2.7-highspeed",
+    "claude-haiku",
+    "parametric",
+]
 
 
 PERSONA_TRAITS = [
@@ -80,7 +88,9 @@ def _random_weights(rng: random.Random) -> SourceWeights:
 def random_genome(rng: random.Random, llm_probability: float = 0.18) -> Genome:
     estimator: Estimator = "llm" if rng.random() < llm_probability else "poisson"
     if estimator == "llm":
-        model: ModelSpecies = rng.choice(["deepseek-v3.2", "qwen-3", "minimax-m2", "claude-haiku"])
+        model: ModelSpecies = rng.choice(
+            ["deepseek-v3.2", "qwen-3", "MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.7-highspeed", "claude-haiku"]
+        )
     else:
         model = "parametric"
 
