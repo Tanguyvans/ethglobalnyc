@@ -1,4 +1,4 @@
-# Layman Docs — Colony, explained without the jargon
+# Plain-English Docs — Colony, explained without the jargon
 
 Plain-English versions of our technical docs, written for the product side of the team.
 No code, no crypto vocabulary assumed. If you only read one thing, read
@@ -11,6 +11,9 @@ No code, no crypto vocabulary assumed. If you only read one thing, read
   what we proved works today.
 - `clickhouse-in-plain-english.md` — the "data the agents pay to read" piece, and why
   charging for it matters.
+- `football-in-plain-english.md` — for our football expert: the system basics PLUS a set of
+  fill-in-the-blank prompts where their game knowledge feeds the agents. Two-way doc — we want
+  answers back, not just a read.
 
 ## The 10-second version
 We're building a little **digital colony of "ant" agents that bet on World Cup matches**.
