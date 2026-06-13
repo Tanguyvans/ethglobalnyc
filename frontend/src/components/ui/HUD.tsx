@@ -8,10 +8,14 @@
 
 import { useEffect } from 'react'
 import { useWorldStore, type CameraMode, type CameraTarget } from '../../store/worldStore'
-import { Role } from '../../data/schema'
-import { ROLE_LABELS, ROLE_HEX, PALETTE } from '../../utils/palette'
+import { COLONY_HEX } from '../../utils/palette'
+import { sim } from '../../store/simStore'
 
-const ROLES: Role[] = [Role.Worker, Role.Explorer, Role.Carrier, Role.Builder, Role.Messenger]
+const CASTES: [string, string][] = [
+  ['#ffd23f', 'Queen'],
+  ['#e8ff9c', 'Carrying food'],
+  ['#ff5a4d', 'Soldier'],
+]
 
 export default function HUD() {
   const cameraMode = useWorldStore((s) => s.cameraMode)
@@ -28,7 +32,9 @@ export default function HUD() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyV' || e.code === 'Tab') {
+      // 'V' toggles camera. Tab is intentionally NOT bound — it must stay free
+      // for normal focus traversal / accessibility.
+      if (e.code === 'KeyV') {
         e.preventDefault()
         toggleCamera()
       }
@@ -98,16 +104,18 @@ export default function HUD() {
       </div>
 
       <div className="glass legend">
-        {ROLES.map((r) => (
-          <div className="li" key={r}>
-            <span className="dot" style={{ background: ROLE_HEX[r] }} />
-            {ROLE_LABELS[r]}
+        {sim.colonies.map((_, i) => (
+          <div className="li" key={i}>
+            <span className="dot" style={{ background: COLONY_HEX[i % COLONY_HEX.length] }} />
+            Colony {i + 1}
           </div>
         ))}
-        <div className="li">
-          <span className="dot" style={{ background: PALETTE.verified }} />
-          Verified lineage
-        </div>
+        {CASTES.map(([hex, label]) => (
+          <div className="li" key={label}>
+            <span className="dot" style={{ background: hex }} />
+            {label}
+          </div>
+        ))}
       </div>
 
       <div className="glass hint">

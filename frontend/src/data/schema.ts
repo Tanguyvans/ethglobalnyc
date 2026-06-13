@@ -116,3 +116,18 @@ export enum AntState {
   ReturnHome = 3,
   Debating = 4,
 }
+
+/**
+ * Caste / task — real ant colonies allocate labor by response thresholds. The
+ * value lives in the `tasks` Uint8Array and is reassigned dynamically by colony
+ * need (more foragers when food is low, more soldiers under threat, etc.).
+ */
+export enum AntTask {
+  Queen = 0, // one per colony; stays in the nest, lays brood
+  Forager = 1, // follows food pheromone, hauls food home
+  Scout = 2, // roams wide to discover new resources, seeds trails
+  Nurse = 3, // tends brood at the nest
+  Soldier = 4, // patrols the territory border, repels intruders
+}
+
+export const TASK_COUNT = 5

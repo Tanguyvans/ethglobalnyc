@@ -1,7 +1,6 @@
 /**
- * Atmosphere — bright sunny sky, a hard directional sun that casts shadows
- * (the key to the blocky Minecraft read), warm sky/ground hemisphere fill, and
- * a little drifting dust. Shadow camera is sized to cover the play area.
+ * Atmosphere — soft natural daylight: warm sun, strong sky fill, and a little
+ * drifting dust. The goal is readable terrain with no crushed-black forests.
  */
 
 import { useMemo, useRef } from 'react'
@@ -40,23 +39,23 @@ export default function Atmosphere() {
 
   return (
     <>
-      <hemisphereLight args={[PALETTE.sky, PALETTE.grassDark, 0.7]} />
-      <ambientLight intensity={0.35} />
+      <hemisphereLight args={['#d8ecff', '#8d8a72', 1.25]} />
+      <ambientLight intensity={0.62} />
       <directionalLight
         ref={sunRef}
-        position={[90, 140, 60]}
-        intensity={2.6}
+        position={[120, 180, 90]}
+        intensity={1.75}
         color={PALETTE.sun}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-near={20}
-        shadow-camera-far={420}
-        shadow-camera-left={-160}
-        shadow-camera-right={160}
-        shadow-camera-top={160}
-        shadow-camera-bottom={-160}
-        shadow-bias={-0.0005}
+        shadow-camera-far={520}
+        shadow-camera-left={-220}
+        shadow-camera-right={220}
+        shadow-camera-top={220}
+        shadow-camera-bottom={-220}
+        shadow-bias={-0.00025}
       />
 
       <points ref={dustRef} geometry={dustGeo}>
@@ -64,7 +63,7 @@ export default function Atmosphere() {
           size={0.6}
           color="#ffffff"
           transparent
-          opacity={0.3}
+          opacity={0.18}
           sizeAttenuation
           depthWrite={false}
           blending={AdditiveBlending}

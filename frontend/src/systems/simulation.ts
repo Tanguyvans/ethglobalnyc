@@ -8,6 +8,7 @@
 import { sim } from '../store/simStore'
 import { updateDomain } from './domain'
 import { updateBoids } from './boids'
+import { pher } from './pheromone'
 
 const MAX_DT = 1 / 30 // clamp to avoid spiral-of-death on tab refocus
 
@@ -17,8 +18,10 @@ export function stepSimulation(rawDt: number) {
 
   // 1. spatial hash for this frame's positions
   sim.hash.rebuild(sim.positions, sim.count)
-  // 2. domain decisions (targets, states, economy, colony aggregate)
+  // 2. evaporate + diffuse last frame's pheromone deposits
+  pher.update(dt)
+  // 3. domain decisions (forage loop, brood/growth, castes, aggregates)
   updateDomain(dt)
-  // 3. movement
+  // 4. movement (follows + lays pheromone; territory + patrol)
   updateBoids(dt)
 }

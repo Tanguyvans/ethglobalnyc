@@ -15,6 +15,7 @@ import Atmosphere from './world/Atmosphere'
 import Terrain from './world/Terrain'
 import Water from './world/Water'
 import Vegetation from './world/Vegetation'
+import PheromoneTrails from './world/PheromoneTrails'
 import Colony from './world/Colony'
 import AntSwarm from './world/AntSwarm'
 import Resources from './world/Resources'
@@ -35,18 +36,19 @@ export default function Experience() {
       camera={{ position: [62, 72, 98], fov: 55, near: 0.1, far: 3000 }}
       onCreated={({ scene }) => {
         scene.background = new Color(PALETTE.sky)
-        scene.fog = new FogExp2(PALETTE.horizon, 0.0011)
+        scene.fog = new FogExp2(PALETTE.horizon, 0.00075)
       }}
     >
       {/* sim driver — must be first */}
       <Engine />
 
-      <Sky sunPosition={[90, 140, 60]} turbidity={6} rayleigh={1.2} mieCoefficient={0.005} mieDirectionalG={0.8} />
+      <Sky sunPosition={[120, 180, 90]} turbidity={4.2} rayleigh={1.6} mieCoefficient={0.003} mieDirectionalG={0.74} />
 
       <Atmosphere />
       <Terrain />
       <Water />
       <Vegetation />
+      <PheromoneTrails />
       <Colony />
       <AntSwarm />
       <Resources />
@@ -61,13 +63,13 @@ export default function Experience() {
       <CameraRig />
 
       <EffectComposer enableNormalPass={false}>
-        <Bloom mipmapBlur intensity={0.35} luminanceThreshold={0.95} luminanceSmoothing={0.15} />
-        <Vignette eskil={false} offset={0.25} darkness={0.4} />
+        <Bloom mipmapBlur intensity={0.16} luminanceThreshold={1.05} luminanceSmoothing={0.2} />
+        <Vignette eskil={false} offset={0.38} darkness={0.18} />
       </EffectComposer>
 
-      <AdaptiveDpr pixelated />
+      <AdaptiveDpr />
       <AdaptiveEvents />
-      {import.meta.env.DEV && <Perf position="bottom-right" minimal />}
+      {import.meta.env.DEV && <Perf position="top-left" minimal />}
     </Canvas>
   )
 }

@@ -9,7 +9,6 @@ import { useFrame } from '@react-three/fiber'
 import { MeshReflectorMaterial } from '@react-three/drei'
 import { Mesh } from 'three'
 import { WATER_LEVEL } from '../../utils/noise'
-import { PALETTE } from '../../utils/palette'
 
 export default function Water() {
   const ref = useRef<Mesh>(null)
@@ -25,16 +24,16 @@ export default function Water() {
       <planeGeometry args={[2400, 2400]} />
       <MeshReflectorMaterial
         resolution={512}
-        mirror={0.55}
-        mixBlur={1.2}
-        mixStrength={5}
-        blur={[260, 70]}
+        mirror={0.28}
+        mixBlur={2.4}
+        mixStrength={2.3}
+        blur={[520, 180]}
         minDepthThreshold={0.3}
         maxDepthThreshold={1.4}
         depthScale={1.1}
-        color={PALETTE.water}
-        metalness={0.65}
-        roughness={0.32}
+        color="#4f8fc0"
+        metalness={0.08}
+        roughness={0.18}
       />
     </mesh>
   )

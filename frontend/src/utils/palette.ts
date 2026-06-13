@@ -43,6 +43,10 @@ export const ROLE_COLORS: Record<Role, Color> = {
 
 export const VERIFIED_COLOR = new Color(PALETTE.verified)
 
+/** Distinct per-colony identity hues (index = colony id). */
+export const COLONY_HEX = ['#ff9e3d', '#2fd6c7', '#ff5e9c', '#9bff5e'] as const
+export const COLONY_COLORS: Color[] = COLONY_HEX.map((h) => new Color(h))
+
 /** Hex string per role (for DOM swatches / legend). */
 export const ROLE_HEX: Record<Role, string> = {
   [Role.Worker]: PALETTE.worker,

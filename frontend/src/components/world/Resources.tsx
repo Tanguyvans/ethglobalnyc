@@ -1,15 +1,14 @@
 /**
- * Resources — energy crystals (USDC stake pools) rendered as one InstancedMesh.
- * They float, rotate, and scale with remaining energy. There are only a handful,
- * so direct instanced raycasting for hover is cheap and fine here (unlike the
- * swarm). Hover sets worldStore.hoveredResource for the tooltip.
+ * Resources — natural food/seed piles instead of floating game crystals. Ants
+ * forage from these low ground clusters, so they should read like part of the
+ * environment, not yellow prototype markers.
  */
 
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { InstancedMesh, Matrix4, Quaternion, Vector3, Euler, Color, OctahedronGeometry } from 'three'
+import { InstancedMesh, Matrix4, Quaternion, Vector3, Euler, Color, SphereGeometry, BufferGeometry } from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { sim, MAX_RESOURCES } from '../../store/simStore'
-import { PALETTE } from '../../utils/palette'
 import { useWorldStore } from '../../store/worldStore'
 
 const _m = new Matrix4()
@@ -18,13 +17,35 @@ const _e = new Euler()
 const _p = new Vector3()
 const _s = new Vector3()
 const _c = new Color()
-const BASE = new Color(PALETTE.resource)
-const BRIGHT = new Color('#fff0d0')
+const BASE = new Color('#8b6238')
+const RIPE = new Color('#c99649')
+
+function buildFoodPile() {
+  const parts: BufferGeometry[] = []
+  const offsets = [
+    [-0.9, 0.18, -0.2, 0.62],
+    [-0.25, 0.25, 0.35, 0.72],
+    [0.55, 0.2, -0.1, 0.58],
+    [0.15, 0.42, -0.55, 0.5],
+    [0.85, 0.16, 0.45, 0.42],
+    [-0.65, 0.12, 0.55, 0.38],
+  ] as const
+
+  for (const [x, y, z, r] of offsets) {
+    const g = new SphereGeometry(r, 8, 6)
+    g.scale(1.15, 0.55, 0.9)
+    g.translate(x, y, z)
+    parts.push(g)
+  }
+
+  const merged = mergeGeometries(parts, false)!
+  parts.forEach((p) => p.dispose())
+  return merged
+}
 
 export default function Resources() {
   const ref = useRef<InstancedMesh>(null)
-
-  const geometry = useMemo(() => new OctahedronGeometry(3.2, 0), [])
+  const geometry = useMemo(buildFoodPile, [])
 
   useLayoutEffect(() => {
     if (ref.current) ref.current.instanceMatrix.needsUpdate = true
@@ -37,15 +58,14 @@ export default function Resources() {
     const n = Math.min(sim.resources.length, MAX_RESOURCES)
     for (let i = 0; i < n; i++) {
       const r = sim.resources[i]
-      const bob = Math.sin(t * 1.5 + i) * 0.8
-      _p.set(r.x, r.y + 5 + bob, r.z)
-      _e.set(t * 0.3 + i, t * 0.5 + i, 0)
+      _p.set(r.x, r.y + 0.12, r.z)
+      _e.set(0.05, i * 1.618 + Math.sin(t * 0.08 + i) * 0.03, 0)
       _q.setFromEuler(_e)
-      const sc = 0.6 + r.energy * 1.0
+      const sc = 1.15 + r.energy * 1.15
       _s.set(sc, sc, sc)
       _m.compose(_p, _q, _s)
       mesh.setMatrixAt(i, _m)
-      _c.copy(BASE).lerp(BRIGHT, r.energy * 0.6)
+      _c.copy(BASE).lerp(RIPE, r.energy * 0.65)
       mesh.setColorAt(i, _c)
     }
     mesh.count = n
@@ -65,16 +85,11 @@ export default function Resources() {
       args={[geometry, undefined, MAX_RESOURCES]}
       frustumCulled={false}
       castShadow
+      receiveShadow
       onPointerMove={onMove}
       onPointerOut={onOut}
     >
-      <meshStandardMaterial
-        roughness={0.15}
-        metalness={0.1}
-        emissive={PALETTE.resource}
-        emissiveIntensity={0.7}
-        toneMapped={false}
-      />
+      <meshStandardMaterial vertexColors roughness={0.92} metalness={0} />
     </instancedMesh>
   )
 }

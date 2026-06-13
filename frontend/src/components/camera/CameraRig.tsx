@@ -18,13 +18,13 @@ import { damp3 } from 'maath/easing'
 import { useWorldStore, type CameraTarget } from '../../store/worldStore'
 import { groundY } from '../../utils/noise'
 
-const EYE_HEIGHT = 3.5
+const EYE_HEIGHT = 9.5
 const WALK_SPEED = 28
 const SPRINT = 2.0
 
 const PRESETS: Record<CameraTarget, { pos: Vector3; target: Vector3 }> = {
   strategic: { pos: new Vector3(62, 72, 98), target: new Vector3(0, 14, 0) },
-  explore: { pos: new Vector3(0, 0, 60), target: new Vector3(0, 8, 0) },
+  explore: { pos: new Vector3(0, 18, 26), target: new Vector3(0, 11, -28) },
 }
 
 export default function CameraRig() {
@@ -92,7 +92,8 @@ export default function CameraRig() {
         camera.position.addScaledVector(forward, (mz / len) * sp)
         camera.position.addScaledVector(right, (mx / len) * sp)
       }
-      // glue eye height to the voxel surface
+      // Glue eye height to the smooth terrain surface. Keep this comfortably
+      // above ants/rocks so first-person screenshots do not start inside props.
       camera.position.y = groundY(camera.position.x, camera.position.z) + EYE_HEIGHT
     }
   })
