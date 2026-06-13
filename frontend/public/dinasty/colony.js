@@ -7,11 +7,17 @@ DN.colony = (function () {
   const P = DN.palette;
   function ground(x, z) { return DN.world.heightAt(x, z); }
 
+  // Seven colonies spread evenly around the play area so the player
+  // always sees a few from any orbit angle. Distances vary so they don't
+  // form a perfect circle.
   const DEFS = [
-    { angle: -0.6, dist: 72 },
-    { angle: 2.0, dist: 100 },
-    { angle: 3.5, dist: 82 },
-    { angle: 5.0, dist: 112 }
+    { angle: -0.6, dist: 76 },
+    { angle: 0.7,  dist: 118 },
+    { angle: 1.8,  dist: 92 },
+    { angle: 2.9,  dist: 130 },
+    { angle: 3.9,  dist: 84 },
+    { angle: 4.9,  dist: 120 },
+    { angle: 5.9,  dist: 96 }
   ];
 
   function buildMound(accent, seed) {

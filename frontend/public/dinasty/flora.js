@@ -7,8 +7,9 @@ DN.flora = (function () {
   function ground(x, z) { return DN.world.heightAt(x, z); }
   function biome() { return DN.world.biome || DN.biomes[0]; }
 
-  // keep a clearing around each colony nest so flora never buries it
-  const CLEAR_R = 26, CLEAR_R2 = CLEAR_R * CLEAR_R;
+  // Tree exclusion zone around each colony so the mound is never buried,
+  // but small enough that the colony still feels embedded in forest.
+  const CLEAR_R = 30, CLEAR_R2 = CLEAR_R * CLEAR_R;
   function nearColony(x, z) {
     const L = (DN.colony && DN.colony.list) || [];
     for (let i = 0; i < L.length; i++) {

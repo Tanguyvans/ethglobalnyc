@@ -34,8 +34,8 @@ DN.palette = {
   antLight: 0x6E4329,
 
   // faction accents — earthy jewel tones (no neon)
-  factions: [0xE3A53C, 0x3FA89F, 0xD96E54, 0x8E79C4],
-  factionNames: ['Amberfall', 'Verdana Prime', 'Cobalt Reach', 'Greywarren'],
+  factions: [0xE3A53C, 0x3FA89F, 0xD96E54, 0x8E79C4, 0xE26B8E, 0x5DB0E8, 0xB8C440],
+  factionNames: ['Amberfall', 'Verdana Prime', 'Cobalt Reach', 'Greywarren', 'Crimson Pact', 'Aether Hold', 'Lichenstrand'],
 
   ink: 0x2B2A26
 };

@@ -2,11 +2,55 @@
 window.DN = window.DN || {};
 
 DN.ants = (function () {
-  const A = { perCol: 150, list: [], heroes: [], byMesh: {} };
+  const A = { perCol: 120, list: [], heroes: [], byMesh: {}, GROUPS: 6 };
   let scene, noise;
   const P = DN.palette;
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
   function ground(x, z) { return DN.world.heightAt(x, z); }
+
+  // ---- shared trail cache: ants travelling between the same (colony,
+  // resource) pair ride a single Quadratic Bezier curve. That way many ants
+  // form a single-file column instead of fanning out individually. -----
+  const _trails = new Map();
+  function trailKey(col, res) { return col.id + '|' + (res ? res.id : 'wander'); }
+  function makeTrail(col, res) {
+    const start = new THREE.Vector3(col.entrance.x, 0, col.entrance.z);
+    let end;
+    if (res) {
+      end = new THREE.Vector3(res.pos.x, 0, res.pos.z);
+    } else {
+      // wander destination — a deterministic far-out point per colony so
+      // the wander trail is also a real column, not random per-ant scatter.
+      let h = 0;
+      for (let i = 0; i < col.id.length; i++) h = ((h * 31) + col.id.charCodeAt(i)) | 0;
+      const ang = ((h % 360) / 360) * Math.PI * 2;
+      const r = 38 + Math.abs((h >> 8) % 24);
+      end = new THREE.Vector3(col.pos.x + Math.cos(ang) * r, 0, col.pos.z + Math.sin(ang) * r);
+    }
+    const dx = end.x - start.x, dz = end.z - start.z;
+    const len = Math.hypot(dx, dz) || 1;
+    // perpendicular curl seeded by key hash so each trail has its own arc
+    const key = trailKey(col, res);
+    let kh = 0; for (let i = 0; i < key.length; i++) kh = ((kh * 131) + key.charCodeAt(i)) | 0;
+    const curl = (((kh % 100) / 100) - 0.5) * 0.22 * len;
+    const perpx = -dz / len, perpz = dx / len;
+    const mid = new THREE.Vector3(
+      (start.x + end.x) * 0.5 + perpx * curl,
+      0,
+      (start.z + end.z) * 0.5 + perpz * curl
+    );
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    return { curve, length: len, key, resId: res ? res.id : null };
+  }
+  function getTrail(col, res) {
+    const k = trailKey(col, res);
+    let t = _trails.get(k);
+    if (!t) { t = makeTrail(col, res); _trails.set(k, t); }
+    return t;
+  }
+  function invalidateTrailsFor(resId) {
+    for (const [k, t] of _trails) if (t.resId === resId) _trails.delete(k);
+  }
 
   // ---- ant geometry builder with leg-animation attributes ----
   function AntBuilder() { this.pos = []; this.norm = []; this.col = []; this.leg = []; this.root = []; this.phase = []; this._c = new THREE.Color(); }
@@ -92,6 +136,12 @@ DN.ants = (function () {
     return b.geometry();
   }
 
+  // Exposed so the underground colony view can reuse the same detailed
+  // voxel ant body + leg-animation shader (so underground ants look
+  // identical to surface ants instead of crude procedural blobs).
+  A.buildAntGeo = buildAntGeo;
+  A.antMaterial = antMaterial;
+
   function antMaterial() {
     const mat = DN.util.voxelMat({ roughness: 0.42, metalness: 0.12, flatShading: false });
     mat.onBeforeCompile = function (sh) {
@@ -137,16 +187,37 @@ DN.ants = (function () {
       for (let i = 0; i < n; i++) {
         inst[i * 2] = Math.random() * 6.28;        // phase
         inst[i * 2 + 1] = 7 + Math.random() * 4;    // gait rate
-        const ang = Math.random() * 6.28, rr = Math.random() * 8;
-        const dockA = Math.random() * 6.28, dockR = 4 + Math.random() * 11;
+        // Spawn AT the colony entrance with sub-unit jitter — visually
+        // emerges from the tunnel mouth rather than ringing the mound.
+        const jx = (Math.random() - 0.5) * 1.2;
+        const jz = (Math.random() - 0.5) * 1.2;
+        // Split this colony's foragers across A.GROUPS foraging groups —
+        // each group locks to a different nearby resource so the surface
+        // shows many distinct columns radiating from each entrance.
+        const groupIdx = i % A.GROUPS;
         const ant = {
           id: 'w-' + ci + '-' + i, ci, col, inst: i, mesh,
-          x: col.pos.x + Math.cos(ang) * rr, z: col.pos.z + Math.sin(ang) * rr,
-          yaw: Math.random() * 6.28, speed: 5.5 + Math.random() * 3.5,
-          state: Math.random() < 0.5 ? 'out' : 'home',
-          target: new THREE.Vector3(), wob: Math.random() * 6.28,
-          dockA, dockR,
-          scale: 0.62 + Math.random() * 0.4, hero: false, cargo: 0,
+          x: col.entrance.x + jx, z: col.entrance.z + jz,
+          yaw: Math.random() * 6.28,
+          // Slower foragers — they read as deliberate workers, not racing
+          // sprites. Scale boosted for visibility from the orbit camera.
+          speed: 2.0 + Math.random() * 1.0,
+          // All spawn outbound — within a few seconds half will be returning
+          // organically as they hit the resource. Mixed-state spawning looked
+          // chaotic because half the ants flashed to the trail's end.
+          state: 'out',
+          wob: Math.random() * 6.28,
+          // trail-following state — t walks 0..1, dir=+1 outbound, -1 home
+          trail: null, t: 0, dir: 1,
+          groupIdx,
+          // tight lateral offset for a clear single-file column
+          laneOffset: (Math.random() - 0.5) * 0.45,
+          // staggered start position along the trail so they form a column
+          tStart: ((i / n) * A.GROUPS % 1) + Math.random() * 0.04,
+          // larger scale so individual ants read from camera distance
+          scale: 1.05 + Math.random() * 0.5, hero: false, cargo: 0,
+          // death/respawn animation timer (state === 'dead')
+          deadTimer: 0,
           role: ['Forager', 'Forager', 'Scout', 'Worker'][i % 4]
         };
         pickTarget(ant);
@@ -201,18 +272,30 @@ DN.ants = (function () {
     return A;
   };
 
+  // Returns the i-th nearest live resource to the colony, so each forager
+  // group can lock to a different one and form its own column.
+  function nthNearestResource(col, n) {
+    const list = (DN.resources && DN.resources.list || []).filter(r => !r.depleted && r.amount > 0);
+    if (!list.length) return null;
+    list.sort((x, y) => col.pos.distanceTo(x.pos) - col.pos.distanceTo(y.pos));
+    return list[Math.min(n, list.length - 1)];
+  }
+
+  // Assign this ant to a trail (shared curve to/from a resource). Many
+  // ants on the same trail produces a single-file column visually.
   function pickTarget(a) {
     if (a.state === 'out') {
-      const res = DN.resources && DN.resources.nearest(a.col.pos);
-      if (res) { a.target.set(res.pos.x + (Math.random() - .5) * 4, 0, res.pos.z + (Math.random() - .5) * 4); a._res = res; }
-      else {
-        const ang = Math.random() * 6.28, rr = 22 + Math.random() * 34;
-        a.target.set(a.col.pos.x + Math.cos(ang) * rr, 0, a.col.pos.z + Math.sin(ang) * rr);
-        a._res = null;
-      }
+      const res = nthNearestResource(a.col, a.groupIdx || 0);
+      a._res = res || null;
+      a.trail = getTrail(a.col, res);
+      a.dir = 1;
+      a.t = a.tStart != null ? a.tStart : 0;
+      a.tStart = null;
     } else {
-      const e = a.col.entrance || a.col.pos;
-      a.target.set(e.x + Math.cos(a.dockA) * a.dockR, 0, e.z + Math.sin(a.dockA) * a.dockR);
+      // returning — reuse last trail in reverse
+      if (!a.trail) a.trail = getTrail(a.col, a._res);
+      a.dir = -1;
+      a.t = 1;
     }
   }
 
@@ -220,30 +303,89 @@ DN.ants = (function () {
     if (A.material.userData.sh) A.material.userData.sh.uniforms.uTime.value = elapsed;
     let cargoN = 0;
     const meshDirty = {};
+    const _curvePos = new THREE.Vector3();
+    const _curveTan = new THREE.Vector3();
     for (let k = 0; k < A.list.length; k++) {
       const a = A.list[k];
-      let dx = a.target.x - a.x, dz = a.target.z - a.z;
-      let dist = Math.hypot(dx, dz) || 0.001;
-      if (dist < 2.6) {
+
+      // ---- death animation: ant tips forward, fades to small, then is
+      // teleported back to the entrance and respawned outbound. Rate is
+      // tuned so ~1 ant dies every several seconds across all colonies. ----
+      if (a.state === 'dead') {
+        a.deadTimer -= dt;
+        const ttl = Math.max(0, a.deadTimer / 2.0);
+        const dieScale = a.scale * Math.max(0.18, ttl);
+        const gy = ground(a.x, a.z);
+        _p.set(a.x, gy + 0.02, a.z);
+        // tip forward as it dies (pitch rotation on X axis)
+        _e.set(Math.PI * 0.45 * (1 - ttl), a.yaw, 0);
+        _q.setFromEuler(_e);
+        _s.setScalar(dieScale);
+        _m.compose(_p, _q, _s);
+        a.mesh.setMatrixAt(a.inst, _m);
+        meshDirty[a.mesh.uuid] = a.mesh;
+        if (a.deadTimer <= 0) {
+          // respawn at entrance, fresh forager outbound
+          a.state = 'out';
+          a.x = a.col.entrance.x + (Math.random() - 0.5) * 1.2;
+          a.z = a.col.entrance.z + (Math.random() - 0.5) * 1.2;
+          a.t = 0; a.dir = 1; a.cargo = 0;
+          pickTarget(a);
+        }
+        continue;
+      }
+      // ant has a chance to die per frame — heroes are immortal
+      if (!a.hero && Math.random() < dt * 0.0002 * timeScale) {
+        a.state = 'dead';
+        a.deadTimer = 2.0;
+        continue;
+      }
+
+      // ensure ant has a trail (first-frame guard)
+      if (!a.trail) pickTarget(a);
+
+      // advance t along the trail at constant world-space speed
+      const sp = a.speed * timeScale;
+      const advance = sp * dt / Math.max(1, a.trail.length);
+      a.t += a.dir * advance;
+
+      // arrival → flip state
+      if (a.dir > 0 && a.t >= 1) {
+        a.t = 1;
         if (a.state === 'out') {
           if (a._res && !a._res.depleted) { a._res.amount -= 0.06 * timeScale; a.cargo = 1; }
           a.state = 'home';
-        } else {
+          a.dir = -1;
+        }
+      } else if (a.dir < 0 && a.t <= 0) {
+        a.t = 0;
+        if (a.state === 'home') {
           if (a.cargo) { a.col.stats.food = Math.min(100, a.col.stats.food + 0.04); a.cargo = 0; }
           a.state = 'out';
+          // re-pick a (possibly fresh) resource — if old resource is gone
+          // the trail cache will hand us a new column to follow.
+          if (!a._res || a._res.depleted) {
+            const next = DN.resources && DN.resources.nearest(a.col.pos);
+            a._res = next || null;
+            a.trail = getTrail(a.col, a._res);
+          }
+          a.dir = 1;
         }
-        pickTarget(a);
-        dx = a.target.x - a.x; dz = a.target.z - a.z; dist = Math.hypot(dx, dz) || 0.001;
       }
-      // steering: toward target + curl wander
-      const inv = 1 / dist; let sx = dx * inv, sz = dz * inv;
-      const w = noise.n3(a.x * 0.05, a.z * 0.05, elapsed * 0.3 + a.wob);
-      const wa = w * Math.PI * 2, mix = 0.34;
-      sx = sx * (1 - mix) + Math.cos(wa) * mix; sz = sz * (1 - mix) + Math.sin(wa) * mix;
-      const sl = Math.hypot(sx, sz) || 1; sx /= sl; sz /= sl;
-      const sp = a.speed * timeScale;
-      a.x += sx * sp * dt; a.z += sz * sp * dt;
-      const ty = Math.atan2(sx, sz);
+
+      // sample curve position + tangent
+      a.trail.curve.getPoint(a.t, _curvePos);
+      a.trail.curve.getTangent(a.t, _curveTan);
+      // lateral offset perpendicular to tangent (in the xz plane) plus a
+      // very small wob noise so the column has organic weave, not a rail
+      const perpX = -_curveTan.z, perpZ = _curveTan.x;
+      const wob = noise.n3(_curvePos.x * 0.05, _curvePos.z * 0.05, elapsed * 0.4 + a.wob) * 0.3;
+      a.x = _curvePos.x + perpX * (a.laneOffset + wob);
+      a.z = _curvePos.z + perpZ * (a.laneOffset + wob);
+
+      // face along direction of travel (flip when returning home)
+      const dirSign = a.dir;
+      const ty = Math.atan2(_curveTan.x * dirSign, _curveTan.z * dirSign);
       let d = ty - a.yaw; while (d > Math.PI) d -= 6.283; while (d < -Math.PI) d += 6.283;
       a.yaw += d * Math.min(1, dt * 8);
       const gy = ground(a.x, a.z);

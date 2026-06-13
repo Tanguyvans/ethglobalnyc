@@ -404,20 +404,29 @@ DN.underground = (function () {
 
   function buildAgents() {
     buildGraph();
-    // ---- procedural ant geometry ---------------------------------------
-    const geo = makeAntGeo(1.0);
-    const N = 60; // worker ants — guided pathing through the tunnel graph
-    agentMesh = new THREE.InstancedMesh(geo, DN.util.voxelMat({ roughness: 0.55, flatShading: false }), N);
+    // ---- reuse surface ant geo + material so underground ants look
+    // identical to the well-formed surface foragers (proper segments,
+    // animated legs via the shader, faction-stripe color). ---------------
+    const accent = (U.col && U.col.accent) || 0xE3A53C;
+    const geo = DN.ants.buildAntGeo(accent);
+    const N = 60;
+    U._antMat = DN.ants.antMaterial();
+    agentMesh = new THREE.InstancedMesh(geo, U._antMat, N);
     agentMesh.frustumCulled = false;
     agentMesh.castShadow = false; agentMesh.receiveShadow = false;
+    // per-instance leg-walk phase + gait rate (same encoding as surface)
+    const inst = new Float32Array(N * 2);
+    for (let i = 0; i < N; i++) { inst[i * 2] = Math.random() * 6.28; inst[i * 2 + 1] = 7 + Math.random() * 4; }
+    geo.setAttribute('aInst', new THREE.InstancedBufferAttribute(inst, 2));
     scene.add(agentMesh);
 
     // ---- queen: single oversized ant locked in Queen Chamber ----------
-    const queenGeo = makeAntGeo(2.4);
-    U.queenMesh = new THREE.Mesh(queenGeo, DN.util.voxelMat({ roughness: 0.4, flatShading: false }));
+    const queenGeo = DN.ants.buildAntGeo(accent);
+    U.queenMesh = new THREE.Mesh(queenGeo, DN.util.voxelMat({ roughness: 0.4, flatShading: false, vertexColors: true }));
     const queenRoom = node('queen');
     U.queenMesh.position.set(queenRoom.x, queenRoom.y - queenRoom.r * 0.4, 0.9);
-    U.queenMesh.rotation.z = Math.PI; // face toward room center
+    U.queenMesh.scale.setScalar(2.4);
+    U.queenMesh.rotation.x = -Math.PI / 2; // surface ant is y-up; orient flat for the cross-section
     scene.add(U.queenMesh);
 
     // ---- larvae: pulsing pale ovoids clustered in Nursery -------------
