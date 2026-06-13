@@ -31,6 +31,29 @@ set -a && source .env && set +a && node create-wallets.mjs 10
 Result: **10/10 V3 MPC EVM wallets in ~3550 ms (~355 ms/wallet, parallel).** EVM/eip155 → usable
 on Arc testnet (chain 5042002). Addresses recorded in `notes/2026-06-13-dynamic-wallets.txt`.
 
+## Colony harness integration
+The Colony Python harness can now use Dynamic as a wallet provider:
+
+```bash
+python3 colony/run_demo.py \
+  --agents 7 \
+  --rooms 1 \
+  --agent-wallets \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --dynamic-env dynamic/.env \
+  --identity-out colony/data/ens-identities.dynamic.json \
+  --no-run-log
+```
+
+The wallet store records each agent's public address and Dynamic metadata, but no raw private key.
+Do not mix providers in one store: if a store was created with `local`, use a fresh store for
+`dynamic`.
+
+Validated on Sepolia testnet with 7 agents: 7 Dynamic V3 wallet records, 0 stored private keys,
+7 ENSv2 subnames published under `colonny.eth`, and all 7 resolver `addr` records read back
+against the expected Dynamic wallet addresses.
+
 ## Why this matters for Colony
 - Fast, server-side pregeneration of ant wallets with one API key — scales past "tens of ants."
 - Each wallet is claimable by a real human via its identifier — interesting for the verified

@@ -106,7 +106,7 @@ python3 colony/run_demo.py \
   --population-state colony/data/demo_population_state.json
 ```
 
-Create/reuse local throwaway EVM wallets, deterministic ENS names, and World ID access status for agents:
+Create/reuse throwaway EVM wallets, deterministic ENS names, and World ID access status for agents:
 
 ```bash
 python3 colony/run_demo.py \
@@ -115,10 +115,27 @@ python3 colony/run_demo.py \
   --show-roster
 ```
 
-Private keys are written to `colony/secrets/agent-wallets.local.json`, which is gitignored.
+By default this uses `--wallet-provider local`. Private keys are written to
+`colony/secrets/agent-wallets.local.json`, which is gitignored.
 `wallet_address`, `ens_name`, `world_status`, and `world_access_tier` are exported in public
 agent records. The same EVM address can be registered with Worldcoin AgentKit on World Chain
 mainnet and later funded on Arc testnet for trades/x402 experiments.
+
+To use the Dynamic scaffold instead of plaintext local keys:
+
+```bash
+python3 colony/run_demo.py \
+  --agents 40 \
+  --agent-wallets \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --dynamic-env dynamic/.env \
+  --show-roster
+```
+
+Dynamic V3 WaaS/MPC wallets do not return raw private keys. The wallet store records the public
+address plus Dynamic metadata such as the identifier, user id, and credential id. Signing Arc
+transactions from those wallets should go through Dynamic's WaaS/SDK path.
 
 ENS defaults come from `colony/.env`:
 
@@ -131,6 +148,8 @@ COLONY_ENS_PARENT=colonny.eth
 COLONY_ENS_VERSION=v2
 COLONY_PROFILE_BASE_URL=https://colony.app/ants
 COLONY_WORLD_VERIFICATIONS=colony/secrets/world-agentkit-verifications.local.json
+COLONY_WALLET_PROVIDER=local
+COLONY_DYNAMIC_ENV=dynamic/.env
 SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
 PROJECT_ENS_PRIVATE_KEY=
 ```
@@ -186,6 +205,8 @@ For a fresh deployment, prefer the orchestrator instead of stitching the command
 ```bash
 python3 colony/deploy_agents.py \
   --agents 50 \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
   --world-count 5 \
   --deployment-id demo_001 \
   --identity-out colony/data/ens-identities.deploy.json
@@ -200,6 +221,8 @@ only when the dry-run looks right:
 ```bash
 python3 colony/deploy_agents.py \
   --agents 50 \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
   --world-count 5 \
   --deployment-id demo_001 \
   --identity-out colony/data/ens-identities.deploy.json \
@@ -208,6 +231,27 @@ python3 colony/deploy_agents.py \
 
 Use explicit `--world-agent ant_0007` flags instead of `--world-count` when you want to pick
 specific premium agents.
+
+For a Dynamic-only ENS smoke test without Worldcoin registration:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 7 \
+  --rooms 1 \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --dynamic-env dynamic/.env \
+  --identity-out colony/data/ens-identities.dynamic.json \
+  --deployment-id dynamic_test \
+  --skip-world \
+  --ens-broadcast
+```
+
+This creates/reuses Dynamic V3 wallets, writes the ENS identity JSON, and publishes the
+subname resolver records on Sepolia. If an RPC returns `nonce too low` during broadcast, rerun
+the same command or rerun `register_ens_identities.py` with the remaining `--agent-id` values;
+the publisher is idempotent for already-created subnames and will continue by writing records.
+The 7-agent smoke test was verified by reading back all resolver `addr` records on Sepolia.
 
 To mark a deployment inactive before retesting, run the cleanup in dry-run mode:
 

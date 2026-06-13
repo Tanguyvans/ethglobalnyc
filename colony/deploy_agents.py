@@ -71,7 +71,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--wallet-store",
         default="colony/secrets/agent-wallets.local.json",
-        help="Gitignored local JSON store for agent private keys.",
+        help="Gitignored JSON store for agent wallet records.",
+    )
+    parser.add_argument(
+        "--wallet-provider",
+        choices=["local", "dynamic"],
+        default=None,
+        help="Wallet backend for generated agents. Defaults to COLONY_WALLET_PROVIDER or local.",
+    )
+    parser.add_argument(
+        "--dynamic-env",
+        default=None,
+        help="Optional Dynamic .env path for --wallet-provider dynamic. Defaults to COLONY_DYNAMIC_ENV or dynamic/.env.",
     )
     parser.add_argument("--ens-parent", default=None, help="Parent ENS name. Defaults to COLONY_ENS_PARENT.")
     parser.add_argument("--profile-base-url", default=None, help="Base URL for ENS agent profile records.")
@@ -128,6 +139,7 @@ def _print_plan(args: argparse.Namespace, world_agents: list[str]) -> None:
     print(f"- identity_out: {args.identity_out}")
     print(f"- deployment_id: {args.deployment_id}")
     print(f"- wallet_store: {args.wallet_store}")
+    print(f"- wallet_provider: {args.wallet_provider or os.environ.get('COLONY_WALLET_PROVIDER') or 'local'}")
     print(f"- world_agents: {', '.join(world_agents) if world_agents else '(none)'}")
     if args.skip_world:
         print("- world: skipped")
@@ -166,6 +178,10 @@ def _generate_identities(args: argparse.Namespace, *, world_agents: list[str]) -
         cmd.extend(["--seed", str(args.seed)])
     if args.population_state:
         cmd.extend(["--population-state", args.population_state])
+    if args.wallet_provider:
+        cmd.extend(["--wallet-provider", args.wallet_provider])
+    if args.dynamic_env:
+        cmd.extend(["--dynamic-env", args.dynamic_env])
     if args.ens_parent:
         cmd.extend(["--ens-parent", args.ens_parent])
     if args.profile_base_url:

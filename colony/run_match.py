@@ -80,12 +80,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--agent-wallets",
         action="store_true",
-        help="Create/reuse local EVM wallets for agents and expose only public addresses.",
+        help="Create/reuse EVM wallets for agents and expose only public addresses.",
+    )
+    parser.add_argument(
+        "--wallet-provider",
+        choices=["local", "dynamic"],
+        default=None,
+        help="Wallet backend for --agent-wallets. Defaults to COLONY_WALLET_PROVIDER or local.",
     )
     parser.add_argument(
         "--wallet-store",
         default="colony/secrets/agent-wallets.local.json",
-        help="Gitignored local JSON store for agent private keys.",
+        help="Gitignored JSON store for agent wallet records.",
+    )
+    parser.add_argument(
+        "--dynamic-env",
+        default=None,
+        help="Optional Dynamic .env path for --wallet-provider dynamic. Defaults to COLONY_DYNAMIC_ENV or dynamic/.env.",
     )
     parser.add_argument(
         "--ens-parent",
@@ -181,6 +192,8 @@ def main() -> None:
         voice_model=voice_model,
         create_agent_wallets=args.agent_wallets,
         wallet_store_path=args.wallet_store if args.agent_wallets else None,
+        wallet_provider=args.wallet_provider,
+        dynamic_env_path=args.dynamic_env,
         agents=loaded_agents,
     )
     _apply_world_agents(args, harness)

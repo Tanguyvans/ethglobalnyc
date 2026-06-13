@@ -47,6 +47,8 @@ class ColonyHarness:
         voice_model: VoiceModel | None = None,
         create_agent_wallets: bool = False,
         wallet_store_path: str | Path | None = None,
+        wallet_provider: str | None = None,
+        dynamic_env_path: str | Path | None = None,
         agents: list[AntAgent] | None = None,
     ) -> None:
         if agents is not None:
@@ -62,7 +64,11 @@ class ColonyHarness:
         self.rng = random.Random(seed)
         self.starting_bankroll = starting_bankroll
         self.voice_model = voice_model or TemplateVoiceModel()
-        self.wallet_store = WalletStore(wallet_store_path) if create_agent_wallets or wallet_store_path else None
+        self.wallet_store = (
+            WalletStore(wallet_store_path, provider=wallet_provider, dynamic_env_path=dynamic_env_path)
+            if create_agent_wallets or wallet_store_path
+            else None
+        )
         self.agents = agents if agents is not None else self._spawn_agents()
         if agents is not None and self.wallet_store is not None:
             self._attach_wallets()
