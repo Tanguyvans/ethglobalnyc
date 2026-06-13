@@ -104,6 +104,11 @@ class ColonyHarness:
         path.parent.mkdir(parents=True, exist_ok=True)
         events = []
         events.append({"event_type": "round_summary", **result.summary})
+        # Emit the roster up front so a replay consumer can bind agent_id -> index
+        # before any debate_claim/forecast/bet_commitment references an agent.
+        events.extend(
+            {"event_type": "agent_record", **record} for record in self.public_roster()
+        )
         events.extend({"event_type": "debate_claim", **claim.to_dict()} for claim in result.claims)
         events.extend({"event_type": "forecast", **forecast.to_dict()} for forecast in result.forecasts)
         events.extend({"event_type": "bet_commitment", **commitment.to_dict()} for commitment in result.commitments)
