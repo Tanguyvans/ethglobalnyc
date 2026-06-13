@@ -11,6 +11,7 @@ from .debate import DebateFeed
 from .genes import random_genome
 from .models import MatchContext, RoundResult
 from .voice import TemplateVoiceModel, VoiceModel
+from .world_graph import build_world_graph
 
 
 class ColonyHarness:
@@ -50,7 +51,7 @@ class ColonyHarness:
             agents.append(agent)
         return agents
 
-    def select_speakers(self) -> list[AntAgent]:
+    def select_debaters(self) -> list[tuple[AntAgent, str]]:
         ranked = sorted(
             self.agents,
             key=lambda ant: (ant.bankroll * 0.7) + (ant.accuracy * 100.0 * 0.3),
@@ -60,13 +61,22 @@ class ColonyHarness:
         elite = ranked[:elite_count]
         remaining = [agent for agent in self.agents if agent not in elite]
         wildcards = self.rng.sample(remaining, k=self.speaker_slots - elite_count)
-        return elite + wildcards
+        selected: list[tuple[AntAgent, str]] = []
+        for rank, agent in enumerate(elite, start=1):
+            score = (agent.bankroll * 0.7) + (agent.accuracy * 100.0 * 0.3)
+            selected.append((agent, f"elite rank {rank}: bankroll/accuracy score {score:.2f}"))
+        for agent in wildcards:
+            selected.append((agent, "wildcard: exploration slot for diversity and noisy debate"))
+        return selected
+
+    def select_speakers(self) -> list[AntAgent]:
+        return [agent for agent, _reason in self.select_debaters()]
 
     def run_round(self, match: MatchContext) -> RoundResult:
         feed = DebateFeed()
 
-        for speaker in self.select_speakers():
-            feed.append(speaker.speak(match, self.rng, self.voice_model))
+        for speaker, selection_reason in self.select_debaters():
+            feed.append(speaker.speak(match, self.rng, self.voice_model, selection_reason))
 
         debate_signal = feed.consensus_home_probability()
         forecasts = [agent.forecast(match, debate_signal) for agent in self.agents]
@@ -85,17 +95,24 @@ class ColonyHarness:
             "speaker_slots": self.speaker_slots,
             "debate_home_probability": None if debate_signal is None else round(debate_signal, 4),
             "market_home_probability": match.market_home_probability,
+            "findings": len(match.findings),
+            "public_findings": sum(1 for finding in match.findings if finding.access_level == "public"),
+            "shared_findings": sum(1 for finding in match.findings if finding.access_level == "shared"),
+            "private_findings": sum(1 for finding in match.findings if finding.access_level == "private"),
             "home_bets": home_bets,
             "away_bets": away_bets,
             "passes": passes,
             "total_staked": total_staked,
         }
+        world_graph = build_world_graph(match, claims=feed.claims, forecasts=forecasts)
 
         return RoundResult(
             round_id=match.round_id,
             claims=feed.claims,
             forecasts=forecasts,
             commitments=commitments,
+            findings=match.findings,
+            world_graph=world_graph,
             summary=summary,
         )
 
@@ -104,6 +121,8 @@ class ColonyHarness:
         path.parent.mkdir(parents=True, exist_ok=True)
         events = []
         events.append({"event_type": "round_summary", **result.summary})
+        events.extend({"event_type": "finding", **finding.to_dict()} for finding in result.findings)
+        events.append({"event_type": "world_graph", **result.world_graph.to_dict()})
         events.extend({"event_type": "debate_claim", **claim.to_dict()} for claim in result.claims)
         events.extend({"event_type": "forecast", **forecast.to_dict()} for forecast in result.forecasts)
         events.extend({"event_type": "bet_commitment", **commitment.to_dict()} for commitment in result.commitments)
