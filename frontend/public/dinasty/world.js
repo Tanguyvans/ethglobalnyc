@@ -84,8 +84,11 @@ DN.world = (function () {
     const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 8000);
     camera.position.set(40, 14, 70);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    // Cap pixel ratio aggressively — at 2x retina the fragment count quadruples
+    // and orbit-camera operations stutter. 1.5 keeps the image crisp without
+    // tanking frametime on high-DPI displays.
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -100,7 +103,7 @@ DN.world = (function () {
     const sun = new THREE.DirectionalLight(0xFFEFC8, 1.5);
     sun.position.set(-110, 150, 80);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.near = 20;
     sun.shadow.camera.far = 620;
     const sc = 260;
@@ -135,7 +138,7 @@ DN.world = (function () {
     // Slightly below the terrain edge so the falloff blends seamlessly.
     // Vertex-colored with subtle low-frequency tonal variation so it doesn't
     // read as a sterile flat plane in the distance.
-    const skirtGeo = new THREE.PlaneGeometry(SKIRT_SIZE, SKIRT_SIZE, 96, 96);
+    const skirtGeo = new THREE.PlaneGeometry(SKIRT_SIZE, SKIRT_SIZE, 32, 32);
     skirtGeo.rotateX(-Math.PI / 2);
     const skirtPos = skirtGeo.attributes.position;
     const skirtColors = new Float32Array(skirtPos.count * 3);
@@ -230,7 +233,17 @@ DN.world = (function () {
     return W;
   };
 
+  // Dust/firefly point clouds update at ~30Hz instead of full FPS — the
+  // motion is too slow for the difference to be perceptible and rewriting
+  // 240+90 vec3 buffers every frame costs CPU + GPU upload.
+  let _atmosTick = 0;
   W.update = function (dt, elapsed) {
+    _atmosTick++;
+    const updateAtmos = (_atmosTick & 1) === 0;
+    if (!updateAtmos) {
+      if (W.water) W.water.material.opacity = 0.74 + Math.sin(elapsed * 0.6) * 0.04;
+      return;
+    }
     const d = W._dust;
     if (d) {
       const p = d.pts.geometry.attributes.position;
@@ -260,7 +273,12 @@ DN.world = (function () {
   };
 
   // time-of-day 0..1 (0 dawn, .5 midday, 1 dusk->night)
+  // Skip work when t hasn't changed meaningfully — daylight is a smooth slow
+  // signal, recomputing colors/light positions every frame is wasted CPU.
+  let _lastDaylight = -2;
   W.setDaylight = function (t) {
+    if (Math.abs(t - _lastDaylight) < 0.002) return;
+    _lastDaylight = t;
     const b = W.biome || DN.biomes[0];
     const day = Math.sin(t * Math.PI); // 0 ends, 1 midday
     const night = Math.max(0, 1 - day * 1.4);

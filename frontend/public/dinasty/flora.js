@@ -218,36 +218,49 @@ DN.flora = (function () {
 
     // bushes removed — only conifer silhouettes per request
 
-    // ---- distant forest on the skirt: same banded buildTree('pine') silhouettes
-    // as the playable area, instanced in a few seed-varied batches so the
-    // horizon reads as a continuous endless conifer woodland. ----
+    // ---- distant forest on the skirt: a stripped-down banded pine LOD that
+    // matches the silhouette of the detailed buildTree('pine') but skips
+    // per-frame wind shader work and trims segment counts. The horizon ring
+    // is never inspected closely, so cheap geometry is fine. ----
     {
       const SKIRT_TREE_Y = -1.6; // matches world.js SKIRT_Y
-      const inner = DN.world.SIZE * 0.50;       // just outside terrain falloff
-      const outer = 2400;                       // visible horizon ring
-      const distantMat = makeTreeWindy(DN.util.voxelMat({ roughness: 0.78, flatShading: false }));
-      // Use a handful of seed-varied pine geometries so the ring of forest
-      // doesn't read as a hall of identical clones. Each variant is its own
-      // InstancedMesh (one draw call per variant).
-      const variants = 5;
-      const perVariant = 180;
+      const inner = DN.world.SIZE * 0.50;
+      const outer = 2200;
+      // Cheap LOD pine: trunk + 5 banded cones at 6 radial segs (not 9),
+      // no wind sway, single static material. Cuts vertex work substantially.
+      function buildLodPine(seedOff) {
+        const rng = mulberry(7000 + seedOff);
+        const parts = [];
+        const tH = 22 + rng() * 8;
+        parts.push({ geo: new THREE.CylinderGeometry(tH * 0.04, tH * 0.09, tH * 0.36, 5), matrix: T(0, tH * 0.18, 0, 1), color: fb.trunkDark });
+        const layers = 5;
+        for (let i = 0; i < layers; i++) {
+          const t = i / (layers - 1), r = 9.8 * (1 - t * 0.78) + 1.6, h = 6.2 * (1 - t * 0.12);
+          const y = tH * 0.34 + i * (tH * 0.62 / layers);
+          parts.push({ geo: new THREE.ConeGeometry(r, h, 6), matrix: T(0, y, 0, 1, 1.1, 1, rng() * 6.28), color: fb.foliage[i % fb.foliage.length] });
+        }
+        parts.push({ geo: new THREE.ConeGeometry(1.4, 3.4, 6), matrix: T(0, tH + 1.2, 0, 1), color: fb.foliage[0] });
+        const g = mergeGeos(parts); parts.forEach(p => p.geo.dispose());
+        return applyTreeShade(g);
+      }
+      // Static material — no wind shader at distance.
+      const distantMat = DN.util.voxelMat({ roughness: 0.85, flatShading: false });
+      const variants = 4;
+      const perVariant = 130;
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sv = new THREE.Vector3(), pv = new THREE.Vector3();
       for (let v = 0; v < variants; v++) {
-        const treeGeo = buildTree(9000 + v * 137 + b.id.length * 31, 'pine', fb);
+        const treeGeo = buildLodPine(v * 31);
         const mesh = new THREE.InstancedMesh(treeGeo, distantMat, perVariant);
-        // Skip shadows on the distant ring — sun shadow camera is bounded
-        // to ~260 anyway, so casting here is wasted work and shimmers.
         mesh.castShadow = false; mesh.receiveShadow = false; mesh.frustumCulled = false;
         let placed = 0;
         for (let i = 0; i < perVariant; i++) {
           const a = Math.random() * 6.28;
-          // bias the density toward the inner ring; sparser at the horizon
-          const rr = inner + Math.pow(Math.random(), 1.4) * (outer - inner);
-          const jx = Math.cos(a) * rr + (Math.random() - 0.5) * 18;
-          const jz = Math.sin(a) * rr + (Math.random() - 0.5) * 18;
-          const sc = 0.85 + Math.random() * 0.7;
+          const rr = inner + Math.pow(Math.random(), 1.3) * (outer - inner);
+          const jx = Math.cos(a) * rr + (Math.random() - 0.5) * 22;
+          const jz = Math.sin(a) * rr + (Math.random() - 0.5) * 22;
+          const sc = 0.9 + Math.random() * 0.6;
           e.set(0, Math.random() * 6.28, 0); q.setFromEuler(e);
-          sv.set(sc, sc * (0.92 + Math.random() * 0.18), sc);
+          sv.set(sc, sc * (0.94 + Math.random() * 0.14), sc);
           pv.set(jx, SKIRT_TREE_Y - 0.5, jz);
           m.compose(pv, q, sv);
           mesh.setMatrixAt(placed++, m);
