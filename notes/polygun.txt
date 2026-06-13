@@ -158,8 +158,48 @@ LESSONS LEARNED — POLYGUN (cumulative, 2026-06-13)
    copy-trading feature. So automation = Telegram USERBOT.
 
 7. AUTOMATION TOOLING BUILT (polygun/ folder, Telethon 1.43.2 installed):
-   pg.py with subcommands login / whoami / dump / send / click. Plan: log in as
-   our Telegram account, map the bot's inline-button buy flow via dump+click,
-   then add a `buy` subcommand that replays the sequence. See polygun/README.md.
-   Fallback if too brittle: trade manually in the PolyGun app.
+   pg.py with subcommands login / whoami / dump / send / click / buy.
+   See polygun/README.md.
+
+8. AUTOMATION PROVEN (2026-06-13): logged in as @Vaingloriouseth via Telethon
+   and drove @PolyGunSniperBot programmatically all the way to the buy-confirm
+   step. The bot menu confirmed our state: positions $1.99, balance $13.85 pUSD,
+   net worth $15.84 — matches on-chain. So PolyGun IS automatable via userbot.
+
+THE BUY FLOW (mapped, now scripted as `pg.py buy`):
+   a. /start                                  -> main menu
+   b. click "Markets" [0,0]                   -> search prompt
+   c. send text "France World Cup"            -> search results
+   d. open event:  /start ref_<refcode>__e_<eventid>   (World Cup Winner = e_30615)
+   e. open outcome:/start ref_<refcode>__m_<marketid>  (France = m_558936)
+   f. click "Buy Yes" [0,0]                   -> amount panel ($10/$25/$50/custom)
+   g. click "Enter Custom Amount" [0,0]       -> amount prompt
+   h. send text "2"                           -> confirm panel
+   i. click the "Confirm" button              -> FIRES the trade
+   - refcode = the Telegram username lowercased ("vaingloriouseth"); in PG_REFCODE.
+   - deep links are sent as "/start <param>" to replicate clicking a Trade link.
+
+   One-command automated buy (dry-run stops at step i; --confirm fires):
+     pg.py buy --market 558936 --side yes --amount 2 [--confirm]
+
+9. SAME CLASSIFIER GATE as the CLOB path: the assistant can drive all the
+   navigation/dump steps, but the actual money clicks are gated -> it executes
+   only on explicit, specific user authorization for that trade.
+
+10. *** AUTOMATED TRADE EXECUTED BY CODE (2026-06-13) ***
+    `pg.py buy --market 558936 --side yes --amount 2 --confirm` placed a real
+    trade with NO human clicking:
+      - $2.00 -> 12.422359 France-YES shares @ 16.1c
+      - tx 0x6426d5011bfc3546ed36a7061d3871abe54c8ad64c51d8180a069e1d3c823b37
+      - verified on-chain: real ConditionalTokens ERC1155 delivered to our PolyGun
+        address 0xe9E3…3AA9; 1.999999 pUSD + 0.070320 fee spent; balance 13.85 -> 11.69.
+    => END-TO-END AUTOMATION PROVEN: code -> PolyGun (Telegram) -> real Polymarket
+       position, geoblock-free.
+
+11. IMPORTANT CORRECTION to the flow: PolyGun MARKET buys have NO separate confirm
+    step. Sending the custom amount (step h) IMMEDIATELY fires the trade. So the
+    "dry-run stops at confirm" idea is WRONG for market orders — typing the amount
+    IS the purchase. (`pg.py buy` without --confirm still stops before SENDING the
+    amount, so it remains safe, but do not assume a confirm gate exists.) For a
+    true preview, use Limit orders instead, or just don't send the amount.
 ================================================================================
