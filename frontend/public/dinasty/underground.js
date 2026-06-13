@@ -7,6 +7,85 @@ DN.underground = (function () {
   const P = DN.palette;
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
 
+  // deterministic seeded PRNG so room decoration is stable across reloads
+  function mulberryUG(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---- geometry helpers ----------------------------------------------------
+  function makeMatrix(x, y, z, sx, sy, sz, rx, ry, rz) {
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx || 0, ry || 0, rz || 0));
+    const sX = sx, sY = sy == null ? sx : sy, sZ = sz == null ? sx : sz;
+    m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(sX, sY, sZ));
+    return m;
+  }
+  function mergeGeos(parts) {
+    const pos = [], norm = [], col = [], nm = new THREE.Matrix3(), v = new THREE.Vector3(), n = new THREE.Vector3(), c = new THREE.Color();
+    parts.forEach(p => {
+      const g = p.geo.index ? p.geo.toNonIndexed() : p.geo;
+      const pa = g.attributes.position, na = g.attributes.normal;
+      nm.getNormalMatrix(p.matrix); c.set(p.color);
+      for (let i = 0; i < pa.count; i++) {
+        v.fromBufferAttribute(pa, i).applyMatrix4(p.matrix);
+        n.fromBufferAttribute(na, i).applyMatrix3(nm).normalize();
+        pos.push(v.x, v.y, v.z); norm.push(n.x, n.y, n.z); col.push(c.r, c.g, c.b);
+      }
+      if (g !== p.geo) g.dispose();
+    });
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    out.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(norm), 3));
+    out.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+    return out;
+  }
+
+  // ---- procedural ant model: head + thorax + abdomen, 6 angled legs, 2
+  // antennae. Geometry is shared across all 60 instances of the InstancedMesh
+  // so this only costs ~600 verts total. ---------------------------------
+  function makeAntGeo(scale) {
+    const s = scale || 1.0;
+    const body = P.ant, dark = P.antDark;
+    const parts = [];
+    // abdomen — large rear ovoid
+    parts.push({ geo: new THREE.SphereGeometry(0.36 * s, 10, 8), matrix: makeMatrix(0, 0.32 * s, -0.62 * s, 1, 0.85, 1.55), color: dark });
+    // thorax — mid segment
+    parts.push({ geo: new THREE.SphereGeometry(0.27 * s, 10, 8), matrix: makeMatrix(0, 0.34 * s, -0.05 * s, 1, 0.9, 1.05), color: body });
+    // head — front round, slightly smaller
+    parts.push({ geo: new THREE.SphereGeometry(0.24 * s, 10, 8), matrix: makeMatrix(0, 0.34 * s, 0.44 * s, 1, 0.95, 1.0), color: dark });
+    // mandibles — two small forward stubs
+    parts.push({ geo: new THREE.ConeGeometry(0.05 * s, 0.18 * s, 5), matrix: makeMatrix(-0.08 * s, 0.34 * s, 0.66 * s, 1, 1, 1, Math.PI / 2, 0, 0.4), color: body });
+    parts.push({ geo: new THREE.ConeGeometry(0.05 * s, 0.18 * s, 5), matrix: makeMatrix(0.08 * s, 0.34 * s, 0.66 * s, 1, 1, 1, Math.PI / 2, 0, -0.4), color: body });
+    // legs — three pairs, angled outward at the thorax. Cylinders are
+    // rotated about Z so they fan out laterally; raised slightly so the
+    // upper segment reads as the femur.
+    const legL = 0.46 * s;
+    const legR = 0.045 * s;
+    for (let side = -1; side <= 1; side += 2) {
+      for (let i = 0; i < 3; i++) {
+        const z = (-0.18 + i * 0.18) * s;
+        // cylinder default is along Y — rotate about Z to angle outward
+        const ang = side * (0.85 + (i === 1 ? 0.15 : 0));
+        parts.push({
+          geo: new THREE.CylinderGeometry(legR * 0.7, legR, legL, 5),
+          matrix: makeMatrix(side * 0.18 * s, 0.18 * s, z, 1, 1, 1, 0, 0, ang),
+          color: dark
+        });
+      }
+    }
+    // antennae — thin forward+up curving cylinders from head
+    parts.push({ geo: new THREE.CylinderGeometry(0.025 * s, 0.035 * s, 0.6 * s, 4), matrix: makeMatrix(-0.10 * s, 0.55 * s, 0.62 * s, 1, 1, 1, 0.7, 0, -0.4), color: dark });
+    parts.push({ geo: new THREE.CylinderGeometry(0.025 * s, 0.035 * s, 0.6 * s, 4), matrix: makeMatrix(0.10 * s, 0.55 * s, 0.62 * s, 1, 1, 1, 0.7, 0, 0.4), color: dark });
+    const g = mergeGeos(parts); parts.forEach(p => p.geo.dispose());
+    g.computeBoundingSphere();
+    return g;
+  }
+
   const ROOMS = [
     { id: 'queen', name: 'Queen Chamber', x: 0, y: -11, r: 7.5, prop: 'queen' },
     { id: 'nursery', name: 'Nursery', x: -17, y: -8, r: 5, prop: 'eggs' },
@@ -113,7 +192,9 @@ DN.underground = (function () {
     shaft.position.set(0, 18, 12); shaft.target.position.set(0, -12, 0);
     scene.add(shaft); scene.add(shaft.target);
 
-    // tunnels (dark rounded tubes)
+    // tunnels (dark rounded tubes + visible glowing centerline so the
+    // colony reads as a network the eye can trace)
+    U._tunnelGlows = [];
     TUNNELS.forEach(t => {
       const a = node(t[0]), b = node(t[1]);
       const ax = new THREE.Vector3(a.x, a.y, 0), bx = new THREE.Vector3(b.x, b.y, 0);
@@ -122,23 +203,102 @@ DN.underground = (function () {
       tube.position.copy(ax).lerp(bx, 0.5); tube.position.z = -0.5;
       tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bx.clone().sub(ax).normalize());
       scene.add(tube);
+      // Thin glowing path line down the middle of each tunnel — recolored
+      // to the colony accent on enter so the route reads at a glance.
+      const pts = [];
+      const N = 12;
+      for (let i = 0; i <= N; i++) {
+        const k = i / N;
+        const px = ax.x + (bx.x - ax.x) * k;
+        const py = ax.y + (bx.y - ax.y) * k;
+        // sag slightly toward middle for an organic dip
+        const sag = Math.sin(k * Math.PI) * 0.4;
+        pts.push(new THREE.Vector3(px, py - sag, 0.55));
+      }
+      const lg = new THREE.BufferGeometry().setFromPoints(pts);
+      const lm = new THREE.LineBasicMaterial({ color: 0xE3A53C, transparent: true, opacity: 0.5 });
+      const line = new THREE.Line(lg, lm);
+      scene.add(line);
+      U._tunnelGlows.push(lm);
     });
 
-    // chambers
+    // chambers — natural carved cavities, not perfect circles.
+    // Each chamber gets:
+    //  · an inner cavity ShapeGeometry whose perimeter is noise-displaced
+    //    around the room's nominal radius (organic clay edge)
+    //  · a darker outer rim ShapeGeometry traced from a slightly larger
+    //    noisy curve (the "wall thickness")
+    //  · a stone pebble cluster on the floor
+    //  · a few hanging roots descending from the cavity ceiling
     U.rooms = {};
+    const wallNoise = new DNNoise(57);
     ROOMS.forEach(r => {
       const accent = 0xE3A53C;
       const g = new THREE.Group(); g.position.set(r.x, r.y, 0);
-      // cavity interior (lighter warm dirt disc)
-      const inner = new THREE.Mesh(new THREE.CircleGeometry(r.r, 40), new THREE.MeshStandardMaterial({ color: 0x6b4a28, roughness: 1 }));
-      inner.position.z = 0.2; g.add(inner);
-      // floor slab
-      const floor = new THREE.Mesh(new THREE.BoxGeometry(r.r * 1.8, 0.6, 2), DN.util.voxelMat());
-      floor.geometry.setAttribute('color', flat(floor.geometry, 0x5a3a1e));
-      floor.position.set(0, -r.r * 0.7, 0.6); g.add(floor);
-      // rim ring
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(r.r, 0.5, 8, 40), new THREE.MeshStandardMaterial({ color: 0x2a1a0c, roughness: 1 }));
-      rim.position.z = 0.3; g.add(rim);
+
+      // build a noisy closed perimeter — same seed per room so it's stable
+      const seg = 32;
+      const innerPts = []; const outerPts = [];
+      for (let i = 0; i < seg; i++) {
+        const a = (i / seg) * Math.PI * 2;
+        const cx = Math.cos(a), cy = Math.sin(a);
+        // domain-warped noise around the perimeter
+        const n = wallNoise.n2(cx * 1.7 + r.x * 0.13, cy * 1.7 + r.y * 0.13);
+        const rIn = r.r * (1 + n * 0.10) + 0.25 * Math.sin(a * 3 + r.x);
+        const rOut = rIn + 0.9 + wallNoise.n2(cx * 4 + 11, cy * 4 - 7) * 0.5;
+        innerPts.push(new THREE.Vector2(cx * rIn, cy * rIn));
+        outerPts.push(new THREE.Vector2(cx * rOut, cy * rOut));
+      }
+      // inner cavity (warm lit clay)
+      const innerShape = new THREE.Shape(innerPts);
+      const innerGeo = new THREE.ShapeGeometry(innerShape, 6);
+      const innerMat = new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 1 });
+      const inner = new THREE.Mesh(innerGeo, innerMat);
+      inner.position.z = 0.2;
+      g.add(inner);
+
+      // outer wall ring — darker, gives depth between cavity and surrounding soil
+      const ringShape = new THREE.Shape(outerPts);
+      ringShape.holes.push(new THREE.Path(innerPts));
+      const ringGeo = new THREE.ShapeGeometry(ringShape, 6);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0x3a2614, roughness: 1 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.z = 0.15;
+      g.add(ring);
+
+      // floor ledge — wider organic slab below the cavity center
+      const floor = new THREE.Mesh(
+        new THREE.BoxGeometry(r.r * 1.8, 0.5, 2),
+        new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 1 })
+      );
+      floor.position.set(0, -r.r * 0.78, 0.55);
+      g.add(floor);
+
+      // 4-7 floor pebbles for grit detail
+      const pebRng = mulberryUG(r.x * 1000 + r.y);
+      const pebN = 4 + Math.floor(pebRng() * 4);
+      for (let i = 0; i < pebN; i++) {
+        const peb = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(0.18 + pebRng() * 0.22, 0),
+          new THREE.MeshStandardMaterial({ color: 0x6a5a44, flatShading: true, roughness: 1 })
+        );
+        peb.position.set((pebRng() - 0.5) * r.r * 1.2, -r.r * 0.55 + (pebRng() - 0.5) * 0.4, 0.7);
+        g.add(peb);
+      }
+
+      // a few hanging roots at the cavity ceiling
+      const rootN = 2 + Math.floor(pebRng() * 3);
+      for (let i = 0; i < rootN; i++) {
+        const len = 1.2 + pebRng() * 2.0;
+        const root = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04, 0.10, len, 5),
+          new THREE.MeshStandardMaterial({ color: 0x3a2410, roughness: 1 })
+        );
+        root.position.set((pebRng() - 0.5) * r.r * 1.3, r.r * 0.6 - len * 0.5, 0.5);
+        root.rotation.z = (pebRng() - 0.5) * 0.4;
+        g.add(root);
+      }
+
       U.roomAccent = U.roomAccent || {};
       r._accent = accent;
       g._roomDef = r;
@@ -167,25 +327,148 @@ DN.underground = (function () {
   }
 
   let agents, agentMesh, propGroups = [];
+  // Adjacency built from TUNNELS so agents traverse the actual graph
+  // instead of teleporting between arbitrary rooms.
+  let ADJ = null, TUNNEL_CURVES = null;
+  function buildGraph() {
+    ADJ = {}; TUNNEL_CURVES = {};
+    const allIds = ROOMS.map(r => r.id).concat(['ent']);
+    allIds.forEach(id => { ADJ[id] = []; });
+    TUNNELS.forEach(([a, b]) => {
+      ADJ[a].push(b); ADJ[b].push(a);
+      const na = node(a), nb = node(b);
+      const start = new THREE.Vector3(na.x, na.y, 0.6);
+      const end = new THREE.Vector3(nb.x, nb.y, 0.6);
+      // Slight downward sag and lateral offset so the curve hugs the tunnel
+      // tube and reads as a real path, not a straight line crossing rooms.
+      const mid = start.clone().add(end).multiplyScalar(0.5);
+      mid.y -= 1.2;
+      const dir = end.clone().sub(start);
+      const perp = new THREE.Vector3(-dir.y, dir.x, 0).normalize();
+      mid.addScaledVector(perp, 0.6 * Math.sign(start.x + end.x || 1));
+      const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+      TUNNEL_CURVES[a + '->' + b] = { curve, from: na, to: nb };
+      TUNNEL_CURVES[b + '->' + a] = { curve, from: nb, to: na, reversed: true };
+    });
+  }
+  function tunnelFor(fromId, toId) { return TUNNEL_CURVES[fromId + '->' + toId] || null; }
+  function pickNeighbor(fromId, avoid) {
+    const ns = (ADJ[fromId] || []).filter(n => n !== 'ent'); // never walk above ground
+    const opts = avoid ? ns.filter(n => n !== avoid) : ns;
+    const list = opts.length ? opts : ns;
+    return list[Math.floor(Math.random() * list.length)] || fromId;
+  }
+
   function buildAgents() {
-    // small voxel ants traveling tunnels / milling in rooms
-    const b = new DN.util.VoxelBuilder();
-    b.box([0.5, 0.4, 0.5], [0, 0.2, -0.3], P.ant);
-    b.box([0.35, 0.3, 0.35], [0, 0.22, 0.2], P.antDark);
-    const geo = b.geometry();
-    const N = 120;
-    agentMesh = new THREE.InstancedMesh(geo, DN.util.voxelMat({ roughness: 0.7 }), N);
+    buildGraph();
+    // ---- procedural ant geometry ---------------------------------------
+    const geo = makeAntGeo(1.0);
+    const N = 60; // worker ants — guided pathing through the tunnel graph
+    agentMesh = new THREE.InstancedMesh(geo, DN.util.voxelMat({ roughness: 0.55, flatShading: false }), N);
     agentMesh.frustumCulled = false;
+    agentMesh.castShadow = false; agentMesh.receiveShadow = false;
     scene.add(agentMesh);
+
+    // ---- queen: single oversized ant locked in Queen Chamber ----------
+    const queenGeo = makeAntGeo(2.4);
+    U.queenMesh = new THREE.Mesh(queenGeo, DN.util.voxelMat({ roughness: 0.4, flatShading: false }));
+    const queenRoom = node('queen');
+    U.queenMesh.position.set(queenRoom.x, queenRoom.y - queenRoom.r * 0.4, 0.9);
+    U.queenMesh.rotation.z = Math.PI; // face toward room center
+    scene.add(U.queenMesh);
+
+    // ---- larvae: pulsing pale ovoids clustered in Nursery -------------
+    const larvaeGroup = new THREE.Group();
+    const nursery = node('nursery');
+    larvaeGroup.position.set(nursery.x, nursery.y - nursery.r * 0.45, 0.85);
+    const larvaMat = new THREE.MeshStandardMaterial({
+      color: 0xF5E6C8, emissive: 0xC09A55, emissiveIntensity: 0.25, roughness: 0.4
+    });
+    U.larvae = [];
+    for (let i = 0; i < 7; i++) {
+      const lr = mulberryUG(7000 + i);
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 12, 8),
+        larvaMat
+      );
+      const a = lr() * Math.PI * 2, rr = lr() * nursery.r * 0.45;
+      m.position.set(Math.cos(a) * rr, Math.sin(a) * rr * 0.45, 0);
+      m.scale.set(0.9 + lr() * 0.3, 0.7 + lr() * 0.2, 1.4 + lr() * 0.3);
+      m.userData.basePh = lr() * 6.28;
+      larvaeGroup.add(m);
+      U.larvae.push(m);
+    }
+    scene.add(larvaeGroup);
+
+    // ---- pheromone flow: one Points cloud, N=14 particles per tunnel,
+    // each particle slides along its assigned curve and wraps. Tinted to
+    // the colony accent in U.enter. ------------------------------------
+    const phPerTunnel = 14;
+    const phN = TUNNELS.length * phPerTunnel;
+    const phPos = new Float32Array(phN * 3);
+    const phGeo = new THREE.BufferGeometry();
+    phGeo.setAttribute('position', new THREE.BufferAttribute(phPos, 3));
+    U._phPos = phGeo.attributes.position;
+    U._phState = [];
+    for (let ti = 0; ti < TUNNELS.length; ti++) {
+      const [a, b] = TUNNELS[ti];
+      const seg = tunnelFor(a, b);
+      for (let i = 0; i < phPerTunnel; i++) {
+        U._phState.push({
+          curve: seg ? seg.curve : null,
+          t: i / phPerTunnel,
+          speed: 0.06 + Math.random() * 0.04
+        });
+      }
+    }
+    U.pheromones = new THREE.Points(phGeo, new THREE.PointsMaterial({
+      size: 0.7, map: DN.util.softSprite(), color: 0xE3A53C,
+      transparent: true, opacity: 0.55, depthWrite: false,
+      blending: THREE.AdditiveBlending
+    }));
+    U.pheromones.frustumCulled = false;
+    scene.add(U.pheromones);
+
+    // Glow billboards beneath each ant — instanced sprites would be ideal
+    // but a single PointsMaterial sprite cloud is cheaper and reads as
+    // bioluminescent agent trails from camera distance.
+    const glowGeo = new THREE.BufferGeometry();
+    glowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+    U._agentGlowPos = glowGeo.attributes.position;
+    U.agentGlow = new THREE.Points(glowGeo, new THREE.PointsMaterial({
+      size: 1.6, map: DN.util.softSprite(), color: 0xFFD98A,
+      transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    U.agentGlow.frustumCulled = false;
+    scene.add(U.agentGlow);
+
     agents = [];
-    const ids = ROOMS.map(r => r.id);
+    U.agents = agents; // expose for HUD active-ant counts
+    // workers spawn in any room except Queen (Queen is reserved for queen
+    // pinned agent) and Nursery (reserved for larvae cluster)
+    const workerRooms = ROOMS.filter(r => r.id !== 'queen' && r.id !== 'nursery');
     for (let i = 0; i < N; i++) {
-      const room = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+      const room = workerRooms[Math.floor(Math.random() * workerRooms.length)];
       agents.push({
-        room, mode: Math.random() < 0.6 ? 'mill' : 'travel',
-        x: room.x + (Math.random() - .5) * room.r, y: room.y - room.r * 0.5 + Math.random() * 2,
-        tx: 0, ty: 0, t: Math.random(), from: room, to: ROOMS[Math.floor(Math.random() * ROOMS.length)],
-        sp: 0.3 + Math.random() * 0.4, phase: Math.random() * 6.28
+        roomId: room.id,
+        // Always start milling so initial frame doesn't snap onto a curve.
+        mode: 'mill',
+        fromId: room.id, toId: pickNeighbor(room.id),
+        t: Math.random(),
+        // smooth elliptical orbit inside the room
+        orbitR: room.r * (0.35 + Math.random() * 0.4),
+        orbitW: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.35),
+        orbitPh: Math.random() * 6.28,
+        orbitY: -room.r * 0.5 + Math.random() * room.r * 0.6,
+        millLeft: 3 + Math.random() * 8,
+        // slow, dignified tunnel traversal: ~8-14 sec per curve
+        speed: 0.07 + Math.random() * 0.05,
+        bobPh: Math.random() * 6.28,
+        // junction pause + antenna twitch state
+        pauseLeft: 0,
+        twitchPh: Math.random() * 6.28,
+        // smoothed pose, initialized inside the room
+        px: room.x, py: room.y - room.r * 0.4, pz: 0.9, rz: 0
       });
     }
   }
@@ -194,6 +477,11 @@ DN.underground = (function () {
     U.active = true; U.col = col;
     // recolor accents to the colony
     ROOMS.forEach(r => { const g = U.rooms[r.id]; r._accent = col.accent; });
+    // tunnel paths + agent glow now read in the colony's accent so the
+    // network visually belongs to this colony.
+    if (U._tunnelGlows) U._tunnelGlows.forEach(lm => lm.color.setHex(col.accent));
+    if (U.agentGlow) U.agentGlow.material.color.setHex(col.accent);
+    if (U.pheromones) U.pheromones.material.color.setHex(col.accent);
     propGroups.forEach(p => scene.remove(p)); propGroups = [];
     ROOMS.forEach(r => {
       const g = U.rooms[r.id];
@@ -213,7 +501,10 @@ DN.underground = (function () {
     camera.lookAt(0, -22, 0);
     U._camTarget = new THREE.Vector3(0, -20, 0);
     U._camPos = new THREE.Vector3(2, -16, 58);
+    U._camLook = new THREE.Vector3(0, -21, 0);
     U._diveT = 0;
+    U._focusTween = null;
+    U._focusRoomId = null;
   };
 
   U.exit = function () { U.active = false; };
@@ -224,34 +515,120 @@ DN.underground = (function () {
 
   U.update = function (dt, elapsed) {
     if (!U.active) return;
-    // dive-in ease
-    if (U._diveT < 1) {
+    // dive-in ease — only while no focus tween is active
+    if (U._diveT < 1 && !U._focusTween) {
       U._diveT = Math.min(1, U._diveT + dt * 0.6);
       const k = 1 - Math.pow(1 - U._diveT, 3);
       camera.position.lerpVectors(new THREE.Vector3(0, 14, 70), U._camPos, k);
     }
-    camera.lookAt(0, -21, 0);
 
-    // agents
-    for (const a of agents) {
+    // agents — guided paths along the actual TUNNELS, smooth orbits in rooms
+    const tmpPos = new THREE.Vector3();
+    const tmpTan = new THREE.Vector3();
+    for (let idx = 0; idx < agents.length; idx++) {
+      const a = agents[idx];
+      let wx, wy, faceAng;
+
       if (a.mode === 'mill') {
-        a.x += Math.cos(elapsed * a.sp + a.phase) * dt * 1.5;
-        a.y += Math.sin(elapsed * a.sp * 1.3 + a.phase) * dt * 1.0;
-        const dx = a.x - a.room.x, dy = a.y - (a.room.y - a.room.r * 0.4);
-        if (Math.hypot(dx, dy) > a.room.r * 0.7) { a.x -= dx * 0.1; a.y -= dy * 0.1; }
-        if (Math.random() < 0.002) { a.mode = 'travel'; a.from = a.room; a.to = ROOMS[Math.floor(Math.random() * ROOMS.length)]; a.t = 0; }
+        const r = node(a.roomId);
+        a.orbitPh += dt * a.orbitW;
+        wx = r.x + Math.cos(a.orbitPh) * a.orbitR;
+        wy = r.y + a.orbitY + Math.sin(a.orbitPh) * a.orbitR * 0.55;
+        // face along the orbit tangent
+        faceAng = Math.atan2(Math.cos(a.orbitPh) * a.orbitR * 0.55, -Math.sin(a.orbitPh) * a.orbitR);
+        a.millLeft -= dt;
+        if (a.millLeft <= 0) {
+          // start a tunnel walk to a connected neighbor — but first pause
+          // for a moment at the junction with antenna twitch (the body
+          // rotates slightly side-to-side while deciding).
+          const nextId = pickNeighbor(a.roomId);
+          const seg = tunnelFor(a.roomId, nextId);
+          if (seg) {
+            a.mode = 'junction';
+            a.fromId = a.roomId; a.toId = nextId;
+            a.pauseLeft = 0.5 + Math.random() * 0.7;
+            a.twitchPh = 0;
+            a.t = 0;
+          } else {
+            a.millLeft = 3 + Math.random() * 4;
+          }
+        }
+      } else if (a.mode === 'junction') {
+        // sniff the air — body twitches +/- 0.4 rad and ant stays in place
+        const r = node(a.fromId);
+        wx = a.px; wy = a.py;
+        a.twitchPh += dt * 9;
+        const seg0 = tunnelFor(a.fromId, a.toId);
+        // initial face = direction toward tunnel mouth
+        seg0.curve.getTangent(seg0.reversed ? 1 : 0, tmpTan);
+        const baseAng = Math.atan2(seg0.reversed ? -tmpTan.y : tmpTan.y, seg0.reversed ? -tmpTan.x : tmpTan.x);
+        faceAng = baseAng + Math.sin(a.twitchPh) * 0.35;
+        a.pauseLeft -= dt;
+        if (a.pauseLeft <= 0) {
+          a.mode = 'travel';
+        }
       } else {
-        a.t += dt * a.sp * 0.5;
-        a.x = a.from.x + (a.to.x - a.from.x) * a.t;
-        a.y = (a.from.y - 1) + ((a.to.y - 1) - (a.from.y - 1)) * a.t + Math.sin(a.t * Math.PI) * 2;
-        if (a.t >= 1) { a.mode = 'mill'; a.room = a.to; }
+        const seg = tunnelFor(a.fromId, a.toId);
+        if (!seg) {
+          // dangling — reset to mill
+          a.mode = 'mill'; a.roomId = a.fromId; a.millLeft = 2 + Math.random() * 4;
+          continue;
+        }
+        // ease in/out so ants don't snap-start or skid at room mouths
+        const tRaw = a.t;
+        const eased = tRaw < 0.5
+          ? 2 * tRaw * tRaw
+          : 1 - Math.pow(-2 * tRaw + 2, 2) / 2;
+        const u = seg.reversed ? 1 - eased : eased;
+        seg.curve.getPoint(u, tmpPos);
+        seg.curve.getTangent(u, tmpTan);
+        wx = tmpPos.x; wy = tmpPos.y;
+        const dirX = seg.reversed ? -tmpTan.x : tmpTan.x;
+        const dirY = seg.reversed ? -tmpTan.y : tmpTan.y;
+        faceAng = Math.atan2(dirY, dirX);
+        a.t += dt * a.speed;
+        if (a.t >= 1) {
+          a.mode = 'mill';
+          a.roomId = a.toId;
+          a.millLeft = 4 + Math.random() * 8;
+          const r = node(a.roomId);
+          a.orbitR = r.r * (0.35 + Math.random() * 0.45);
+          a.orbitW = (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
+          a.orbitPh = Math.random() * 6.28;
+          a.orbitY = -r.r * 0.55 + Math.random() * r.r * 0.7;
+        }
       }
-      const ang = Math.atan2((a.to.x - a.from.x), 1);
-      _p.set(a.x, a.y, 0.9); _e.set(0, 0, a.mode === 'travel' ? ang * 0.3 : 0); _q.setFromEuler(_e); _s.setScalar(1);
+
+      // walking bob: small vertical wobble synced to step rhythm
+      a.bobPh += dt * (a.mode === 'travel' ? 9 : 5);
+      const bob = Math.sin(a.bobPh) * 0.08;
+
+      // pose smoothing — eases position + rotation so motion reads as
+      // sexy and floaty rather than tick-driven discrete steps.
+      const k = Math.min(1, dt * 9);
+      a.px += (wx - a.px) * k;
+      a.py += (wy + bob - a.py) * k;
+      // rotation: lerp via shortest angular distance
+      let dAng = faceAng - a.rz;
+      while (dAng > Math.PI) dAng -= Math.PI * 2;
+      while (dAng < -Math.PI) dAng += Math.PI * 2;
+      a.rz += dAng * Math.min(1, dt * 7);
+
+      _p.set(a.px, a.py, 0.9);
+      _e.set(0, 0, a.rz);
+      _q.setFromEuler(_e);
+      _s.setScalar(0.95 + Math.sin(a.bobPh * 0.5) * 0.04);
       _m.compose(_p, _q, _s);
-      agentMesh.setMatrixAt(agents.indexOf(a), _m);
+      agentMesh.setMatrixAt(idx, _m);
+      // mirror the position into the glow sprite cloud
+      if (U._agentGlowPos) {
+        U._agentGlowPos.array[idx * 3] = a.px;
+        U._agentGlowPos.array[idx * 3 + 1] = a.py;
+        U._agentGlowPos.array[idx * 3 + 2] = 0.85;
+      }
     }
     agentMesh.instanceMatrix.needsUpdate = true;
+    if (U._agentGlowPos) U._agentGlowPos.needsUpdate = true;
 
     // room glow pulse
     ROOMS.forEach(r => {
@@ -264,7 +641,73 @@ DN.underground = (function () {
       for (let i = 0; i < p.count; i++) { p.array[i * 3 + 1] = U._sporeBase[i * 3 + 1] + Math.sin(elapsed * 0.3 + i) * 1.5; }
       p.needsUpdate = true;
     }
+
+    // larvae soft pulse — emissive intensity + slight scale breathing
+    if (U.larvae) {
+      U.larvae.forEach((m, i) => {
+        const ph = m.userData.basePh;
+        const pulse = 0.22 + 0.18 * (0.5 + 0.5 * Math.sin(elapsed * 1.6 + ph));
+        m.material.emissiveIntensity = pulse;
+        const bs = 1 + 0.06 * Math.sin(elapsed * 1.4 + ph * 1.7);
+        m.scale.set((0.9 + (i % 3) * 0.05) * bs, (0.7 + (i % 2) * 0.05) * bs, (1.4 + (i % 4) * 0.04) * bs);
+      });
+    }
+    // queen slow breathing
+    if (U.queenMesh) {
+      const b = 1 + 0.025 * Math.sin(elapsed * 0.9);
+      U.queenMesh.scale.set(b, b, b);
+    }
+    // pheromone particles flow along their tunnel curves
+    if (U._phPos && U._phState.length) {
+      const arr = U._phPos.array;
+      const tmp = new THREE.Vector3();
+      for (let i = 0; i < U._phState.length; i++) {
+        const s = U._phState[i];
+        if (!s.curve) continue;
+        s.t = (s.t + dt * s.speed) % 1;
+        s.curve.getPoint(s.t, tmp);
+        arr[i * 3] = tmp.x; arr[i * 3 + 1] = tmp.y; arr[i * 3 + 2] = 0.7;
+      }
+      U._phPos.needsUpdate = true;
+    }
+
+    // hovered chamber highlight — fade its tunnel paths up
+    if (U._tunnelGlows) {
+      U._tunnelGlows.forEach((lm, idx) => {
+        const [a, b] = TUNNELS[idx];
+        const hit = U._hoverRoomId && (U._hoverRoomId === a || U._hoverRoomId === b);
+        const target = hit ? 0.9 : 0.5;
+        lm.opacity += (target - lm.opacity) * Math.min(1, dt * 6);
+      });
+    }
+
+    // chamber focus camera dolly
+    if (U._focusTween && U._focusTween.t < 1) {
+      const tw = U._focusTween;
+      tw.t = Math.min(1, tw.t + dt * 0.9);
+      const k = 1 - Math.pow(1 - tw.t, 3);
+      camera.position.lerpVectors(tw.fromP, tw.toP, k);
+      U._camLook.lerpVectors(tw.fromL, tw.toL, k);
+    }
+    if (U._camLook) camera.lookAt(U._camLook);
   };
+
+  // ---- public: focus the camera on a chamber. Called from interactions.js
+  // when the user clicks a room in the underground view. ----------------
+  U.focusRoom = function (roomId) {
+    const r = node(roomId);
+    if (!r || !camera) return;
+    const fromP = camera.position.clone();
+    const fromL = U._camLook ? U._camLook.clone() : new THREE.Vector3(0, -21, 0);
+    const toP = new THREE.Vector3(r.x, r.y + 4, 22);
+    const toL = new THREE.Vector3(r.x, r.y, 0);
+    U._focusTween = { t: 0, fromP, toP, fromL, toL };
+    U._focusRoomId = roomId;
+    DN.hud && DN.hud.showRoomInfo && DN.hud.showRoomInfo(r);
+  };
+
+  // ---- hover helpers used by interactions.js for tunnel-glow feedback --
+  U.setHoverRoom = function (id) { U._hoverRoomId = id || null; };
 
   U.resize = function () { if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); } };
 

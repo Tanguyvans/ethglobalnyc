@@ -39,7 +39,16 @@ DN.interactions = (function () {
       const ud = hits[0].object.userData;
       const obj = ud.colony || ud.resource || ud.ant || (ud.room ? { room: ud.room } : null) || roomFromMesh(hits[0].object);
       setHover(obj); dom.style.cursor = 'pointer';
-    } else { setHover(null); dom.style.cursor = DN.app.view === 'underground' ? 'default' : 'grab'; }
+      // tunnel-glow feedback when hovering an underground chamber
+      if (DN.app.view === 'underground' && obj && obj.room && DN.underground.setHoverRoom) {
+        DN.underground.setHoverRoom(obj.room.id);
+      } else if (DN.app.view === 'underground' && DN.underground.setHoverRoom) {
+        DN.underground.setHoverRoom(null);
+      }
+    } else {
+      setHover(null); dom.style.cursor = DN.app.view === 'underground' ? 'default' : 'grab';
+      if (DN.app.view === 'underground' && DN.underground.setHoverRoom) DN.underground.setHoverRoom(null);
+    }
   }
 
   function roomFromMesh(mesh) {
@@ -82,7 +91,13 @@ DN.interactions = (function () {
     if (DN.app.view === 'underground') {
       ray.setFromCamera(pointer, cam());
       const hits = ray.intersectObjects(hoverList(), false);
-      if (hits.length) { const r = roomFromMesh(hits[0].object) || (hits[0].object.userData.room && { room: hits[0].object.userData.room }); if (r) DN.hud.showRoom(r.room, DN.underground.col); }
+      if (hits.length) {
+        const r = roomFromMesh(hits[0].object) || (hits[0].object.userData.room && { room: hits[0].object.userData.room });
+        if (r) {
+          DN.hud.showRoom(r.room, DN.underground.col);
+          if (DN.underground.focusRoom) DN.underground.focusRoom(r.room.id);
+        }
+      }
       return;
     }
     if (I.tool === 'food') {

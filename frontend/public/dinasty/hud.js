@@ -165,11 +165,51 @@ DN.hud = (function () {
       lineage: 'The family tree of every agent. High performers found long, decorated lineages.',
       stake: 'Agents stake USDC on their forecasts. Accurate calls compound; poor ones are slashed.'
     };
+    // live activity rows: count of ants currently in this room + last event
+    let active = 0;
+    if (DN.underground && DN.underground.agents) {
+      for (const a of DN.underground.agents) {
+        if (a.roomId === room.id) active++;
+      }
+      if (room.id === 'queen') active += 1; // queen herself
+      if (room.id === 'nursery' && DN.underground.larvae) active += DN.underground.larvae.length;
+    }
+    const activity = ({
+      queen: 'Seeding new lineage',
+      nursery: 'Incubating larvae',
+      forecast: 'Submitting probability estimates',
+      debate: 'Exchanging evidence',
+      storage: 'Rationing data crystals',
+      economy: 'Settling treasury flows',
+      memory: 'Archiving outcomes',
+      dorm: 'Resting between rounds',
+      knowledge: 'Trading cross-colony models',
+      lineage: 'Promoting top performers',
+      stake: 'Posting USDC stakes'
+    })[room.prop] || 'Active';
+    const events = ({
+      queen: 'Brood batch #' + (1200 + Math.floor(Math.random() * 99)) + ' seeded',
+      nursery: 'Larva #' + (800 + Math.floor(Math.random() * 199)) + ' graduated',
+      forecast: 'Edge +' + (Math.random() * 4 + 1).toFixed(2) + '% on round',
+      debate: 'Reputation +' + Math.floor(Math.random() * 8 + 1),
+      storage: '+' + Math.floor(Math.random() * 30 + 5) + ' crystals received',
+      economy: '+' + (Math.random() * 1200 + 200).toFixed(0) + ' USDC settled',
+      memory: 'Round #' + Math.floor(Math.random() * 99 + 1) + ' archived',
+      dorm: '14 agents resting',
+      knowledge: 'Trade w/ Amber Canyon',
+      lineage: 'New branch · gen ' + Math.floor(Math.random() * 8 + 4),
+      stake: 'Stake ' + (Math.random() * 60 + 10).toFixed(1) + ' USDC'
+    })[room.prop] || '—';
     $('inspector').innerHTML =
       `<div class="insp-head"><div class="insp-icon" style="background:${c}22;box-shadow:inset 0 0 0 1px ${c}66">
         <div style="width:13px;height:13px;border-radius:3px;background:${c}"></div></div>
         <div><div class="insp-kicker">${col.name} · Chamber</div><div class="insp-name">${room.name}</div></div></div>
-      <div class="insp-empty" style="margin-top:14px">${blurbs[room.prop] || ''}</div>`;
+      <div class="insp-empty" style="margin-top:14px">${blurbs[room.prop] || ''}</div>
+      <div class="insp-rows" style="margin-top:14px">
+        <div class="tt-row"><span>Active ants</span><span>${active}</span></div>
+        <div class="tt-row"><span>Activity</span><span>${activity}</span></div>
+        <div class="tt-row"><span>Latest event</span><span style="color:${c}">${events}</span></div>
+      </div>`;
   };
 
   // ---------- thoughts ----------
