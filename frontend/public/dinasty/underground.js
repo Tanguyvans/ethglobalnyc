@@ -426,7 +426,10 @@ DN.underground = (function () {
     const queenRoom = node('queen');
     U.queenMesh.position.set(queenRoom.x, queenRoom.y - queenRoom.r * 0.4, 0.9);
     U.queenMesh.scale.setScalar(2.4);
-    U.queenMesh.rotation.x = -Math.PI / 2; // surface ant is y-up; orient flat for the cross-section
+    // Match the workers' cross-section orientation (X-tilt then Z-yaw).
+    // Queen faces "up" toward the chamber top.
+    U.queenMesh.rotation.order = 'XYZ';
+    U.queenMesh.rotation.set(Math.PI / 2, 0, Math.PI);
     scene.add(U.queenMesh);
 
     // ---- larvae: pulsing pale ovoids clustered in Nursery -------------
@@ -510,14 +513,15 @@ DN.underground = (function () {
         plan: [],
         goalId: null,
         t: Math.random(),
-        // smooth elliptical orbit inside the room
+        // smooth elliptical orbit inside the room — slowed down so chamber
+        // activity reads as deliberate rather than frantic
         orbitR: room.r * (0.35 + Math.random() * 0.4),
-        orbitW: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.35),
+        orbitW: (Math.random() < 0.5 ? -1 : 1) * (0.18 + Math.random() * 0.18),
         orbitPh: Math.random() * 6.28,
         orbitY: -room.r * 0.5 + Math.random() * room.r * 0.6,
         millLeft: 3 + Math.random() * 8,
-        // slow, dignified tunnel traversal: ~8-14 sec per curve
-        speed: 0.07 + Math.random() * 0.05,
+        // dignified tunnel traversal: ~20-30 sec per curve
+        speed: 0.032 + Math.random() * 0.018,
         bobPh: Math.random() * 6.28,
         // junction pause + antenna twitch state
         pauseLeft: 0,
@@ -624,6 +628,8 @@ DN.underground = (function () {
 
   U.update = function (dt, elapsed) {
     if (!U.active) return;
+    // tick the surface-ant leg-walk shader so underground ants animate too
+    if (U._antMat && U._antMat.userData.sh) U._antMat.userData.sh.uniforms.uTime.value = elapsed;
     // dive-in ease — only while no focus tween is active
     if (U._diveT < 1 && !U._focusTween) {
       U._diveT = Math.min(1, U._diveT + dt * 0.6);
@@ -715,7 +721,7 @@ DN.underground = (function () {
           if (arrivedAtGoal) { a.plan = []; a.goalId = null; }
           const r = node(a.roomId);
           a.orbitR = r.r * (0.35 + Math.random() * 0.45);
-          a.orbitW = (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
+          a.orbitW = (Math.random() < 0.5 ? -1 : 1) * (0.22 + Math.random() * 0.22);
           a.orbitPh = Math.random() * 6.28;
           a.orbitY = -r.r * 0.55 + Math.random() * r.r * 0.7;
         }
@@ -737,7 +743,11 @@ DN.underground = (function () {
       a.rz += dAng * Math.min(1, dt * 7);
 
       _p.set(a.px, a.py, 0.9);
-      _e.set(0, 0, a.rz);
+      // The surface ant model has +Z as forward and +Y as up. For the
+      // cross-section view we tilt it 90° about X (so its back faces the
+      // camera) and then yaw about Z by faceAng + 90° so its head ends up
+      // aligned with the motion direction in the XY plane.
+      _e.set(Math.PI / 2, 0, a.rz + Math.PI / 2);
       _q.setFromEuler(_e);
       _s.setScalar(0.95 + Math.sin(a.bobPh * 0.5) * 0.04);
       _m.compose(_p, _q, _s);

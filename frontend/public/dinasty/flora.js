@@ -192,6 +192,49 @@ DN.flora = (function () {
     F._objs = []; F.windMats = []; F.treeMats = []; F.trees = [];
   };
 
+  // Remove individual trees + rocks AND hide instanced ground-cover
+  // instances within radius of (x, z). Used by colony.foundColony so new
+  // mounds don't spawn buried in forest.
+  F.clearAround = function (x, z, radius) {
+    const r2 = radius * radius;
+    const survivors = [];
+    const _m = new THREE.Matrix4();
+    const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+    const _zero = new THREE.Vector3(0, 0, 0);
+    for (const o of F._objs) {
+      if (o.isInstancedMesh) {
+        // Hide per-instance: collapse matrices to zero-scale inside the
+        // clearing. Cheap to do once per founding (~thousands of instances).
+        let touched = false;
+        for (let i = 0; i < o.count; i++) {
+          o.getMatrixAt(i, _m);
+          _m.decompose(_p, _q, _s);
+          const dx = _p.x - x, dz = _p.z - z;
+          if (dx * dx + dz * dz < r2 && _s.x > 0.001) {
+            _m.compose(_p, _q, _zero);
+            o.setMatrixAt(i, _m);
+            touched = true;
+          }
+        }
+        if (touched) o.instanceMatrix.needsUpdate = true;
+        survivors.push(o);
+        continue;
+      }
+      const dx = o.position.x - x, dz = o.position.z - z;
+      if (dx * dx + dz * dz < r2) {
+        scene.remove(o);
+        if (o.geometry) o.geometry.dispose();
+      } else {
+        survivors.push(o);
+      }
+    }
+    F._objs = survivors;
+    if (F.trees) F.trees = F.trees.filter(t => {
+      const dx = t.position.x - x, dz = t.position.z - z;
+      return dx * dx + dz * dz >= r2;
+    });
+  };
+
   F.init = function (sceneRef) { if (sceneRef) scene = sceneRef; F.build(); return F; };
   F.rebuild = function () { F.dispose(); F.build(); };
 

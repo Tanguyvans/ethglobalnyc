@@ -2,7 +2,7 @@
 window.DN = window.DN || {};
 
 DN.ants = (function () {
-  const A = { perCol: 120, list: [], heroes: [], byMesh: {}, GROUPS: 6 };
+  const A = { perCol: 180, list: [], heroes: [], byMesh: {}, GROUPS: 5 };
   let scene, noise;
   const P = DN.palette;
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
@@ -169,6 +169,85 @@ DN.ants = (function () {
     return mat;
   }
 
+  // Migration trail from a parent colony's entrance to the new colony's
+  // entrance. One shared curve so the founder party reads as one column.
+  function buildMigrationTrail(parent, newCol) {
+    const start = new THREE.Vector3(parent.entrance.x, 0, parent.entrance.z);
+    const end = new THREE.Vector3(newCol.entrance.x, 0, newCol.entrance.z);
+    const dx = end.x - start.x, dz = end.z - start.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const perpx = -dz / len, perpz = dx / len;
+    // gentle curl so the migration arcs naturally instead of pure straight
+    const mid = new THREE.Vector3(
+      (start.x + end.x) * 0.5 + perpx * 0.12 * len,
+      0,
+      (start.z + end.z) * 0.5 + perpz * 0.12 * len
+    );
+    return { curve: new THREE.QuadraticBezierCurve3(start, mid, end), length: len };
+  }
+
+  // Spawn the ant InstancedMesh + worker list for one colony. Pulled out
+  // of A.init so newly founded colonies can call it via A.addColony().
+  // `parent` (optional): if provided, all initial ants begin at parent.
+  // entrance and walk a migration trail to col.entrance, then settle into
+  // normal foraging behaviour.
+  function spawnColonyAnts(col, ci, parent) {
+    const geo = buildAntGeo(col.accent);
+    const n = A.perCol;
+    const mesh = new THREE.InstancedMesh(geo, A.material, n);
+    mesh.castShadow = false;
+    mesh.frustumCulled = false;
+    mesh.userData.colIndex = ci;
+    const inst = new Float32Array(n * 2);
+    const migTrail = parent ? buildMigrationTrail(parent, col) : null;
+    for (let i = 0; i < n; i++) {
+      inst[i * 2] = Math.random() * 6.28;
+      inst[i * 2 + 1] = 7 + Math.random() * 4;
+      const jx = (Math.random() - 0.5) * 1.2;
+      const jz = (Math.random() - 0.5) * 1.2;
+      const groupIdx = i % A.GROUPS;
+      const startX = parent ? parent.entrance.x + jx : col.entrance.x + jx;
+      const startZ = parent ? parent.entrance.z + jz : col.entrance.z + jz;
+      const ant = {
+        id: 'w-' + ci + '-' + i, ci, col, inst: i, mesh,
+        x: startX, z: startZ,
+        yaw: Math.random() * 6.28,
+        speed: 2.0 + Math.random() * 1.0,
+        // 'migrating' = walking from parent to new colony entrance
+        // 'out'/'home' = normal forage cycle
+        state: parent ? 'migrating' : 'out',
+        wob: Math.random() * 6.28,
+        trail: null, t: 0, dir: 1,
+        // migration state
+        migTrail,
+        // staggered start so the procession is a long visible column
+        // rather than a single clump (i/n in [0,1] → migT in [-0.5, 0])
+        migT: parent ? -(i / n) * 0.5 : 0,
+        groupIdx,
+        laneOffset: (Math.random() - 0.5) * 0.45,
+        tStart: ((i / n) * A.GROUPS % 1) + Math.random() * 0.04,
+        scale: 1.05 + Math.random() * 0.5, hero: false, cargo: 0,
+        deadTimer: 0,
+        role: ['Forager', 'Forager', 'Scout', 'Worker'][i % 4]
+      };
+      if (!parent) pickTarget(ant);
+      A.list.push(ant);
+    }
+    mesh.geometry.setAttribute('aInst', new THREE.InstancedBufferAttribute(inst, 2));
+    scene.add(mesh);
+    A.meshes.push(mesh);
+    A.byMesh[mesh.uuid] = ci;
+    col._antMesh = mesh;
+  }
+
+  // Called by colony.js after a founding animation completes — adds the
+  // new colony's foragers to the surface ant system. If `parent` is given,
+  // those ants walk the migration trail from parent → col before settling.
+  A.addColony = function (col, parent) {
+    if (!scene || !A.material) return; // not initialised yet
+    spawnColonyAnts(col, A.meshes.length, parent);
+  };
+
   A.init = function (sceneRef, colonies) {
     scene = sceneRef;
     noise = new DNNoise(404);
@@ -176,59 +255,7 @@ DN.ants = (function () {
     A.material = mat;
     A.meshes = [];
 
-    colonies.forEach((col, ci) => {
-      const geo = buildAntGeo(col.accent);
-      const n = A.perCol;
-      const mesh = new THREE.InstancedMesh(geo, mat, n);
-      mesh.castShadow = false;
-      mesh.frustumCulled = false;
-      mesh.userData.colIndex = ci;
-      const inst = new Float32Array(n * 2);
-      for (let i = 0; i < n; i++) {
-        inst[i * 2] = Math.random() * 6.28;        // phase
-        inst[i * 2 + 1] = 7 + Math.random() * 4;    // gait rate
-        // Spawn AT the colony entrance with sub-unit jitter — visually
-        // emerges from the tunnel mouth rather than ringing the mound.
-        const jx = (Math.random() - 0.5) * 1.2;
-        const jz = (Math.random() - 0.5) * 1.2;
-        // Split this colony's foragers across A.GROUPS foraging groups —
-        // each group locks to a different nearby resource so the surface
-        // shows many distinct columns radiating from each entrance.
-        const groupIdx = i % A.GROUPS;
-        const ant = {
-          id: 'w-' + ci + '-' + i, ci, col, inst: i, mesh,
-          x: col.entrance.x + jx, z: col.entrance.z + jz,
-          yaw: Math.random() * 6.28,
-          // Slower foragers — they read as deliberate workers, not racing
-          // sprites. Scale boosted for visibility from the orbit camera.
-          speed: 2.0 + Math.random() * 1.0,
-          // All spawn outbound — within a few seconds half will be returning
-          // organically as they hit the resource. Mixed-state spawning looked
-          // chaotic because half the ants flashed to the trail's end.
-          state: 'out',
-          wob: Math.random() * 6.28,
-          // trail-following state — t walks 0..1, dir=+1 outbound, -1 home
-          trail: null, t: 0, dir: 1,
-          groupIdx,
-          // tight lateral offset for a clear single-file column
-          laneOffset: (Math.random() - 0.5) * 0.45,
-          // staggered start position along the trail so they form a column
-          tStart: ((i / n) * A.GROUPS % 1) + Math.random() * 0.04,
-          // larger scale so individual ants read from camera distance
-          scale: 1.05 + Math.random() * 0.5, hero: false, cargo: 0,
-          // death/respawn animation timer (state === 'dead')
-          deadTimer: 0,
-          role: ['Forager', 'Forager', 'Scout', 'Worker'][i % 4]
-        };
-        pickTarget(ant);
-        A.list.push(ant);
-      }
-      mesh.geometry.setAttribute('aInst', new THREE.InstancedBufferAttribute(inst, 2));
-      scene.add(mesh);
-      A.meshes.push(mesh);
-      A.byMesh[mesh.uuid] = ci;
-      col._antMesh = mesh;
-    });
+    colonies.forEach((col, ci) => { spawnColonyAnts(col, ci); });
 
     // ---- hero (named) ants ----
     const greek = ['Δ', 'Σ', 'Ω', 'Φ', 'Ψ', 'Θ'];
@@ -334,10 +361,106 @@ DN.ants = (function () {
         }
         continue;
       }
-      // ant has a chance to die per frame — heroes are immortal
-      if (!a.hero && Math.random() < dt * 0.0002 * timeScale) {
+      // ant has a chance to die per frame — heroes and migrators are immortal
+      if (!a.hero && a.state !== 'migrating' && Math.random() < dt * 0.0002 * timeScale) {
         a.state = 'dead';
         a.deadTimer = 2.0;
+        continue;
+      }
+
+      // ---- migration: walk from parent.entrance to new colony.entrance
+      // along a shared Bezier trail. Negative migT lets each ant wait its
+      // turn at the parent entrance so the procession is staggered. -----
+      if (a.state === 'migrating') {
+        // Tuned so the lead ants arrive just as the 6.5-sec founding
+        // animation finishes — total migration ≈ 7s with a ~4s spread.
+        a.migT += dt * 0.14 * timeScale;
+        if (a.migT < 0) {
+          // still waiting at parent entrance — render in place
+          const gy = ground(a.x, a.z);
+          _p.set(a.x, gy + 0.05, a.z);
+          _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
+          _s.setScalar(a.scale);
+          _m.compose(_p, _q, _s);
+          a.mesh.setMatrixAt(a.inst, _m);
+          meshDirty[a.mesh.uuid] = a.mesh;
+          continue;
+        }
+        if (a.migT >= 1 || !a.migTrail) {
+          // Arrived. Sample the exact trail end (col.entrance) so there
+          // is no teleport-jitter. Then enter 'settling': the ant wanders
+          // briefly near the new mound for 0–10s before joining forage,
+          // staggered per ant so we don't get a mass "outbound spawn"
+          // moment the moment migration finishes.
+          if (a.migTrail) {
+            a.migTrail.curve.getPoint(1, _curvePos);
+            a.x = _curvePos.x; a.z = _curvePos.z;
+          }
+          a.state = 'settling';
+          a.settleLeft = Math.random() * 10;
+          // render in place this frame so we don't pop
+          const gy0 = ground(a.x, a.z);
+          _p.set(a.x, gy0 + 0.05, a.z);
+          _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
+          _s.setScalar(a.scale);
+          _m.compose(_p, _q, _s);
+          a.mesh.setMatrixAt(a.inst, _m);
+          meshDirty[a.mesh.uuid] = a.mesh;
+          continue;
+        } else {
+          a.migTrail.curve.getPoint(a.migT, _curvePos);
+          a.migTrail.curve.getTangent(a.migT, _curveTan);
+          const perpX = -_curveTan.z, perpZ = _curveTan.x;
+          a.x = _curvePos.x + perpX * a.laneOffset;
+          a.z = _curvePos.z + perpZ * a.laneOffset;
+          const ty = Math.atan2(_curveTan.x, _curveTan.z);
+          let d = ty - a.yaw;
+          while (d > Math.PI) d -= 6.283;
+          while (d < -Math.PI) d += 6.283;
+          a.yaw += d * Math.min(1, dt * 8);
+          const gy = ground(a.x, a.z);
+          _p.set(a.x, gy + 0.05, a.z);
+          _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
+          _s.setScalar(a.scale);
+          _m.compose(_p, _q, _s);
+          a.mesh.setMatrixAt(a.inst, _m);
+          meshDirty[a.mesh.uuid] = a.mesh;
+          continue;
+        }
+      }
+
+      // ---- settling: just arrived from migration. Drift gently around
+      // the new colony entrance for 0–10s, then begin foraging. Each
+      // ant's timer is randomised so forage starts spread across that
+      // window instead of triggering as a single mass exodus. ----------
+      if (a.state === 'settling') {
+        a.settleLeft -= dt * timeScale;
+        const ex = a.col.entrance.x, ez = a.col.entrance.z;
+        // soft random walk
+        const turn = noise.n3(a.x * 0.08, a.z * 0.08, elapsed * 0.5 + a.wob);
+        a.yaw += turn * dt * 1.5;
+        const drift = 0.7;
+        a.x += Math.sin(a.yaw) * drift * dt;
+        a.z += Math.cos(a.yaw) * drift * dt;
+        // soft pull back toward entrance if drifting too far
+        const dx = a.x - ex, dz = a.z - ez;
+        const d = Math.hypot(dx, dz);
+        if (d > 4) {
+          a.x -= (dx / d) * 1.5 * dt;
+          a.z -= (dz / d) * 1.5 * dt;
+        }
+        const gy = ground(a.x, a.z);
+        _p.set(a.x, gy + 0.05, a.z);
+        _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
+        _s.setScalar(a.scale);
+        _m.compose(_p, _q, _s);
+        a.mesh.setMatrixAt(a.inst, _m);
+        meshDirty[a.mesh.uuid] = a.mesh;
+        if (a.settleLeft <= 0) {
+          // settled — join the regular forage rotation
+          a.state = 'out'; a.t = 0; a.dir = 1;
+          pickTarget(a);
+        }
         continue;
       }
 
