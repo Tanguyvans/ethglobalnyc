@@ -273,15 +273,17 @@ def main() -> None:
         records = records[: args.limit]
     if not records:
         raise SystemExit("No ENS identity records found.")
-    parent = str(args.ens_parent or payload.get("ens_parent") or "").strip().lower().strip(".")
+    parent = _resolve_ens_parent(args, payload)
     if not parent:
-        raise SystemExit("Missing ens_parent in identity JSON. Pass --ens-parent.")
+        raise SystemExit("Missing ENS parent. Set COLONY_ENS_PARENT, include ens_parent in JSON, or pass --ens-parent.")
+    ens_version = _resolve_ens_version(args)
     if args.check_parent:
         w3 = _connect_public(args)
         registry = w3.eth.contract(address=Web3.to_checksum_address(args.registry), abi=ENS_REGISTRY_ABI)
         wrapper = w3.eth.contract(address=Web3.to_checksum_address(args.name_wrapper), abi=NAME_WRAPPER_ABI)
         v2_registry = w3.eth.contract(address=Web3.to_checksum_address(args.v2_registry), abi=V2_REGISTRY_ABI)
-        _print_parent_status(registry, wrapper, v2_registry, parent, args.ens_version)
+        _print_parent_status(registry, wrapper, v2_registry, parent, ens_version)
+        _print_configured_signer(args)
         return
 
     if args.broadcast:
@@ -291,7 +293,7 @@ def main() -> None:
         wrapper = w3.eth.contract(address=Web3.to_checksum_address(args.name_wrapper), abi=NAME_WRAPPER_ABI)
         resolver = w3.eth.contract(address=Web3.to_checksum_address(args.resolver), abi=PUBLIC_RESOLVER_ABI)
         v2_registry = w3.eth.contract(address=Web3.to_checksum_address(args.v2_registry), abi=V2_REGISTRY_ABI)
-        parent_status = _resolve_parent_status_auto(registry, wrapper, v2_registry, parent, args.ens_version)
+        parent_status = _resolve_parent_status_auto(registry, wrapper, v2_registry, parent, ens_version)
         if parent_status["version"] == "v2":
             _assert_v2_parent_authority(parent_status, account.address)
             v2_factory = w3.eth.contract(address=Web3.to_checksum_address(args.v2_factory), abi=V2_FACTORY_ABI)
@@ -377,11 +379,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--env", default="colony/.env", help="Path to .env containing PROJECT_ENS_PRIVATE_KEY/RPC.")
     parser.add_argument("--rpc-url", default=None, help="Sepolia RPC URL. Defaults to SEPOLIA_RPC_URL or a public fallback.")
     parser.add_argument("--private-key-env", default="PROJECT_ENS_PRIVATE_KEY")
-    parser.add_argument("--ens-parent", default=None, help="Override parent ENS name from identity JSON.")
+    parser.add_argument("--ens-parent", default=None, help="Override parent ENS name. Defaults to COLONY_ENS_PARENT or identity JSON.")
     parser.add_argument("--registry", default=SEPOLIA_REGISTRY)
     parser.add_argument("--name-wrapper", default=SEPOLIA_NAME_WRAPPER)
     parser.add_argument("--resolver", default=SEPOLIA_PUBLIC_RESOLVER)
-    parser.add_argument("--ens-version", choices=["auto", "v1", "v2"], default="auto")
+    parser.add_argument("--ens-version", choices=["auto", "v1", "v2"], default=None, help="Defaults to COLONY_ENS_VERSION or auto.")
     parser.add_argument("--v2-registry", default=SEPOLIA_V2_REGISTRY)
     parser.add_argument("--v2-factory", default=SEPOLIA_V2_FACTORY)
     parser.add_argument("--v2-resolver-implementation", default=SEPOLIA_V2_RESOLVER_IMPLEMENTATION)
@@ -397,6 +399,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--check-parent", action="store_true", help="Read parent ENS status and exit without a wallet.")
     parser.add_argument("--broadcast", action="store_true", help="Submit Sepolia transactions.")
     return parser.parse_args()
+
+
+def _resolve_ens_parent(args: argparse.Namespace, payload: dict[str, Any]) -> str:
+    return str(args.ens_parent or os.environ.get("COLONY_ENS_PARENT") or payload.get("ens_parent") or "").strip().lower().strip(".")
+
+
+def _resolve_ens_version(args: argparse.Namespace) -> str:
+    value = str(args.ens_version or os.environ.get("COLONY_ENS_VERSION") or "auto").strip().lower()
+    if value not in {"auto", "v1", "v2"}:
+        raise SystemExit(f"Unsupported COLONY_ENS_VERSION/--ens-version: {value}")
+    return value
+
+
+def _print_configured_signer(args: argparse.Namespace) -> None:
+    private_key = os.environ.get(args.private_key_env)
+    if not private_key:
+        print(f"Publisher:   no {args.private_key_env} configured")
+        return
+    try:
+        account = Account.from_key(private_key)
+    except Exception:
+        print(f"Publisher:   invalid {args.private_key_env}")
+        return
+    print(f"Publisher:   {account.address}")
 
 
 def _connect(args: argparse.Namespace) -> tuple[Web3, Any]:

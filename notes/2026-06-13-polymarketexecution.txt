@@ -13,6 +13,32 @@ Two roles for this integration:
                  (an ant's Forecast -> a real on-chain settled bet).
 
 
+*** HEADLINE FINDING (2026-06-13): DIRECT CLOB IS GEOBLOCKED IN THE US ***
+------------------------------------------------------------------------
+We took the direct py-clob-client path all the way to a live order. Our code
+worked: it built + signed + POSTED a real $2 "France to win the World Cup" order.
+Polymarket rejected it:
+
+  HTTP 403 — "Trading restricted in your region, please refer to available
+  regions" (docs.polymarket.com/developers/CLOB/geoblock)
+
+=> Polymarket's CLOB GEOBLOCKS the US. We're in NYC, so direct-API trading is a
+   dead end here regardless of funds/allowances. This is a hard block at their
+   API, not a bug in our setup.
+
+CONSEQUENCE: PolyGun (custodial, trades via its own relayer) is the right path
+for a US user — it sidesteps the geoblock. The custody trade-off is the PRICE OF
+ACCESS, not just convenience. To automate PolyGun: no API exists -> Telegram
+userbot scripting or copy-trading. (Running our CLOB bot from an allowed-region
+server would technically work but is subject to Polymarket's ToS/regional rules.)
+
+Leftover from the CLOB attempt: ~5.99 USDC.e now sits in treasury 0xcc16…31eB
+(swapped from 6 native USDC; the swap + router approval succeeded on-chain). It's
+unusable for direct CLOB from here; can swap back to native USDC or hold.
+
+------------------------------------------------------------------------
+
+
 TREASURY WALLET (Polymarket bets)
 ---------------------------------
 - Address:  0xcc16bEC342794f35a32d4Ba2c76BF9D759C131eB  (plain EOA, sig type 0)
@@ -167,4 +193,47 @@ NEXT (optional)
   colony run so the test order reflects a real colony decision.
 - Pull Polymarket implied odds into the colony as the odds_home_signal /
   beat-the-market benchmark (the DATA role above).
+
+
+================================================================================
+LESSONS LEARNED — DIRECT CLOB (cumulative, 2026-06-13)
+================================================================================
+1. THE BIG ONE: Polymarket CLOB geoblocks the US. A fully-formed, signed order
+   returns HTTP 403 "Trading restricted in your region." Our code is correct; the
+   wall is regional. From NYC, direct CLOB is not a usable execution path. ->
+   PolyGun (custodial relayer) is the workaround. See HEADLINE FINDING above.
+
+2. Our direct-CLOB stack DOES work up to that wall — it authenticated, derived L2
+   API creds, built + EIP-712-signed a real order, and POSTed it. So if ever run
+   from an allowed region/server, the code path is proven (ToS caveats aside).
+
+3. USDC token confusion is real and costly:
+   - Polymarket settles in USDC.e (bridged, 0x2791Bca1...).
+   - We were funded in NATIVE USDC (0x3c499c54...). CLOB saw balance 0.
+   - Fix = swap native -> USDC.e (Uniswap v3 0.01% pool; swap_to_usdce.py works:
+     6 native -> 5.9992 USDC.e, ~0 slippage).
+
+4. py-clob-client's update_balance_allowance / check_account --approve is a
+   NO-OP for a raw EOA (signature_type 0): it pings Polymarket's API but does NOT
+   send the on-chain ERC20 approval. For an EOA you must approve USDC.e to the
+   Polymarket exchange contracts yourself on-chain. (We never needed it — geoblock
+   killed the order first — but note for any future allowed-region run. Spenders
+   reported by the client: 0xE111180000d2663C0091e4f400237545B87B996B,
+   0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296,
+   0xe2222d279d744050d28e00520010520000310F59.)
+
+5. Infra gotchas:
+   - macOS python.org Python fails TLS unless SSL_CERT_FILE points at certifi
+     (config.py auto-handles it).
+   - Public Polygon RPCs are picky: polygon-rpc.com -> 401; publicnode works but
+     needs a browser User-Agent; eth_getLogs capped at 10k block range.
+
+6. Toolkit built under polymarket/ (all working): connectivity_check.py (no-key
+   smoke test), config.py, pm_client.py, check_account.py, place_test_trade.py
+   (3-guard safety), swap_to_usdce.py (native->USDC.e), watch_treasury.py (poll
+   for inbound funds).
+
+7. Treasury state after experiments: ~20 native USDC + 5.99 USDC.e + ~0.79 POL,
+   all self-custodied in 0xcc16…31eB. The 5.99 USDC.e is stranded for CLOB use
+   from the US; swap back or hold.
 ================================================================================

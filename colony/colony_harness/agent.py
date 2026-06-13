@@ -320,6 +320,7 @@ class AntAgent:
     lineage_id: str = ""
     lineage_root_agent_id: str = ""
     verified_lineage: bool = False
+    world_verified: bool = False
     world_human_id: str = ""
     evolution_role: str = ""
     parent_genome_id: str = ""
@@ -329,6 +330,14 @@ class AntAgent:
     @property
     def genome_id(self) -> str:
         return self.genome.stable_id()
+
+    @property
+    def world_status(self) -> str:
+        return "world_verified" if self.world_verified else "unverified"
+
+    @property
+    def world_access_tier(self) -> str:
+        return "premium_world" if self.world_verified else "standard"
 
     @property
     def public_record(self) -> dict:
@@ -342,7 +351,10 @@ class AntAgent:
             "lineage_id": self.lineage_id,
             "lineage_root_agent_id": self.lineage_root_agent_id,
             "verified_lineage": self.verified_lineage,
+            "world_verified": self.world_verified,
             "world_human_id": self.world_human_id,
+            "world_status": self.world_status,
+            "world_access_tier": self.world_access_tier,
             "generation": self.generation,
             "bankroll": round(self.bankroll, 4),
             "accuracy": round(self.accuracy, 4),

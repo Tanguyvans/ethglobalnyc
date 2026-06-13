@@ -16,6 +16,7 @@ from colony_harness.identity import assign_ens_names, write_identity_records
 from colony_harness.models import MatchContext
 from colony_harness.population import load_population_state, normalize_agent_lineages, save_population_state
 from colony_harness.voice import TemplateVoiceModel, llm_voice_model_from_env
+from colony_harness.world import DEFAULT_WORLD_VERIFICATION_STORE, apply_world_verifications
 
 
 DEFAULT_CONFIG = Path(__file__).parent / "config" / "example.colony.json"
@@ -56,12 +57,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--agent-wallets",
         action="store_true",
-        help="Create/reuse local EVM wallets for agents and expose only public addresses.",
+        help="Create/reuse EVM wallets for agents and expose only public addresses.",
+    )
+    parser.add_argument(
+        "--wallet-provider",
+        choices=["local", "dynamic"],
+        default=None,
+        help="Wallet backend for --agent-wallets. Defaults to COLONY_WALLET_PROVIDER or local.",
     )
     parser.add_argument(
         "--wallet-store",
         default="colony/secrets/agent-wallets.local.json",
-        help="Gitignored local JSON store for agent private keys.",
+        help="Gitignored JSON store for agent wallet records.",
+    )
+    parser.add_argument(
+        "--dynamic-env",
+        default=None,
+        help="Optional Dynamic .env path for --wallet-provider dynamic. Defaults to COLONY_DYNAMIC_ENV or dynamic/.env.",
     )
     parser.add_argument(
         "--ens-parent",
@@ -74,19 +86,51 @@ def parse_args() -> argparse.Namespace:
         help="Write generated ENS identity-card records for every ant to this JSON file.",
     )
     parser.add_argument(
+        "--deployment-id",
+        default=None,
+        help="Deployment/run id written into ENS identity records. Defaults to COLONY_DEPLOYMENT_ID.",
+    )
+    parser.add_argument(
+        "--world-agent",
+        action="append",
+        default=[],
+        help="Require this ant to have a Worldcoin AgentKit receipt and premium World access. Can be repeated.",
+    )
+    parser.add_argument(
         "--verified-root",
         action="append",
         default=[],
-        help="Mark a lineage root as World ID verified by agent_id or wallet address. Can be repeated.",
+        help="Deprecated alias for --world-agent.",
+    )
+    parser.add_argument(
+        "--world-verified-root",
+        action="append",
+        default=[],
+        help="Deprecated alias for --world-agent.",
+    )
+    parser.add_argument(
+        "--world-verifications",
+        default=None,
+        help="Gitignored local Worldcoin AgentKit receipt store.",
+    )
+    parser.add_argument(
+        "--allow-manual-world-agent",
+        action="store_true",
+        help="Demo escape hatch: allow --world-agent without a stored AgentKit receipt.",
+    )
+    parser.add_argument(
+        "--allow-manual-verified-root",
+        action="store_true",
+        help="Deprecated alias for --allow-manual-world-agent.",
     )
     parser.add_argument(
         "--world-human-id",
         default="",
-        help="Optional pseudonymous World ID identifier to attach to verified roots.",
+        help="Optional pseudonymous World ID identifier to attach to verified World agents.",
     )
     parser.add_argument(
         "--profile-base-url",
-        default="https://colony.app/ants",
+        default=None,
         help="Base URL used in ENS profile and agent-context records.",
     )
     parser.add_argument(
@@ -150,9 +194,11 @@ def main() -> None:
         voice_model=voice_model,
         create_agent_wallets=args.agent_wallets,
         wallet_store_path=args.wallet_store if args.agent_wallets else None,
+        wallet_provider=args.wallet_provider,
+        dynamic_env_path=args.dynamic_env,
         agents=loaded_agents,
     )
-    _apply_verified_roots(args, harness)
+    _apply_world_agents(args, harness)
     ens_parent = _resolve_ens_parent(args)
     assign_ens_names(harness.agents, ens_parent=ens_parent)
 
@@ -173,6 +219,7 @@ def main() -> None:
         print(f"Population state: {status} {saved_population_path or args.population_state}")
     if identity_path is not None:
         print(f"ENS identity records: {identity_path}")
+    print(_identity_summary(harness))
     print(
         "Debate structure: "
         f"room_budget={result.summary['speaker_slots']} "
@@ -259,7 +306,8 @@ def _write_identity_if_requested(args: argparse.Namespace, harness: ColonyHarnes
         args.identity_out,
         harness.agents,
         ens_parent=_resolve_ens_parent(args),
-        profile_base_url=args.profile_base_url,
+        profile_base_url=_resolve_profile_base_url(args),
+        deployment_id=_resolve_deployment_id(args),
     )
 
 
@@ -267,26 +315,41 @@ def _resolve_ens_parent(args: argparse.Namespace) -> str:
     return args.ens_parent or os.environ.get("COLONY_ENS_PARENT") or "colonny.eth"
 
 
-def _apply_verified_roots(args: argparse.Namespace, harness: ColonyHarness) -> None:
-    if not args.verified_root:
-        return
-    for wanted in args.verified_root:
-        normalized = wanted.lower()
-        agent = next(
-            (
-                candidate
-                for candidate in harness.agents
-                if candidate.agent_id.lower() == normalized
-                or (candidate.wallet_address and candidate.wallet_address.lower() == normalized)
-            ),
-            None,
+def _resolve_profile_base_url(args: argparse.Namespace) -> str:
+    return args.profile_base_url or os.environ.get("COLONY_PROFILE_BASE_URL") or "https://colony.app/ants"
+
+
+def _resolve_deployment_id(args: argparse.Namespace) -> str:
+    return args.deployment_id or os.environ.get("COLONY_DEPLOYMENT_ID") or ""
+
+
+def _identity_summary(harness: ColonyHarness) -> str:
+    wallets = sum(1 for agent in harness.agents if agent.wallet_address)
+    ens_names = sum(1 for agent in harness.agents if agent.ens_name)
+    world_verified = sum(1 for agent in harness.agents if agent.world_verified)
+    return f"Agent identities: wallets={wallets} ens={ens_names} world_verified={world_verified}"
+
+
+def _apply_world_agents(args: argparse.Namespace, harness: ColonyHarness) -> None:
+    required_agents = list(args.world_agent or []) + list(args.verified_root or []) + list(args.world_verified_root or [])
+    try:
+        apply_world_verifications(
+            harness.agents,
+            store_path=_resolve_world_verifications(args),
+            required_agents=required_agents,
+            allow_manual=bool(args.allow_manual_world_agent or args.allow_manual_verified_root),
         )
-        if agent is None:
-            raise SystemExit(f"--verified-root did not match any agent_id or wallet address: {wanted}")
-        agent.verified_lineage = True
-        if args.world_human_id:
-            agent.world_human_id = args.world_human_id
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    if args.world_human_id:
+        for agent in harness.agents:
+            if agent.world_verified and not agent.world_human_id:
+                agent.world_human_id = args.world_human_id
     normalize_agent_lineages(harness.agents)
+
+
+def _resolve_world_verifications(args: argparse.Namespace) -> str:
+    return args.world_verifications or os.environ.get("COLONY_WORLD_VERIFICATIONS") or str(DEFAULT_WORLD_VERIFICATION_STORE)
 
 
 if __name__ == "__main__":

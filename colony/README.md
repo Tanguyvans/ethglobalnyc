@@ -44,7 +44,7 @@ What works today:
 - Render public debate messages without agent IDs in the text, with short source-grounded replies and a two-sentence cap for template voices.
 - Attach a stable `genome_id` to public roster records, debate claims, forecasts, disputes, conversation memory, and KG genome entities.
 - Attach local EVM wallet addresses and lineage metadata to agents.
-- Generate ENS identity-card records for each ant subdomain, including parent, lineage, World ID inheritance status, profile URL, and agent-context text.
+- Generate ENS identity-card records for each ant subdomain, including parent, lineage, deployment id, World access tier, profile URL, and agent-context text.
 - Save/load a persistent population state so the same `genome_id` roster can run across multiple matches.
 - Evolve a saved population offline from recent conversation-memory scores, keeping useful genomes and replacing weaker slots with mutations.
 - Aggregate room outputs into one final-chamber synthesis with structured `diagnostics`: consensus, main evidence thread, minority report, source dispute, room range, and dispute counts.
@@ -106,20 +106,53 @@ python3 colony/run_demo.py \
   --population-state colony/data/demo_population_state.json
 ```
 
-Create/reuse local throwaway EVM wallets and assign deterministic ENS names for agents:
+Create/reuse throwaway EVM wallets, deterministic ENS names, and World ID access status for agents:
 
 ```bash
 python3 colony/run_demo.py \
   --agents 40 \
   --agent-wallets \
-  --ens-parent colonny.eth \
   --show-roster
 ```
 
-Private keys are written to `colony/secrets/agent-wallets.local.json`, which is gitignored.
-Only `wallet_address` and `ens_name` are exported in public agent records. The same EVM
-address can be registered with Worldcoin AgentKit on World Chain mainnet and later funded
-on Arc testnet for trades/x402 experiments.
+By default this uses `--wallet-provider local`. Private keys are written to
+`colony/secrets/agent-wallets.local.json`, which is gitignored.
+`wallet_address`, `ens_name`, `world_status`, and `world_access_tier` are exported in public
+agent records. The same EVM address can be registered with Worldcoin AgentKit on World Chain
+mainnet and later funded on Arc testnet for trades/x402 experiments.
+
+To use the Dynamic scaffold instead of plaintext local keys:
+
+```bash
+python3 colony/run_demo.py \
+  --agents 40 \
+  --agent-wallets \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --dynamic-env dynamic/.env \
+  --show-roster
+```
+
+Dynamic V3 WaaS/MPC wallets do not return raw private keys. The wallet store records the public
+address plus Dynamic metadata such as the identifier, user id, and credential id. Signing Arc
+transactions from those wallets should go through Dynamic's WaaS/SDK path.
+
+ENS defaults come from `colony/.env`:
+
+```bash
+cp colony/.env.example colony/.env
+```
+
+```env
+COLONY_ENS_PARENT=colonny.eth
+COLONY_ENS_VERSION=v2
+COLONY_PROFILE_BASE_URL=https://colony.app/ants
+COLONY_WORLD_VERIFICATIONS=colony/secrets/world-agentkit-verifications.local.json
+COLONY_WALLET_PROVIDER=local
+COLONY_DYNAMIC_ENV=dynamic/.env
+SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+PROJECT_ENS_PRIVATE_KEY=
+```
 
 Generate ENS identity-card records for the current roster:
 
@@ -127,16 +160,115 @@ Generate ENS identity-card records for the current roster:
 python3 colony/run_demo.py \
   --agents 40 \
   --agent-wallets \
-  --ens-parent colonny.eth \
-  --verified-root ant_0000 \
+  --identity-out colony/data/ens-identities.demo.json
+```
+
+Register selected premium World agents with the real Worldcoin AgentKit flow. This can take
+multiple agents in one command; the CLI will ask you to complete one World ID flow per agent:
+
+```bash
+python3 colony/register_world_agent.py \
+  ant_0000 ant_0007 ant_0012 ant_0028 ant_0034 \
+  --identity-json colony/data/ens-identities.demo.json \
+  --skip-existing
+```
+
+That command runs `@worldcoin/agentkit-cli register` for each selected ant, asks you to scan
+the World ID QR/link for each wallet, and stores the resulting tx/nullifier receipts in
+`COLONY_WORLD_VERIFICATIONS`.
+
+Then regenerate/export with those World agents enforced from the receipt store:
+
+```bash
+python3 colony/run_demo.py \
+  --agents 40 \
+  --agent-wallets \
+  --world-agent ant_0000 \
+  --world-agent ant_0007 \
+  --world-agent ant_0012 \
+  --world-agent ant_0028 \
+  --world-agent ant_0034 \
   --identity-out colony/data/ens-identities.demo.json
 ```
 
 Each record has a subdomain such as `root-fable-0.colonny.eth`, an `addr` record pointing
 to the ant wallet, an ENSIP-26 `agent-context`, `agent-endpoint[web]`, and compact
 `com.colony.*` text records.
-Generation-0 ants become lineage roots. Children keep their own ENS names and inherit
-`verified_lineage` from the root when a root has been registered through Worldcoin AgentKit.
+Generation-0 ants become lineage roots. Children keep their own ENS names and parent/lineage
+pointers. World ID is a separate premium capability: it is attached only to ants that have a
+stored AgentKit receipt, and those ants export `world_access_tier=premium_world`.
+Subdomains are stable agent identities. New runs reuse existing names and overwrite mutable
+records such as `com.colony.deployment_id` and `com.colony.active`.
+
+For a fresh deployment, prefer the orchestrator instead of stitching the commands manually:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 50 \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --world-count 5 \
+  --deployment-id demo_001 \
+  --identity-out colony/data/ens-identities.deploy.json
+```
+
+That generates fresh wallet/ENS identity records, runs the World AgentKit batch for
+`ant_0000` through `ant_0004`, regenerates the records with `premium_world`, then runs ENS
+publication in dry-run mode. If `--deployment-id` is omitted, one is generated automatically.
+Existing subdomains are not recreated; their records are rewritten. Add `--ens-broadcast`
+only when the dry-run looks right:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 50 \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --world-count 5 \
+  --deployment-id demo_001 \
+  --identity-out colony/data/ens-identities.deploy.json \
+  --ens-broadcast
+```
+
+Use explicit `--world-agent ant_0007` flags instead of `--world-count` when you want to pick
+specific premium agents.
+
+For a Dynamic-only ENS smoke test without Worldcoin registration:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 7 \
+  --rooms 1 \
+  --wallet-provider dynamic \
+  --wallet-store colony/secrets/agent-wallets.dynamic.local.json \
+  --dynamic-env dynamic/.env \
+  --identity-out colony/data/ens-identities.dynamic.json \
+  --deployment-id dynamic_test \
+  --skip-world \
+  --ens-broadcast
+```
+
+This creates/reuses Dynamic V3 wallets, writes the ENS identity JSON, and publishes the
+subname resolver records on Sepolia. If an RPC returns `nonce too low` during broadcast, rerun
+the same command or rerun `register_ens_identities.py` with the remaining `--agent-id` values;
+the publisher is idempotent for already-created subnames and will continue by writing records.
+The 7-agent smoke test was verified by reading back all resolver `addr` records on Sepolia.
+
+To mark a deployment inactive before retesting, run the cleanup in dry-run mode:
+
+```bash
+python3 colony/cleanup_ens_identities.py colony/data/ens-identities.deploy.json
+```
+
+Then broadcast the deactivation when the list looks right:
+
+```bash
+python3 colony/cleanup_ens_identities.py \
+  colony/data/ens-identities.deploy.json \
+  --broadcast
+```
+
+This writes `com.colony.active=false`. Use `--clear-records` only when you intentionally want
+to wipe the resolver records instead of preserving the identity card history.
 
 See the full runbook in [`docs/ens-agent-identity.md`](docs/ens-agent-identity.md).
 
@@ -178,7 +310,6 @@ records. Publish a specific ant first:
 python3 colony/register_ens_identities.py \
   colony/data/ens-identities.demo.json \
   --agent-id ant_0001 \
-  --ens-version v2 \
   --broadcast
 ```
 

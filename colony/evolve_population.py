@@ -89,7 +89,6 @@ def evolve_population(
                 lineage_id=parent.lineage_id or f"lineage_{parent.lineage_root_agent_id or parent.agent_id}",
                 lineage_root_agent_id=parent.lineage_root_agent_id or parent.agent_id,
                 verified_lineage=parent.verified_lineage,
-                world_human_id=parent.world_human_id,
                 evolution_role="child",
                 parent_genome_id=parent.genome_id,
                 previous_genome_id=slot.genome_id,

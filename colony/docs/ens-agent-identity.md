@@ -5,8 +5,10 @@ Colony uses ENS as the public identity layer for ant agents.
 The important separation is:
 
 1. **Local identity assignment**: every generated ant gets a wallet address and a deterministic ENS name.
-2. **Identity record export**: the roster is written as ENSIP-26-ready records.
-3. **On-chain publication**: selected records are registered as ENSv2 subnames and written to the agent resolver.
+2. **World access assignment**: selected ants expose `world_status=world_verified` and `world_access_tier=premium_world` after a real AgentKit receipt is stored.
+3. **Identity record export**: the roster is written as ENSIP-26-ready records.
+4. **On-chain publication**: selected records are registered as ENSv2 subnames and written to the agent resolver.
+5. **Run state update**: new runs reuse stable subdomains and rewrite mutable records such as `deployment_id` and `active`.
 
 This keeps the simulation usable before spending gas, while making the on-chain demo a real extension of the same data.
 
@@ -21,6 +23,9 @@ ens_name        root-onyx-1.colonny.eth
 generation      0
 lineage         root-onyx-1.colonny.eth
 world_status    unverified
+world_access     standard
+deployment_id   demo_001
+active          true
 ```
 
 Generation-0 ants are lineage roots. Children receive their own ENS names but point back to their parent and lineage root:
@@ -29,12 +34,40 @@ Generation-0 ants are lineage roots. Children receive their own ENS names but po
 gold-lens-42.colonny.eth
   parent  = root-fable-0.colonny.eth
   lineage = root-fable-0.colonny.eth
-  world   = inherited_verified
+  world   = unverified
+  access  = standard
 ```
 
-Wallets are local throwaway EVM wallets stored in `colony/secrets/agent-wallets.local.json`, which is gitignored. Only public addresses and ENS names are exported.
+Wallets are local throwaway EVM wallets stored in `colony/secrets/agent-wallets.local.json`, which is gitignored. Only public addresses and ENS names are exported. World ID is a separate privilege layer: if 5 ants out of 50 are verified, only those 5 get `premium_world` capabilities.
+
+ENS subdomains are stable identities. A new run should not delete and recreate names; it should rewrite records:
+
+```text
+root-onyx-1.colonny.eth
+  com.colony.deployment_id = demo_002
+  com.colony.active        = true
+```
 
 ## Generation Flow
+
+Copy the environment template once:
+
+```bash
+cp colony/.env.example colony/.env
+```
+
+Set the reusable ENS values:
+
+```env
+COLONY_ENS_PARENT=colonny.eth
+COLONY_ENS_VERSION=v2
+COLONY_PROFILE_BASE_URL=https://colony.app/ants
+COLONY_WORLD_VERIFICATIONS=colony/secrets/world-agentkit-verifications.local.json
+SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+PROJECT_ENS_PRIVATE_KEY=
+```
+
+`PROJECT_ENS_PRIVATE_KEY` is the publisher key. The publisher wallet address is derived from it, so it does not need to be duplicated in `.env`.
 
 Generate agents with wallets and ENS names:
 
@@ -42,8 +75,6 @@ Generate agents with wallets and ENS names:
 python3 colony/run_demo.py \
   --agents 4 \
   --agent-wallets \
-  --ens-parent colonny.eth \
-  --verified-root ant_0000 \
   --identity-out colony/data/ens-identities.demo.json \
   --show-roster
 ```
@@ -53,7 +84,8 @@ During generation:
 ```text
 AntAgent.wallet_address is assigned/reused from the local wallet store.
 AntAgent.ens_name is deterministically assigned from the ENS parent.
-The public roster includes both wallet_address and ens_name.
+AntAgent.world_status is derived from a stored Worldcoin AgentKit receipt.
+The public roster includes wallet_address, ens_name, world_status, and world_access_tier.
 The identity JSON contains the records that can later be published on-chain.
 ```
 
@@ -85,7 +117,10 @@ The `agent-context` record is the canonical machine-readable entrypoint:
   "generation": 0,
   "parent": "",
   "lineage": "root-onyx-1.colonny.eth",
+  "deployment_id": "demo_001",
+  "active": true,
   "world_status": "unverified",
+  "world_access_tier": "standard",
   "capabilities": ["stats_scout", "forecast", "debate", "trade"]
 }
 ```
@@ -104,8 +139,7 @@ Check the parent:
 ```bash
 python3 colony/register_ens_identities.py \
   colony/data/ens-identities.demo.json \
-  --check-parent \
-  --ens-version v2
+  --check-parent
 ```
 
 Expected ready state:
@@ -124,7 +158,6 @@ Publish one ant:
 python3 colony/register_ens_identities.py \
   colony/data/ens-identities.demo.json \
   --agent-id ant_0001 \
-  --ens-version v2 \
   --broadcast
 ```
 
@@ -146,31 +179,143 @@ write resolver records
 ```
 
 Already registered ENSv2 subnames are skipped for the create step, so the script can safely continue a partial publication run.
+For subsequent runs, this is the expected path: existing subdomains are detected, creation is skipped, and resolver records are rewritten.
 
-## Verified Lineages
+## Premium World Agents
 
-World ID verification is attached to lineage roots, not every descendant.
+World ID verification is attached to selected agents, not to the whole lineage. This is the clean model for premium tools: a colony can have 50 ants where only 5 have World ID-backed privileges.
+
+First generate identities so every ant has a wallet and ENS name:
 
 ```bash
 python3 colony/run_demo.py \
+  --agents 50 \
   --agent-wallets \
-  --ens-parent colonny.eth \
-  --verified-root ant_0000 \
-  --world-human-id world_pseudonymous_root \
+  --identity-out colony/data/ens-identities.demo.json \
+  --show-roster
+```
+
+Then run the real AgentKit flow for the selected premium ants. This is one command, but the CLI still creates one World ID challenge per wallet:
+
+```bash
+python3 colony/register_world_agent.py \
+  ant_0000 ant_0007 ant_0012 ant_0028 ant_0034 \
+  --identity-json colony/data/ens-identities.demo.json \
+  --skip-existing
+```
+
+This launches:
+
+```bash
+npx -y @worldcoin/agentkit-cli register <agent-wallet>
+```
+
+and stores the resulting tx/nullifier receipt in `COLONY_WORLD_VERIFICATIONS`.
+
+Then regenerate/export while requiring those receipts:
+
+```bash
+python3 colony/run_demo.py \
+  --agents 50 \
+  --agent-wallets \
+  --world-agent ant_0000 \
+  --world-agent ant_0007 \
+  --world-agent ant_0012 \
+  --world-agent ant_0028 \
+  --world-agent ant_0034 \
   --identity-out colony/data/ens-identities.demo.json
 ```
 
-The root gets:
+Each verified ant gets:
 
 ```text
-com.colony.world = verified_root
+com.colony.world = world_verified
+com.colony.world_access_tier = premium_world
+com.colony.capabilities = ...,world_agentkit,premium_data,x402_privileged
 ```
 
-Descendants inherit:
+## Fresh Deploy Script
+
+For new colonies, use the deploy orchestrator instead of manually composing `run_demo`,
+`register_world_agent`, and `register_ens_identities`.
+
+Dry-run ENS publication:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 50 \
+  --world-count 5 \
+  --deployment-id demo_001 \
+  --identity-out colony/data/ens-identities.deploy.json
+```
+
+This does four steps:
 
 ```text
-com.colony.world = inherited_verified
+1. Generate 50 agents with wallets and ENS identity records.
+2. Register ant_0000 through ant_0004 with Worldcoin AgentKit.
+3. Regenerate the identity records with premium_world capabilities.
+4. Run ENS publication in dry-run mode.
 ```
+
+If `--deployment-id` is omitted, the deploy script generates a UTC id such as
+`deploy_20260613_184200`.
+
+When the dry-run is correct, broadcast Sepolia ENS transactions:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 50 \
+  --world-count 5 \
+  --deployment-id demo_001 \
+  --identity-out colony/data/ens-identities.deploy.json \
+  --ens-broadcast
+```
+
+For hand-picked World agents:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 50 \
+  --world-agent ant_0000 \
+  --world-agent ant_0007 \
+  --world-agent ant_0012 \
+  --deployment-id demo_custom_001 \
+  --identity-out colony/data/ens-identities.deploy.json
+```
+
+## New Run Flow
+
+To run the same colony again, keep the same ENS names and use a new deployment id:
+
+```bash
+python3 colony/deploy_agents.py \
+  --agents 50 \
+  --world-count 5 \
+  --deployment-id demo_002 \
+  --identity-out colony/data/ens-identities.deploy.json \
+  --ens-broadcast
+```
+
+When a subdomain already exists, publication prints `exists` for the create step and still
+writes the new records. That is intentional.
+
+To mark the previous identity JSON inactive:
+
+```bash
+python3 colony/cleanup_ens_identities.py \
+  colony/data/ens-identities.deploy.json \
+  --broadcast
+```
+
+This writes:
+
+```text
+com.colony.active = false
+```
+
+Use `--clear-records` only when you want to wipe resolver data for testing. Do not use it as
+the normal new-run flow.
 
 ## ENSIP-25 Later
 
