@@ -1,0 +1,145 @@
+"""Agent behavior for the Colony harness."""
+
+from __future__ import annotations
+
+import hashlib
+import random
+import secrets
+from dataclasses import dataclass
+
+from .genes import Genome
+from .models import BetCommitment, DebateClaim, Forecast, MatchContext, Side
+from .voice import TemplateVoiceModel, VoiceModel
+
+
+def _clamp_probability(value: float) -> float:
+    return min(max(value, 0.01), 0.99)
+
+
+@dataclass
+class AntAgent:
+    agent_id: str
+    name: str
+    generation: int
+    genome: Genome
+    bankroll: float
+    accuracy: float
+
+    @property
+    def public_record(self) -> dict:
+        return {
+            "agent_id": self.agent_id,
+            "name": self.name,
+            "generation": self.generation,
+            "bankroll": round(self.bankroll, 4),
+            "accuracy": round(self.accuracy, 4),
+            "status": "alive",
+            "genome_hash": self.genome.public_hash(),
+        }
+
+    def private_baseline_probability(self, match: MatchContext) -> float:
+        weights = self.genome.source_weights.normalized()
+        probability = (
+            weights.stats * match.stats_home_signal
+            + weights.odds * match.odds_home_signal
+            + weights.news * match.news_home_signal
+            + weights.debate * match.market_home_probability
+        )
+
+        if self.genome.estimator == "llm":
+            model_tilt = {
+                "deepseek-v3.2": 0.018,
+                "qwen-3": 0.01,
+                "minimax-m2": -0.006,
+                "claude-haiku": 0.004,
+                "parametric": 0.0,
+            }.get(self.genome.model, 0.0)
+            probability += model_tilt
+
+        return _clamp_probability(probability)
+
+    def listen(self, match: MatchContext, debate_home_probability: float | None) -> float:
+        base = self.private_baseline_probability(match)
+        if debate_home_probability is None:
+            return base
+
+        debate_weight = self.genome.source_weights.normalized().debate
+        signed_herd = self.genome.herd_bias
+        adjustment = debate_weight * signed_herd * (debate_home_probability - match.market_home_probability)
+        return _clamp_probability(base + adjustment)
+
+    def speak(self, match: MatchContext, rng: random.Random, voice_model: VoiceModel | None = None) -> DebateClaim:
+        probability = self.private_baseline_probability(match)
+        edge = probability - match.market_home_probability
+        confidence = min(abs(edge) * 3.0 + 0.25 + rng.random() * 0.1, 0.95)
+        direction: Side = "home" if edge >= 0 else "away"
+        voice = voice_model or TemplateVoiceModel()
+        message = voice.render_claim(
+            agent_name=self.name,
+            genome=self.genome,
+            match=match,
+            probability=probability,
+            direction=direction,
+        )
+
+        tags = []
+        weights = self.genome.source_weights.normalized()
+        for label, value in weights.to_dict().items():
+            if value >= 0.28:
+                tags.append(label)
+
+        return DebateClaim(
+            round_id=match.round_id,
+            speaker_id=self.agent_id,
+            speaker_name=self.name,
+            model=self.genome.model,
+            persona=self.genome.persona,
+            stated_home_probability=round(probability, 4),
+            confidence=round(confidence, 4),
+            direction=direction,
+            message=message,
+            evidence_tags=tags,
+        )
+
+    def forecast(self, match: MatchContext, debate_home_probability: float | None) -> Forecast:
+        probability = self.listen(match, debate_home_probability)
+        home_edge = probability - match.market_home_probability
+        away_edge = (1.0 - probability) - (1.0 - match.market_home_probability)
+
+        if home_edge >= self.genome.edge_threshold:
+            side: Side = "home"
+            edge = home_edge
+        elif away_edge >= self.genome.edge_threshold:
+            side = "away"
+            edge = away_edge
+        else:
+            side = "pass"
+            edge = 0.0
+
+        stake = 0.0 if side == "pass" else round(self.bankroll * self.genome.risk_appetite, 4)
+        return Forecast(
+            agent_id=self.agent_id,
+            home_probability=round(probability, 4),
+            edge=round(edge, 4),
+            side=side,
+            stake=stake,
+            bankroll=round(self.bankroll, 4),
+        )
+
+    def commit_bet(self, forecast: Forecast, round_id: str) -> BetCommitment:
+        salt = secrets.token_hex(16)
+        reveal = {
+            "agent_id": self.agent_id,
+            "round_id": round_id,
+            "side": forecast.side,
+            "stake": forecast.stake,
+            "salt": salt,
+        }
+        payload = f"{self.agent_id}|{round_id}|{forecast.side}|{forecast.stake}|{salt}"
+        commitment = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        return BetCommitment(
+            agent_id=self.agent_id,
+            round_id=round_id,
+            commitment=commitment,
+            reveal=reveal,
+        )

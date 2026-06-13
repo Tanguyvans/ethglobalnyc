@@ -1,0 +1,16 @@
+{
+  "round_id": "round_world_cup_demo_001",
+  "match": {
+    "home_team": "France",
+    "away_team": "Senegal",
+    "market_home_probability": 0.47,
+    "stats_home_signal": 0.55,
+    "odds_home_signal": 0.48,
+    "news_home_signal": 0.51
+  },
+  "population": {
+    "agents": 40,
+    "speaker_slots": 6,
+    "seed": 42
+  }
+}

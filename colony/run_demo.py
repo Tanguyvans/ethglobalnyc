@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Run a local Colony debate harness demo."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from colony_harness import ColonyHarness
+from colony_harness.env import load_env_file
+from colony_harness.models import MatchContext
+from colony_harness.voice import OpenAICompatibleVoiceModel, TemplateVoiceModel
+
+
+DEFAULT_CONFIG = Path(__file__).parent / "config" / "example.colony.json"
+
+
+def load_config(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the Colony debate harness.")
+    parser.add_argument("--config", default=str(DEFAULT_CONFIG), help="Path to a colony config JSON file.")
+    parser.add_argument("--agents", type=int, default=None, help="Override population size.")
+    parser.add_argument("--speakers", type=int, default=None, help="Override number of debate speakers.")
+    parser.add_argument("--seed", type=int, default=None, help="Override RNG seed.")
+    parser.add_argument("--out", default=None, help="Optional JSONL output path.")
+    parser.add_argument("--show-roster", action="store_true", help="Print public ant records.")
+    parser.add_argument(
+        "--voice-mode",
+        choices=["template", "llm"],
+        default="template",
+        help="Use deterministic templates or an OpenAI-compatible LLM for debate messages.",
+    )
+    parser.add_argument("--env", default="colony/.env", help="Optional .env path for LLM settings.")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    load_env_file(args.env)
+    config = load_config(Path(args.config))
+    population = config.get("population", {})
+
+    if args.voice_mode == "llm":
+        voice_model = OpenAICompatibleVoiceModel.from_env()
+    else:
+        voice_model = TemplateVoiceModel()
+
+    harness = ColonyHarness(
+        population_size=args.agents or int(population.get("agents", 40)),
+        speaker_slots=args.speakers or int(population.get("speaker_slots", 6)),
+        seed=args.seed if args.seed is not None else int(population.get("seed", 42)),
+        voice_model=voice_model,
+    )
+
+    match = MatchContext.from_dict(config)
+    result = harness.run_round(match)
+
+    print(f"Colony round: {result.round_id}")
+    print(f"Match: {match.home_team} vs {match.away_team}")
+    print(f"Population: {result.summary['population']} agents")
+    print(f"Speakers: {result.summary['speaker_slots']}")
+    print(f"Market home probability: {result.summary['market_home_probability']:.1%}")
+    print(f"Debate home probability: {result.summary['debate_home_probability']:.1%}")
+    print(
+        "Bets: "
+        f"home={result.summary['home_bets']} "
+        f"away={result.summary['away_bets']} "
+        f"pass={result.summary['passes']} "
+        f"total_staked={result.summary['total_staked']}"
+    )
+
+    print("\nDebate feed:")
+    for claim in result.claims:
+        tags = ", ".join(claim.evidence_tags) if claim.evidence_tags else "no dominant source"
+        print(f"- [{claim.model} | {tags}] {claim.message}")
+
+    if args.show_roster:
+        print("\nPublic roster:")
+        for record in harness.public_roster():
+            print(json.dumps(record, sort_keys=True))
+
+    if args.out:
+        harness.write_jsonl(result, args.out)
+        print(f"\nWrote JSONL events to {args.out}")
+
+
+if __name__ == "__main__":
+    main()
