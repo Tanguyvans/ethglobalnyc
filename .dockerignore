@@ -1,0 +1,7 @@
+.git
+frontend/node_modules
+frontend/dist
+colony/secrets
+colony/runs
+**/__pycache__
+**/.DS_Store

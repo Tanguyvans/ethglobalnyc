@@ -5,3 +5,5 @@
 
 camel-ai==0.2.90
 ddgs==9.14.4
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
