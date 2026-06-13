@@ -53,11 +53,42 @@ WHAT THIS MEANS FOR COLONY WALLET ARCHITECTURE
   - Open question: how to SIGN an Arc tx from a Dynamic V3 wallet server-side (the WaaS signing
     API). Needed before ants funded via Dynamic can actually stake/transfer on Arc.
 
-TO VALIDATE NEXT
-  [ ] Find/test the V3 WaaS server-side SIGNING endpoint (sign a tx / message for a pregen wallet).
-  [ ] Decide wallet model for ants: Dynamic MPC vs. local cast keys (or hybrid: Dynamic for
-      verified/human-claimable lineage roots, local keys for ephemeral ants).
-  [ ] Fund a Dynamic wallet from the treasury and confirm it can hold/move USDC on Arc.
+✅ SERVER-SIDE SIGNING WORKS + FULL CROSS-PRODUCT ROUTE (2026-06-13)
+  Two server-side signing paths in @dynamic-labs-wallet/node-evm:
+    1. DELEGATED (delegatedSignTransaction/Message/TypedData): needs walletId + walletApiKey +
+       keyShare from a wallet.delegation.created flow. For wallets a USER delegates to us.
+    2. DEVELOPER-CREATED (DynamicEvmWalletClient): we create the wallet and HOLD the key share,
+       so we can sign immediately — no delegation needed. THIS is what we used.
+  Recipe (developer-created, server-side):
+    const c = new DynamicEvmWalletClient({ environmentId });
+    await c.authenticateApiToken(apiKey);                       // exchanges API key -> JWT
+    const w = await c.createWalletAccount({ thresholdSignatureScheme:"TWO_OF_TWO", password, backUpToDynamic:true });
+    const walletClient = await c.getWalletClient({ walletMetadata:w.walletMetadata, password,
+        externalServerKeyShares:w.externalServerKeyShares, chainId:5042002, rpcUrl });
+    // walletClient is a viem WalletClient that signs via MPC -> use for Arc txs AND Unlink evm.fromViem.
+  Proven: created an MPC wallet in ~2.2s and signed a message; then signed real Arc txs.
+
+  COMBINED A->B->C->D ROUTE (dynamic/combined-route.mjs) — ALL HOPS PROCESSED ✅
+    A treasury 0x1be3...2D8F --3 USDC native (Arc)-->        B Dynamic MPC 0xDF53...E984
+    B --depositWithApproval 2 USDC (B signs via MPC)-->      C Unlink (private)  -> C private 3 USDC
+    C --Unlink private transfer 1 USDC-->                    D Unlink (private)
+    Result: deposit processed, transfer processed, C private 2 USDC, D private 2 USDC.
+  Key point: the SAME Dynamic MPC walletClient both sends Arc USDC AND acts as Unlink's EVM
+  provider (evm.fromViem) for the deposit. Dynamic + Unlink compose cleanly.
+
+  ARC NATIVE/ERC-20 NOTE: native USDC (18dp) and the 0x3600 ERC-20 (6dp) are the SAME balance.
+  Funding a wallet with native USDC also gives it spendable ERC-20 USDC + gas. Verified on-chain.
+
+WALLET-MODEL TAKEAWAY FOR COLONY
+  Hybrid is viable and proven: treasury (local key) funds Dynamic MPC wallets (managed, no key to
+  leak, claimable by humans -> ties to Worldcoin verified lineages), which can push USDC into
+  Unlink's private layer. Decide per-ant: Dynamic MPC for verified/human roots, local cast keys
+  for cheap ephemeral ants.
+
+STILL OPEN
+  [ ] Pregenerated REST wallets (waas/create) vs developer-created (SDK) — the REST ones need
+      DELEGATION before we can sign for them; the SDK-created ones we can sign for immediately.
+      Decide which we use for ants.
 
 SEE ALSO
   dynamic/.env, dynamic/README.md, dynamic/create-wallets.mjs, notes/2026-06-13-treasury.txt
