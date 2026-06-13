@@ -662,24 +662,34 @@ def _ensure_v2_subregistry(
 
 
 def _send_contract_tx(w3: Web3, account: Any, call: Any, label: str) -> str:
-    nonce = w3.eth.get_transaction_count(account.address)
-    tx = call.build_transaction(
-        {
-            "from": account.address,
-            "nonce": nonce,
-            "chainId": 11155111,
-            **_fee_params(w3),
-        }
-    )
-    tx["gas"] = int(w3.eth.estimate_gas(tx) * 1.2)
-    signed = account.sign_transaction(tx)
-    raw_transaction = signed.raw_transaction if hasattr(signed, "raw_transaction") else signed.rawTransaction
-    tx_hash = w3.eth.send_raw_transaction(raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    if receipt.status != 1:
-        raise SystemExit(f"Transaction failed for {label}: {tx_hash.hex()}")
-    print(f"  tx: {label} {tx_hash.hex()}")
-    return tx_hash.hex()
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        nonce = w3.eth.get_transaction_count(account.address, "pending")
+        tx = call.build_transaction(
+            {
+                "from": account.address,
+                "nonce": nonce,
+                "chainId": 11155111,
+                **_fee_params(w3),
+            }
+        )
+        tx["gas"] = int(w3.eth.estimate_gas(tx) * 1.2)
+        signed = account.sign_transaction(tx)
+        raw_transaction = signed.raw_transaction if hasattr(signed, "raw_transaction") else signed.rawTransaction
+        try:
+            tx_hash = w3.eth.send_raw_transaction(raw_transaction)
+        except ValueError as exc:
+            last_error = exc
+            if "nonce too low" not in str(exc).lower() or attempt == 3:
+                raise
+            time.sleep(attempt * 2)
+            continue
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        if receipt.status != 1:
+            raise SystemExit(f"Transaction failed for {label}: {tx_hash.hex()}")
+        print(f"  tx: {label} {tx_hash.hex()}")
+        return tx_hash.hex()
+    raise RuntimeError(f"Could not send transaction for {label}: {last_error}")
 
 
 def _fee_params(w3: Web3) -> dict[str, int]:

@@ -92,6 +92,10 @@ python3 colony/run_demo.py
 ```
 
 Each run now saves compact local artifacts by default under `colony/runs/<timestamp>_<round_id>/`.
+For the current 200-agent testnet demo, see
+[`docs/demo-200-agent-pipeline.md`](docs/demo-200-agent-pipeline.md). It documents the
+already-published Dynamic wallets, Sepolia ENSv2 subdomains, communicating-agent run, prediction
+result, and opinion-change analysis.
 
 With a custom population:
 
@@ -136,6 +140,8 @@ python3 colony/run_demo.py \
 Dynamic V3 WaaS/MPC wallets do not return raw private keys. The wallet store records the public
 address plus Dynamic metadata such as the identifier, user id, and credential id. Signing Arc
 transactions from those wallets should go through Dynamic's WaaS/SDK path.
+The Dynamic wallet creator retries transient HTTP 5xx and transport failures, then reuses the same
+gitignored wallet store so large runs can resume instead of starting from zero.
 
 ENS defaults come from `colony/.env`:
 
@@ -251,6 +257,8 @@ This creates/reuses Dynamic V3 wallets, writes the ENS identity JSON, and publis
 subname resolver records on Sepolia. If an RPC returns `nonce too low` during broadcast, rerun
 the same command or rerun `register_ens_identities.py` with the remaining `--agent-id` values;
 the publisher is idempotent for already-created subnames and will continue by writing records.
+The publisher reads the `pending` nonce before each transaction and retries nonce-low sends, which
+makes long ENSv2 batches more robust on public Sepolia RPCs.
 The 7-agent smoke test was verified by reading back all resolver `addr` records on Sepolia.
 
 To mark a deployment inactive before retesting, run the cleanup in dry-run mode:
@@ -722,6 +730,11 @@ The structured DeepSeek scouts use `COLONY_DEEPSEEK_API_KEY`,
 can reuse the OpenRouter/LLM settings above.
 
 The OpenRouter endpoint is OpenAI-compatible, so the harness sends `POST /chat/completions` with `Authorization: Bearer <key>`.
+
+`--voice-mode llm` currently applies to room representatives and the final synthesis. For a
+200-agent run with 12 room slots, expect roughly 15 room LLM messages plus one final synthesis,
+while all 200 ants still forecast, publish prediction cards, and receive wallet-linked
+commitments. Generating all 200 prediction cards through an LLM would be a separate expensive mode.
 
 MiniMax is still supported via `COLONY_LLM_PROVIDER=minimax`.
 

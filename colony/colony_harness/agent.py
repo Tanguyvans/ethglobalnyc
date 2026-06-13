@@ -47,6 +47,7 @@ def _sanitize_public_numbers(text: str) -> str:
     cleaned = re.sub(r"\b(\d+(?:\.\d+)?)%\s+confiden(?:ce|t)\b", confidence_percent, text, flags=re.IGNORECASE)
     cleaned = re.sub(r"\bconfidence\s+(?:is\s+)?(?:only\s+)?(\d?\.\d+)\b", confidence_decimal, cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\b(\d?\.\d+)\s+confiden(?:ce|t)\b", confidence_decimal, cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b0\.\d+\b", "a qualitative signal", cleaned)
     cleaned = re.sub(r"\b(\d+(?:\.\d+)?)%\b", "a numeric signal", cleaned)
     return cleaned
 
