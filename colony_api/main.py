@@ -191,6 +191,10 @@ class AntKillRequest(BaseModel):
     reason: str = "manual"
 
 
+class AntAvatarRequest(BaseModel):
+    variant: str | None = None
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -2106,6 +2110,48 @@ def reproduce_ant(request: AntReproduceRequest) -> dict:
         "wallet_store": wallet_store,
         "ens_parent": _ens_parent(),
         "source": str(CHILD_ANTS_PATH),
+    }
+
+
+@app.post("/ants/{agent_id}/avatar/random")
+def randomize_ant_avatar(agent_id: str, request: AntAvatarRequest | None = None) -> dict:
+    ant = _find_parent_ant(agent_id)
+    requested = (request.variant if request else None) or ""
+    variant = requested.strip() if requested else random.choice(AVATAR_VARIANTS)
+    if variant not in AVATAR_VARIANTS:
+        raise HTTPException(status_code=400, detail=f"Unknown avatar variant: {variant}")
+    _avatar_asset_path(variant)
+    agent_id = str(ant.get("agent_id") or agent_id)
+    state = _read_ant_state()
+    agent_state = dict(state.get(agent_id) or {})
+    agent_state.update(
+        {
+            "avatar": _avatar_url(agent_id),
+            "avatar_trait": variant,
+            "avatar_updated_at": _utc_now(),
+        }
+    )
+    state[agent_id] = agent_state
+    _write_ant_state(state)
+    children = _read_child_ants()
+    changed = False
+    for child in children:
+        if str(child.get("agent_id") or "") == agent_id:
+            child.update(agent_state)
+            if isinstance(child.get("ens_text_records"), dict):
+                child["ens_text_records"]["avatar"] = agent_state["avatar"]
+                child["ens_text_records"]["com.colony.avatar"] = agent_state["avatar"]
+                child["ens_text_records"]["com.colony.avatar_trait"] = variant
+            changed = True
+            break
+    if changed:
+        _write_child_ants(children)
+    ant.update(agent_state)
+    return {
+        "status": "avatar_updated",
+        "ant": ant,
+        "variant": variant,
+        "source": str(ANT_STATE_PATH),
     }
 
 
