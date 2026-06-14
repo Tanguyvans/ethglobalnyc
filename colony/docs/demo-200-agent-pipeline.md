@@ -45,7 +45,7 @@ python3 colony/run_demo.py \
   --debug
 ```
 
-The latest clean demo run is:
+The latest Dynamic-wallet LLM demo run is:
 
 ```text
 colony/runs/20260613_183244_round_world_cup_demo_001
@@ -62,7 +62,7 @@ Room claims: 15
 Final claims: 1
 Social actions: 361
 Prediction cards: 200
-Technical passes: 0
+Participation: 200/200
 ```
 
 Prediction result:
@@ -75,6 +75,36 @@ Collective decision: draw
 Score call: France 1-1 Senegal
 Confidence: medium
 ```
+
+## Current KG France/Senegal Sanity Run
+
+After the economy-layer correction, `pass` is no longer a valid ant side. Each ant must choose
+`home`, `draw`, or `away`; unresolved settlement is represented separately as `pending`.
+
+Latest deterministic KG run:
+
+```text
+colony/runs/20260614_002031_roundworld_cup_20260492026_06_16_france_senegal
+```
+
+Distribution:
+
+```text
+Opinion:
+France / home: 19
+Draw: 95
+Senegal / away: 86
+
+Bets:
+France / home: 19
+Draw: 112
+Senegal / away: 69
+Participation: 200/200
+```
+
+This run validates the end-to-end process and the no-pass invariant. It should not be presented as
+a calibrated football forecast yet: the synthetic KG priors are intentionally contested and now
+need tuning toward a realistic France-favored baseline before the prediction quality is meaningful.
 
 Social action result:
 

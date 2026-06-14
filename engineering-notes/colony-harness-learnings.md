@@ -37,8 +37,9 @@ Python 3, **core uses only the standard library — runs with no API keys.** Opt
   `edge_threshold` (0.01–0.18), `source_weights {stats,odds,news,debate}`, `herd_bias` (−1..+1),
   `query_budget` (0.1–2.0), persona. Only `genome_hash` is public; plaintext revealed on death.
 - **agent.py** — `AntAgent`: baseline probability = weighted blend of visible signals + debate ×
-  market; `listen()` adjusts by consensus × herd_bias; `forecast()` = edge vs threshold →
-  bet/pass; `commit_bet()` = sha256(agent_id | round_id | side | stake | salt).
+  market; `listen()` adjusts by consensus × herd_bias; `forecast()` always chooses one market
+  outcome (`home`, `draw`, or `away`) and records conviction/edge; `commit_bet()` =
+  sha256(agent_id | round_id | side | stake | salt).
 - **knowledge.py** — access policy by `query_budget`: `<0.75 public | 0.75–1.5 shared | ≥1.5
   private`. **This is the seam for future x402 payment / Worldcoin privilege gating.**
 - **scouts.py** — mock findings for offline testing. **live_scouts.py** — real lightweight
@@ -57,14 +58,44 @@ Python 3, **core uses only the standard library — runs with no API keys.** Opt
 the streaming event family **the frontend consumes**. (`--debug` adds `debug.md`.)
 
 ## State of completeness
-**Complete:** predictor loop (genomes, edge/threshold bet-or-pass), two-layer debate, KG assembly
-+ access-tier filtering, tournament KG builder, compact logging, template + LLM voice, public-data
-scouts, sealed bet commitments.
-**Stubbed / planned (NOT in this first harness):** settlement + bankroll updates (commitments
-exist; reveal/settle missing), reproduction/death/mutation across epochs, multi-round persistence,
-x402-gated ClickHouse purchases (currently a local deterministic stub), Worldcoin/ENS/Arc planes,
+**Complete:** predictor loop (genomes, edge/threshold conviction, mandatory three-way choice for
+group-stage markets), two-layer debate, KG assembly + access-tier filtering, tournament KG builder,
+compact logging, template + LLM voice, public-data scouts, internal settlement accounting, sealed
+bet commitments, and the Arc/x402 smoke paths.
+**Stubbed / planned:** reproduction/death/mutation across epochs, multi-round persistence,
+automatic x402-gated ClickHouse purchases in the harness loop, Dynamic MPC buyer-side x402 signing,
 real odds API, real match oracle/UMA, **and the replay clock + strict timestamp gating** (the
 lookahead-leak guard the plan calls the cardinal rule) — not built here yet.
+
+## 2026-06-14 France/Senegal correction
+
+The economy-layer bug was that `pass` leaked into the ant side model. That made weak-edge ants
+look like they abstained, which broke the project rule that each ant must make its own choice.
+`Side` is now only `home | draw | away`; unresolved match settlement uses a separate `pending`
+result state.
+
+Latest deterministic KG run:
+
+```text
+colony/runs/20260614_002031_roundworld_cup_20260492026_06_16_france_senegal
+
+Opinion distribution:
+France/home: 19
+Draw: 95
+Senegal/away: 86
+
+Bet distribution:
+France/home: 19
+Draw: 112
+Senegal/away: 69
+Participation: 200/200
+```
+
+This is healthy as a pipeline/debug distribution because it proves the 200 ants no longer collapse
+to one side and no longer emit `pass`. It is not yet calibrated as a serious football model:
+France probably should not be only 9.5% in a real prior against Senegal. The next calibration task
+is to tune synthetic/live priors toward a more realistic France-favored baseline, then let debate
+and paid data move the distribution.
 
 ## Design notes to remember
 - **Genomes, not LLMs, are the substrate** — keeps evolution chartable (a trait sweeps because it

@@ -176,7 +176,7 @@ class ColonyHarness:
         home_bets = sum(1 for forecast in forecasts if forecast.side == "home")
         draw_bets = sum(1 for forecast in forecasts if forecast.side == "draw")
         away_bets = sum(1 for forecast in forecasts if forecast.side == "away")
-        passes = sum(1 for forecast in forecasts if forecast.side == "pass")
+        prediction_sides = Counter(_prediction_side(forecast.home_probability) for forecast in forecasts)
         total_staked = round(sum(forecast.stake for forecast in forecasts), 4)
         risk_profiles = Counter(forecast.risk_profile for forecast in forecasts)
 
@@ -214,7 +214,9 @@ class ColonyHarness:
             "home_bets": home_bets,
             "draw_bets": draw_bets,
             "away_bets": away_bets,
-            "passes": passes,
+            "prediction_home": prediction_sides.get("home", 0),
+            "prediction_draw": prediction_sides.get("draw", 0),
+            "prediction_away": prediction_sides.get("away", 0),
             "participating_bets": home_bets + draw_bets + away_bets,
             "risk_profiles": dict(risk_profiles),
             "total_staked": total_staked,
@@ -802,7 +804,7 @@ def _direction_for_probability(probability: float, market_probability: float) ->
         return "home"
     if edge <= -0.01:
         return "away"
-    return "pass"
+    return "draw"
 
 
 def _room_probability_range(rooms: list[DebateRoom]) -> str:
@@ -1113,3 +1115,9 @@ def _lean_label(value: float | None) -> str:
     if value <= 0.485:
         return "leaning away"
     return "contested"
+
+
+def _prediction_side(home_probability: float) -> str:
+    if abs(home_probability - 0.5) < 0.006:
+        return "draw"
+    return "home" if home_probability > 0.5 else "away"

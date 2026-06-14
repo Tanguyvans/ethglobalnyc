@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Literal
 
-Side = Literal["home", "draw", "away", "pass"]
+Side = Literal["home", "draw", "away"]
+ResultSide = Literal["home", "draw", "away", "pending"]
 AccessLevel = Literal["public", "shared", "private"]
 AccessTier = Literal["public", "shared", "private"]
 MarketType = Literal["three_way", "binary_qualification"]
@@ -206,7 +207,7 @@ class MarketSpec:
     round_id: str
     market_type: MarketType
     outcomes: list[str]
-    result_side: Side = "pass"
+    result_side: ResultSide = "pending"
     settlement_status: str = "pending"
 
     def to_dict(self) -> dict:
@@ -250,7 +251,7 @@ class InternalStake:
     amount: float
     confidence: float
     status: str = "pending"
-    result_side: Side = "pass"
+    result_side: ResultSide = "pending"
 
     def to_dict(self) -> dict:
         return asdict(self)

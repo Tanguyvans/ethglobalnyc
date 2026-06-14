@@ -296,7 +296,6 @@ def main() -> None:
         f"draw={result.summary.get('draw_bets', 0)} "
         f"away={result.summary['away_bets']} "
         f"participation={result.summary.get('participating_bets', 0)}/{result.summary['population']} "
-        f"technical_pass={result.summary['passes']} "
         f"total_staked={result.summary['total_staked']}"
     )
     decision = result.collective_decision

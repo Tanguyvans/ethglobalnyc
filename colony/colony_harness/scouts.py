@@ -81,14 +81,19 @@ def mock_match_context_from_tournament_match(match_entity: dict) -> MatchContext
 
 
 def synthetic_probabilities(home_team: str, away_team: str) -> tuple[float, float, float, float]:
-    """Derive deterministic mock market/stats/odds/news probabilities from team ratings."""
+    """Derive deterministic mock probabilities with enough disagreement for debate.
+
+    This is a local harness input, not a real market model. Keep scouts clustered
+    around 50% so genome source weights can produce home, draw, and away reads
+    instead of collapsing every agent onto the stronger team.
+    """
     home_strength = _team_strength(home_team)
     away_strength = _team_strength(away_team)
     edge = (home_strength - away_strength) * 0.42
-    market = _clamp(0.5 + edge * 0.9)
-    stats = _clamp(0.5 + edge * 1.12)
-    odds = _clamp((market * 0.75) + (0.5 * 0.25))
-    news = _clamp(0.5 + edge * 0.72)
+    market = _clamp(0.5 - edge * 0.55)
+    stats = _clamp(0.5 + edge * 0.92)
+    odds = _clamp(0.5 - edge * 0.37)
+    news = _clamp(0.5 + edge * 0.18)
     return tuple(round(value, 4) for value in (market, stats, odds, news))  # type: ignore[return-value]
 
 
