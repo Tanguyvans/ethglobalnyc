@@ -11,7 +11,7 @@ DN.databridge = (function () {
   const B = { ready: false, source: '/data/demo.jsonl', apiUrl, runId: null };
   let thoughts = [];
   let ti = 0;
-  let records = [], forecasts = [], summary = null;
+  let records = [], forecasts = [], rooms = [], summary = null;
   let runEvents = [];
   const COL = { debate: '#8E79C4', forecast: '#3FA89F', economy: '#E8A23D', lineage: '#D96E54' };
 
@@ -21,8 +21,13 @@ DN.databridge = (function () {
   function build(events) {
     records = events.filter((e) => e.event_type === 'agent_record');
     forecasts = events.filter((e) => e.event_type === 'forecast');
+    rooms = events.filter((e) => e.event_type === 'debate_room');
     const debates = events.filter((e) => e.event_type === 'debate_claim');
     summary = events.find((e) => e.event_type === 'round_summary') || null;
+    B.agents = records;
+    B.forecasts = forecasts;
+    B.rooms = rooms;
+    B.summary = summary;
 
     const q = [];
     if (summary) {
@@ -44,7 +49,8 @@ DN.databridge = (function () {
       .sort((a, b) => b.stake - a.stake)
       .slice(0, 8)
       .forEach((f) => {
-        const nm = (f.agent_id || 'agent').replace('_', '-');
+        const agent = records.find((r) => r.agent_id === f.agent_id);
+        const nm = (agent && (agent.ens_name || agent.name)) || (f.agent_id || 'agent').replace('_', '-');
         q.push([
           nm + ' commits ' + r1(f.stake) + ' USDC ' + f.side + ' @ ' +
             Math.round(f.home_probability * 100) + '% (edge ' + r1(f.edge) + ')',
@@ -55,10 +61,16 @@ DN.databridge = (function () {
     const top = records.slice().sort((a, b) => b.bankroll - a.bankroll)[0];
     if (top) {
       q.push([
-        (top.name || top.agent_id) + ' leads the gene pool — ' +
+        (top.ens_name || top.name || top.agent_id) + ' leads the gene pool — ' +
           Math.round(top.accuracy * 100) + '% accuracy, ' + r1(top.bankroll) + ' USDC bankroll.',
         'Lineage', COL.lineage,
       ]);
+      if (top.wallet_address) {
+        q.push([
+          (top.ens_name || top.agent_id) + ' resolves to wallet ' + top.wallet_address.slice(0, 6) + '...' + top.wallet_address.slice(-4) + '.',
+          'Identity', COL.lineage,
+        ]);
+      }
     }
     if (q.length) thoughts = q;
     B.ready = thoughts.length > 0;
@@ -94,6 +106,12 @@ DN.databridge = (function () {
     ti++;
     return t;
   };
+
+  B.getAgents = function () { return records.slice(); };
+  B.getRooms = function () { return rooms.slice(); };
+  B.getForecasts = function () { return forecasts.slice(); };
+  B.getSummary = function () { return summary; };
+  B.getAgent = function (agentId) { return records.find((r) => r.agent_id === agentId) || null; };
 
   function parseJsonl(txt) {
     return txt
@@ -144,7 +162,13 @@ DN.databridge = (function () {
 
   B.startDemoRun = function (opts) {
     if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
-    const body = Object.assign({ agents: 20, rooms: 4, seed: Math.floor(Math.random() * 10000), voice_mode: 'llm' }, opts || {});
+    const body = Object.assign(
+      { agents: 20, rooms: 4, seed: Math.floor(Math.random() * 10000), voice_mode: 'llm' },
+      cfg.RUN || {},
+      opts || {},
+    );
+    if (!body.agent_wallets) delete body.wallet_provider;
+    if (!body.agent_wallets) delete body.wallet_store;
     runEvents = [];
     B.ready = false;
     return fetch(apiUrl + '/runs/demo', {

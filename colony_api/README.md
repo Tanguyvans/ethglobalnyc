@@ -27,6 +27,40 @@ Expected shape:
 }
 ```
 
+## API Config
+
+The frontend can inspect the backend contract with `GET /config`.
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/config
+```
+
+Important fields:
+
+```json
+{
+  "defaults": {
+    "agents": 200,
+    "rooms": 12,
+    "seed": 205,
+    "voice_mode": "llm",
+    "agent_wallets": true,
+    "wallet_provider": "dynamic",
+    "wallet_store": "colony/data/agent-wallets.dynamic.200.public.json"
+  },
+  "identity_fields": [
+    "agent_id",
+    "name",
+    "ens_name",
+    "wallet_address",
+    "world_status",
+    "world_access_tier",
+    "genome_id",
+    "lineage_id"
+  ]
+}
+```
+
 ## Start A Demo Run
 
 The frontend can create a run with `POST /runs/demo`.
@@ -34,7 +68,7 @@ The frontend can create a run with `POST /runs/demo`.
 ```bash
 curl -X POST https://ethglobalnyc-production.up.railway.app/runs/demo \
   -H "Content-Type: application/json" \
-  -d '{"agents":20,"rooms":4,"seed":42,"voice_mode":"llm"}'
+  -d '{"agents":200,"rooms":12,"seed":205,"voice_mode":"llm","agent_wallets":true,"wallet_provider":"dynamic","wallet_store":"colony/data/agent-wallets.dynamic.200.public.json"}'
 ```
 
 Response:
@@ -50,6 +84,17 @@ Response:
 Use `voice_mode: "llm"` for the deployed frontend interaction. Use
 `voice_mode: "template"` only for cheap smoke tests or when OpenRouter/DeepSeek
 variables are not configured in Railway.
+
+The committed wallet store is sanitized:
+
+```text
+colony/data/agent-wallets.dynamic.200.public.json
+```
+
+It contains the 200 already-published Dynamic/ENS public addresses, but no raw
+private keys and no Dynamic user metadata. It lets Railway reuse the same
+`ant_0000` ... `ant_0199` wallet addresses and ENS names instead of minting new
+wallets during a frontend demo click.
 
 ## Poll Run Status
 
@@ -98,6 +143,44 @@ The current first integration streams transport/status immediately. Most domain
 events arrive when `run_demo.py` writes `events.jsonl` at the end of the harness
 run. A later harness refactor can emit room/forecast events during `run_round()`.
 
+## Agents And Rooms
+
+The frontend can fetch ant identity and debate-room structure directly without
+parsing raw JSONL.
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/agents
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/rooms
+```
+
+`GET /runs/{run_id}/agents` returns every `agent_record`, including ENS and
+wallet identity fields:
+
+```json
+{
+  "run_id": "run_...",
+  "count": 200,
+  "agents": [
+    {
+      "agent_id": "ant_0000",
+      "name": "ant-0000",
+      "ens_name": "root-fable-0.colonny.eth",
+      "wallet_address": "0x3fB467e269e4C0BfdeAA99086f7854d3590A078D",
+      "genome_id": "genome_...",
+      "world_status": "unverified",
+      "world_access_tier": "standard",
+      "latest_forecast": {
+        "side": "draw",
+        "stake": 2.4
+      }
+    }
+  ]
+}
+```
+
+`GET /runs/{run_id}/rooms` returns each `debate_room`, including participants,
+representatives, stance, evidence focus, synthesis, and claims.
+
 ## Frontend Interaction
 
 The deployed frontend reads the backend URL from:
@@ -109,6 +192,15 @@ frontend/public/config.js
 ```js
 window.DN_CONFIG = window.DN_CONFIG || {
   API_URL: 'https://ethglobalnyc-production.up.railway.app',
+  RUN: {
+    agents: 200,
+    rooms: 12,
+    seed: 205,
+    voice_mode: 'llm',
+    agent_wallets: true,
+    wallet_provider: 'dynamic',
+    wallet_store: 'colony/data/agent-wallets.dynamic.200.public.json',
+  },
 }
 ```
 
@@ -136,9 +228,13 @@ async function startRun() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      agents: 20,
-      rooms: 4,
+      agents: 200,
+      rooms: 12,
+      seed: 205,
       voice_mode: 'llm',
+      agent_wallets: true,
+      wallet_provider: 'dynamic',
+      wallet_store: 'colony/data/agent-wallets.dynamic.200.public.json',
     }),
   })
   const run = await response.json()
@@ -153,7 +249,18 @@ Required for the API:
 ```env
 COLONY_API_RUNS_DIR=/data/runs
 COLONY_API_CORS_ORIGINS=*
+COLONY_API_DEFAULT_AGENTS=200
+COLONY_API_DEFAULT_ROOMS=12
+COLONY_API_DEFAULT_SEED=205
+COLONY_API_DEFAULT_VOICE_MODE=llm
+COLONY_API_DEFAULT_AGENT_WALLETS=true
+COLONY_API_DEFAULT_WALLET_PROVIDER=dynamic
+COLONY_API_DEFAULT_WALLET_STORE=colony/data/agent-wallets.dynamic.200.public.json
 ```
+
+The sanitized wallet store already contains `ant_0000` through `ant_0199`, so
+those defaults reuse the existing Dynamic wallet addresses and deterministic ENS
+names. Dynamic API variables are only needed when creating additional wallets.
 
 Required for LLM mode:
 

@@ -30,13 +30,14 @@ RUN_DEMO = REPO_ROOT / "colony" / "run_demo.py"
 
 
 class DemoRunRequest(BaseModel):
-    agents: int = Field(default=40, ge=1, le=500)
-    rooms: int = Field(default=6, ge=1, le=50)
-    seed: int | None = Field(default=None, ge=0)
-    voice_mode: Literal["template", "llm"] = "template"
+    agents: int = Field(default=200, ge=1, le=500)
+    rooms: int = Field(default=12, ge=1, le=50)
+    seed: int | None = Field(default=205, ge=0)
+    voice_mode: Literal["template", "llm"] = "llm"
     debug: bool = False
-    agent_wallets: bool = False
-    wallet_provider: Literal["local", "dynamic"] | None = None
+    agent_wallets: bool = True
+    wallet_provider: Literal["local", "dynamic"] | None = "dynamic"
+    wallet_store: str | None = "colony/data/agent-wallets.dynamic.200.public.json"
 
 
 class RunRecord(BaseModel):
@@ -97,6 +98,35 @@ def _latest_compact_dir(run_id: str) -> Path | None:
     return sorted(children)[-1]
 
 
+def _read_events(run_id: str) -> list[dict]:
+    path = _safe_artifact_path(run_id, "events.jsonl")
+    events: list[dict] = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return events
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+
+
 def _build_command(request: DemoRunRequest, run_dir: Path) -> list[str]:
     command = [
         sys.executable,
@@ -120,6 +150,8 @@ def _build_command(request: DemoRunRequest, run_dir: Path) -> list[str]:
         command.append("--agent-wallets")
         if request.wallet_provider:
             command.extend(["--wallet-provider", request.wallet_provider])
+        if request.wallet_store:
+            command.extend(["--wallet-store", request.wallet_store])
     return command
 
 
@@ -178,6 +210,56 @@ def health() -> dict:
         "service": "colony-api",
         "runs_root": str(RUNS_ROOT),
         "run_demo_exists": RUN_DEMO.exists(),
+    }
+
+
+@app.get("/config")
+def get_config() -> dict:
+    wallet_provider = os.environ.get("COLONY_API_DEFAULT_WALLET_PROVIDER") or os.environ.get(
+        "COLONY_WALLET_PROVIDER",
+        "dynamic",
+    )
+    return {
+        "service": "colony-api",
+        "endpoints": {
+            "health": "/health",
+            "config": "/config",
+            "start_demo_run": "/runs/demo",
+            "list_runs": "/runs",
+            "run": "/runs/{run_id}",
+            "events": "/runs/{run_id}/events",
+            "stream": "/runs/{run_id}/stream",
+            "agents": "/runs/{run_id}/agents",
+            "rooms": "/runs/{run_id}/rooms",
+        },
+        "defaults": {
+            "agents": _env_int("COLONY_API_DEFAULT_AGENTS", 200),
+            "rooms": _env_int("COLONY_API_DEFAULT_ROOMS", 12),
+            "seed": _env_int("COLONY_API_DEFAULT_SEED", 205),
+            "voice_mode": os.environ.get("COLONY_API_DEFAULT_VOICE_MODE", "llm"),
+            "agent_wallets": _env_bool("COLONY_API_DEFAULT_AGENT_WALLETS", True),
+            "wallet_provider": wallet_provider,
+            "wallet_store": os.environ.get(
+                "COLONY_API_DEFAULT_WALLET_STORE",
+                "colony/data/agent-wallets.dynamic.200.public.json",
+            ),
+        },
+        "limits": {
+            "agents": {"min": 1, "max": 500},
+            "rooms": {"min": 1, "max": 50},
+            "voice_modes": ["template", "llm"],
+            "wallet_providers": ["local", "dynamic"],
+        },
+        "identity_fields": [
+            "agent_id",
+            "name",
+            "ens_name",
+            "wallet_address",
+            "world_status",
+            "world_access_tier",
+            "genome_id",
+            "lineage_id",
+        ],
     }
 
 
@@ -248,6 +330,47 @@ def get_run(run_id: str) -> dict:
 def get_events(run_id: str) -> PlainTextResponse:
     path = _safe_artifact_path(run_id, "events.jsonl")
     return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="application/x-ndjson")
+
+
+@app.get("/runs/{run_id}/agents")
+def get_run_agents(run_id: str) -> dict:
+    metadata = _read_metadata(run_id)
+    events = _read_events(run_id)
+    agents = [event for event in events if event.get("event_type") == "agent_record"]
+    forecasts_by_agent = {
+        event.get("agent_id"): event
+        for event in events
+        if event.get("event_type") == "forecast" and event.get("agent_id")
+    }
+    for agent in agents:
+        forecast = forecasts_by_agent.get(agent.get("agent_id"))
+        if forecast:
+            agent["latest_forecast"] = {
+                "side": forecast.get("side"),
+                "stake": forecast.get("stake"),
+                "home_probability": forecast.get("home_probability"),
+                "edge": forecast.get("edge"),
+                "prediction": forecast.get("prediction"),
+            }
+    return {
+        "run_id": run_id,
+        "status": metadata["status"],
+        "count": len(agents),
+        "agents": agents,
+    }
+
+
+@app.get("/runs/{run_id}/rooms")
+def get_run_rooms(run_id: str) -> dict:
+    metadata = _read_metadata(run_id)
+    events = _read_events(run_id)
+    rooms = [event for event in events if event.get("event_type") == "debate_room"]
+    return {
+        "run_id": run_id,
+        "status": metadata["status"],
+        "count": len(rooms),
+        "rooms": rooms,
+    }
 
 
 @app.get("/runs/{run_id}/stream")

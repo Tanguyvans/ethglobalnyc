@@ -1,0 +1,3608 @@
+{
+  "provider": "dynamic",
+  "schema_version": 1,
+  "source_identity_json": "colony/runs/identity_200_dynamic_communicating_clean_seed205.json",
+  "wallets": {
+    "ant_0000": {
+      "address": "0x3fB467e269e4C0BfdeAA99086f7854d3590A078D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0001": {
+      "address": "0x9a10bc9D0E4C7287DF66796049039dbc3fb9B6fb",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0002": {
+      "address": "0x9994F4b6780B68a6ca1306fCe9D63b2042606A2c",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0003": {
+      "address": "0x81FeBa51425d0F0A1059D0428A0986acF88D286B",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0004": {
+      "address": "0x8F36b2A615F97E3A8e03c3090ab5A272555905D0",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0005": {
+      "address": "0x0deD95a0d7533b1536970db0Cc3ee1d5772CbEb3",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0006": {
+      "address": "0xa3Addf63f47634c04Ece77061874c3C33129D1B9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0007": {
+      "address": "0x9Dc33802Cac7A4f7C44CE63fD1EF13e2B3701B60",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0008": {
+      "address": "0xC6C676e09838Dc9620d1a5C256811250A788C801",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0009": {
+      "address": "0x8D5b36F77B5CFEdd524cA899990D61803F7802F3",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0010": {
+      "address": "0x8A0515c36B29D1B8E3DeE4F1053d9fb9c52f826C",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0011": {
+      "address": "0xD5aa3e6d2ADA0079c828Bdef3eBaEb17567f2F16",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0012": {
+      "address": "0xdAC0A89324AB7060c70288e273B132Bd110906A5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0013": {
+      "address": "0x6B8617F04118Ec91c690D7Df3ad51D69f4475d76",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0014": {
+      "address": "0x0235c47A10B7590f02B1a0730341028F15cB3C90",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0015": {
+      "address": "0x1a5F598efd99EFed5B0437A04BD93431Ed2ed308",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0016": {
+      "address": "0xf6f1c5342FF6dbB3A29b92767b994f78a8AA0731",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0017": {
+      "address": "0x344a5261Aa0c542b2c915268A2Aaf4c1dCdfb782",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0018": {
+      "address": "0x54d779Bc79bb52b44Dd6386940e457CDB32398Ab",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0019": {
+      "address": "0x50fd753C1503c4Af78fC9dA87015855b8D0e4cd5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0020": {
+      "address": "0xDF2E5075eFFAAcEAE6bdD16484c76362978795B3",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0021": {
+      "address": "0xDCdA318696d93fF525D07DF3dd748Dded147FD40",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0022": {
+      "address": "0xB88bD70B5BC7710D9892C243592a492e94382643",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0023": {
+      "address": "0x4C182905E09058E3a9652e4c24D3dEc9f2BA52bd",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0024": {
+      "address": "0xa4737E82FBF169749d3a72e44377e3F8347100A5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0025": {
+      "address": "0x60E4E5BCF803922ce9E60349c17bDc73f33203fe",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0026": {
+      "address": "0x7d493834d13046d7Fbe6cD599cc103e87c53750C",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0027": {
+      "address": "0x3C7Cd54BD511Ce8F09fa9123E87F64F2b0568264",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0028": {
+      "address": "0xe71dC0392047DCA2Ff0821043FA4fe9a4E12c72D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0029": {
+      "address": "0xB896c4c748Dbc1fd0Bea0F15303e2dD12BcB3233",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0030": {
+      "address": "0xBc3CdB306F5598ECF1e91293303d10C03C0dC785",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0031": {
+      "address": "0x5C5B8364b8E20A3DB0c7c16A9099D24756146182",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0032": {
+      "address": "0x75db6A7Ba85b61eD5C9f5d80c4CeAB71bbe0b7b2",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0033": {
+      "address": "0x02189C3EC27A1Cd125D9b5c6B2C5d356d9C639e9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0034": {
+      "address": "0x0482a7f3e4eC96a9662D5D35E9Fc4613C1253657",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0035": {
+      "address": "0xbd5F7263062627fbbb0dda257b636CbEcAc15159",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0036": {
+      "address": "0x12Aae985eB9bA28EE7e4Aa864596E7A6A4F2a8e7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0037": {
+      "address": "0x8330907F9BaCc5F2d665E0d024901f71fcE72903",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0038": {
+      "address": "0x320006a350bA2b31849D65f5F4dcC77477F88C49",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0039": {
+      "address": "0x7474dEB57D3D4BDC4C1886134f53FC4A69767688",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0040": {
+      "address": "0x7d67ca786946de52D674ff53cb6084260247F066",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0041": {
+      "address": "0x6f3F8498c33Fe396ae2e0491b0dF6054463Bc778",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0042": {
+      "address": "0xF1A3D804DE050368d911432bE7d4fB45F521A16d",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0043": {
+      "address": "0x8a9302DBB589B3811AA315AEc96a92e3dfD98F0a",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0044": {
+      "address": "0xACb50ACcd7f929e0D48aC2dA6E94Fa44B68B3A82",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0045": {
+      "address": "0xa44406eAD18ea6760511C3246fCab0B3A2DD867D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0046": {
+      "address": "0x52d84770C8D94791B6042D41C41f23e90Ab87e58",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0047": {
+      "address": "0x33aFE4aACd24Ac1a00d1DE3C1C971A32c4d7eCA7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0048": {
+      "address": "0x6Cba0cFA61C6669A7bF4977b8bFDBCF1490c90FD",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0049": {
+      "address": "0x264093141698D9dF35ef9414d9BdC2395584226c",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0050": {
+      "address": "0x0885ca170a81DFCaC0ce56E1A8091455C67d81f5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0051": {
+      "address": "0x89B9B401BD92069759cB2C739D45CABF4759fBC9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0052": {
+      "address": "0x2F9B0676D4692dB15576114bB9487A693a7254c9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0053": {
+      "address": "0x12f2885e8b35516a7dC5781490dA7A371a7b4FbC",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0054": {
+      "address": "0xBB0bdFC344006C0f2654b8D01DF736f4377DC3FA",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0055": {
+      "address": "0x10f2384af0f282d580Df88446B679da2FeE7117C",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0056": {
+      "address": "0xd3a6F2379A257A57E3825d4922aaE57385f4502B",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0057": {
+      "address": "0xdd10F7c398ACeE590Ff54aC2143ff76608869efb",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0058": {
+      "address": "0x957c60da7e500d4135AEDbDf7E98Fd013D91426b",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0059": {
+      "address": "0x38621325cc67C25Fb7F858209b5881C3BC4C4F5E",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0060": {
+      "address": "0xFC38B7ebaF0295705D8fe1898De7C4484AD2D905",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0061": {
+      "address": "0x186D66c50159f449eA8D03335627E1761CC5cE19",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0062": {
+      "address": "0xFFd96F552960fEC5a1EC69ddB63cc99D60303be5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0063": {
+      "address": "0x7E1F15311657E6fFef5A4B93A5Be1eB091861301",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0064": {
+      "address": "0xba28387DE664b612691845459046Bfd341100E2E",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0065": {
+      "address": "0xF69095a285F81D226920cB21dda54D4c92e09528",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0066": {
+      "address": "0x24c1a1ec4effE0bC578687635548D63A437384ab",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0067": {
+      "address": "0x421ECA8d915087f0829c22939e69BF557771D790",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0068": {
+      "address": "0x97B31451e90Fe83cC5a84C397964fD0899339BC9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0069": {
+      "address": "0x9B04f4d8A30C3f8666a2aA00C256d2b0b4830Ec9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0070": {
+      "address": "0xF6A3e5fa98aaF708c704c5981CD73c01aEE3B75E",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0071": {
+      "address": "0x4deFFD337b8928B7E90bec62C727922a400DF34D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0072": {
+      "address": "0xA1529efA69C7162473a1dCE04C73FFf74B438622",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0073": {
+      "address": "0xCc5682B3761d6f4bB4f03b970201C26F68a3626e",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0074": {
+      "address": "0xF89B61AD9fD49c764f7E4D49b19cC5a977083e8b",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0075": {
+      "address": "0xb93046f958a06e3d1A7D288E2f0F2d99a75Bbec4",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0076": {
+      "address": "0xBEdCC50445Ebe51C25DE7080f73bCd5e8E33Edf6",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0077": {
+      "address": "0x3Af99DC72D1C5d13A72E2C4eD992382938aea48E",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0078": {
+      "address": "0x77ee9916336e6FA8834eBDC4A41356e6b2f44686",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0079": {
+      "address": "0x4038C815584744c12d2e60554DC9Dae5ec3a9334",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0080": {
+      "address": "0x6f2827598c4cabfa92a6F00FC1ee1B713bc9BcA9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0081": {
+      "address": "0x664eb83bb63AD93208abb837E73EDc8E4faA409a",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0082": {
+      "address": "0x8B9A0f99A575946455c6AA0e36DAaD4281Ce4c3A",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0083": {
+      "address": "0xab874F8caf4186bf03e505CFEF32240025CdEa43",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0084": {
+      "address": "0x1612B1FB9d301aF499FC352705495A85299330fA",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0085": {
+      "address": "0x67E94e14beEa1b50531C73db59C3134052E1a0e2",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0086": {
+      "address": "0x26dBDBEd54fF93beEa49115093c89925676c7e5d",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0087": {
+      "address": "0x1BAdC02Fc9CEc541AB16f9866314287a9D26a16b",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0088": {
+      "address": "0x447605C9A160159f749AD7F59382cfA1cc12E117",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0089": {
+      "address": "0x3b2ef401aCaDCdb846965E37c1D6c269e4d63FBD",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0090": {
+      "address": "0x4eA41F66c8a95b94de0b9164C16833f4dd86A6Fb",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0091": {
+      "address": "0xD2eEe7B54BF69DB3Bc79a88Df2744921c53A2686",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0092": {
+      "address": "0x544234eCa55aDC1deF33fb689236404FbbDd0104",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0093": {
+      "address": "0x1a49E22Aa6A11ca71bd1D9CCc9DFDd20FA6382a7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0094": {
+      "address": "0xaCfD4D2625344Be44c0E52B054155dEB140ECc34",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0095": {
+      "address": "0xa618Af4e3224718E3B15CBDdb9582bF5Ad8690FC",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0096": {
+      "address": "0xa23f8B13e6e4d4C7c6Be42Adc556B06D0B5da581",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0097": {
+      "address": "0xd7cc57487dd2dF2bc39D710B50551e86e3397C37",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0098": {
+      "address": "0x9DBA783cAdf23D13E16103760738743d786Bc161",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0099": {
+      "address": "0x428ab0660cFfed98bBa097fcfa6Cb4EEB502891A",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0100": {
+      "address": "0x0A8d2FAb74229E15B5BaEBCBE4507a159C47bBD7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0101": {
+      "address": "0x1f2120147fD380d87F0a74a63780fE22e95895b2",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0102": {
+      "address": "0x843D9E708828CE359D53b76B8C7e9076087fD60f",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0103": {
+      "address": "0x9f27aaCb1278E10F8D7ae4b5DF7fe9808BF63B95",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0104": {
+      "address": "0xCC74499c054399377b41e4bA47f0Ff3dCcC2f9Fd",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0105": {
+      "address": "0xe654dcE4299dEa8e28d1C44868d0bf046327F7e0",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0106": {
+      "address": "0x5aF039d34Dc0206751961c4ccdAa56A23aeEd762",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0107": {
+      "address": "0xA8A7A5EC66cD4504430d6d5Ae12CAe42d74Fdc56",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0108": {
+      "address": "0xb59Be813508EFF30006aCCfe2c394cDD1a6159eA",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0109": {
+      "address": "0x0a612A883d9Df8A7814651cf01667e0a0D370662",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0110": {
+      "address": "0xA46D45097d036c04E555CC9c95015A26853f1d0e",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0111": {
+      "address": "0x493ADeDc304cA8789d6fB455E95f40C2Ab157ed0",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0112": {
+      "address": "0xC92E80d3891f0957c58D897b9fBf46ED1229A160",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0113": {
+      "address": "0xeD4E8D07507F901e0F2181FfEd6BEf1a14690c94",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0114": {
+      "address": "0xAd904F49AF94c6643aA63D6c5D55C4e6D4f04Cc5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0115": {
+      "address": "0xd0B0f4900A67CE1A0B088C3E86A12A49504630E1",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0116": {
+      "address": "0x735160488fAA3438354F6c0ADB7cB644689f8C93",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0117": {
+      "address": "0x8De0FE89c822776E09cE7812B233A3B3AF9a97DC",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0118": {
+      "address": "0xE88d6549CD95133Cc22CbAc91Ff562A0461b60Bc",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0119": {
+      "address": "0x60Df73D9df1791b5D2CA257a2741EF7076368e82",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0120": {
+      "address": "0xB7c984EDa7Dd66Eb44502c8E99c169CE0a6A52b2",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0121": {
+      "address": "0x6e232D0c1736eAB23c7a9C5736a2F03431a14a4B",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0122": {
+      "address": "0x72Ee77C277EdB16B5e3032f54F01e5E7a3036d7f",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0123": {
+      "address": "0xDB1041941f895F50e114C157bF860aED01EF2623",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0124": {
+      "address": "0xa4f7B0826b8837Ebb27A3384da3DA927121382C0",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0125": {
+      "address": "0x0F5A83664668bB539EC9d3381F09e741775dDE42",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0126": {
+      "address": "0x356ADD7958B23C1fdE0CF566Da6A1f599499A6D2",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0127": {
+      "address": "0x4e0590313a1fe5dF5E7a3b93168Bf535152ED1fb",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0128": {
+      "address": "0xf2cFbbE19A48b67f7f84D7eB5aC1d0965B001781",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0129": {
+      "address": "0xd2c96282548784360334114e486e309015d3Ebc7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0130": {
+      "address": "0x170E34477cf324cC5B63DA9cA0205e80D0a65E9e",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0131": {
+      "address": "0xCAd1a54dA2a45d0123e589Cc9f199978C4D1a0Dc",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0132": {
+      "address": "0x06890d047e1c8B39dEb093B5b5F41653380e83E5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0133": {
+      "address": "0x7188eEE33F8b8df9f3C5f2021B598A74c26B9Bc7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0134": {
+      "address": "0xb67e86aa30f5ae5593ea168A1FB3dF64458F1ED1",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0135": {
+      "address": "0x24E1Af5daf3faaCbadfa28bbDb3B048EA62426d7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0136": {
+      "address": "0x1aAD1D15881d2C78B9B471AE9723D3eEb813B338",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0137": {
+      "address": "0x9788c4F1C943384e6fF53a2debfEd225cAa13Ccd",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0138": {
+      "address": "0xBd8f809f84bFDC9Be200b6226e9C97921A223216",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0139": {
+      "address": "0x57d398a11CfF09080FD364DC27a64B1dC472e7Dc",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0140": {
+      "address": "0x27026DE0218aA162D7bA867Ba94E05b24C723547",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0141": {
+      "address": "0xB4740B138eE2761999D406F876fF2F2fc9498B08",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0142": {
+      "address": "0xf24e4108281773540AE0c5B20414225F217C7A7c",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0143": {
+      "address": "0x3cD94B819d97cB62fd722DB9531A2A6F090f9a50",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0144": {
+      "address": "0xc5d4B1bB0bF0aa9495a3546429e7B995f34cAA9B",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0145": {
+      "address": "0x74Eb935301B0184B40C12AECe0dCD75889969a4f",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0146": {
+      "address": "0x9F8796bf0EB078dccaaeC579E1fd86454F0842bc",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0147": {
+      "address": "0xa2Fc0aEB8dA2d0BC2A297125737eCA0e67362dBc",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0148": {
+      "address": "0xE7C55bFe9c756F7051d1844215B1439229A1E0c1",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0149": {
+      "address": "0x3baACa1af2f1316c3d7bb35b5c85F41cC6A6f722",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0150": {
+      "address": "0x9dE12fd7FA35eCAbe3E9D3Cf08be9F5273A7528d",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0151": {
+      "address": "0x368B1D5Ed88CE0aD41bd6350258A5036cdd13642",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0152": {
+      "address": "0x6831623fb123874B86B40E203029C1Ba263980d8",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0153": {
+      "address": "0x9D97eB652572cAec30E7d29a84f3630d704fdE60",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0154": {
+      "address": "0x73Aa91917ea65F71adb3CB94a69DC4a59fA820a3",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0155": {
+      "address": "0x855CCf30381Cb58b366C59F9B31162C01db18c8f",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0156": {
+      "address": "0x5a55FD79345f939bd10c323C963df91c7E8b7679",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0157": {
+      "address": "0x05ad99F920c4682D7CC84eADDDa297E1dcAd6F83",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0158": {
+      "address": "0x2c3B99Be75465Df2e35EE7e36FDD7409aAa43F3D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0159": {
+      "address": "0xF482Aa87b4528D442fee8ea5Dd9f87F86cC753A4",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0160": {
+      "address": "0xaC40d9EA1d5D9bbcD6C85B3798dfAc753976d2fc",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0161": {
+      "address": "0xB5819AeA9b2b1d2a1950eA7c68aeB56F7e169316",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0162": {
+      "address": "0x766e4126932294920e984C022c69E441f0A1ad76",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0163": {
+      "address": "0xf130586822C0d6cB0e86646139faE33CDA5118d7",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0164": {
+      "address": "0x9A06915144659A7E188d766478036586B85f246e",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0165": {
+      "address": "0x6a607b1b0f4ceaBc1E5E495206b3712f451dbf01",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0166": {
+      "address": "0x71A1723A2207898404e07F822544A19394C9505b",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0167": {
+      "address": "0x52eCe85744b815bE22C34E9299AA0F73905AAC9D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0168": {
+      "address": "0xefEC164b3C1Aad0a8238a07b6Cc2FE2BCA27A02A",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0169": {
+      "address": "0xBbf2Db38fe062d05eff85F60e03B88Abc5311Aaa",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0170": {
+      "address": "0xF1109978cEE61d86e68Cf447039b4679CF0eC743",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0171": {
+      "address": "0x0C70Cb9d1fC33c82884EF5D6B253F8d09Fc11EA2",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0172": {
+      "address": "0x4c772D08509Ed7C35edc11eE2fA74F1BbC18ba34",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0173": {
+      "address": "0x46b43d3Bcb0107724dF4E017216763806AEbD225",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0174": {
+      "address": "0x21B6a881f15F9d81A1dFcaE40d12573B2490BC79",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0175": {
+      "address": "0x4e00148D303D1491895Eb03C17eBa67a121B2a7A",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0176": {
+      "address": "0xd5A40E8449668881d483661FA6BFeF4349754FAf",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0177": {
+      "address": "0x5bE62a3D4055a5B2efbB1f604549E0dbD81b475D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0178": {
+      "address": "0x322Ca23f8d10F67c740ae6F202651c9019074496",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0179": {
+      "address": "0x6D7cbEfbaa1797e2c77fF4b6A1E3461c8B76c00D",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0180": {
+      "address": "0xf26E1bBB3986687846c730F6CD85E9322d6da9F8",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0181": {
+      "address": "0x093177De5934BA02e699acf1fdc58Fa3c4f5c920",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0182": {
+      "address": "0xE27B7F3167E3636da43EaAF7eA8dd1e41837f716",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0183": {
+      "address": "0xa250cFB40c359E69a3A0B5a2128451731B154dB1",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0184": {
+      "address": "0x3e38eC3FB24b049b43C90DD1D10c49Ecf63045d0",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0185": {
+      "address": "0x6E68d1dab1a5ece1ee4625f31BEaf88a649Dda87",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0186": {
+      "address": "0x9bc124904189eF59a6cC382a243B7476991b43ce",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0187": {
+      "address": "0xc019A1a23C369401d8ADE79e37a80cAF2137DaEf",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0188": {
+      "address": "0xd97a8A1C93a481A99A4488929bfb8d9d6CE292Ed",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0189": {
+      "address": "0xEbCE4bdb183C40e48aAB36b31CBed180a791B17C",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0190": {
+      "address": "0xcC6E1e640Dd469c2AD12433274550e70f2D7E258",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0191": {
+      "address": "0x1184AD875b1EF864F843f384cA0b94436Ec8d089",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0192": {
+      "address": "0x81efC29c18409FbF924949893D5E17433bAb7a0c",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0193": {
+      "address": "0x6a54D3f488d55f2780d0844f5562F6beC192938b",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0194": {
+      "address": "0x6e7e1971934DEe4CAB03F9f949B1B884BcbD7568",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0195": {
+      "address": "0x5f81D01D37f741a9dF15B6964C17cc79c2454e74",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0196": {
+      "address": "0x304DeCb4fb7DB9c84E5CC5a6C63a3a5eaEd809AE",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0197": {
+      "address": "0x1457701164D9D00DC00f7473F57A26CC677014B5",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0198": {
+      "address": "0x5e89742d30B1BFe5d049B515e537358287BD24f9",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    },
+    "ant_0199": {
+      "address": "0x34F32499dCE99f977B039BfD8Ff6eed403435326",
+      "chains": {
+        "arc_testnet": {
+          "chain": "Arc testnet",
+          "chain_id": null,
+          "purpose": "test trades and x402 settlement"
+        },
+        "world_agentkit": {
+          "chain": "World Chain mainnet",
+          "chain_id": 480,
+          "purpose": "Worldcoin AgentKit human verification"
+        }
+      },
+      "provider": "dynamic",
+      "world_agentkit_registered": false,
+      "world_human_id": ""
+    }
+  },
+  "warning": "Public Dynamic wallet address registry generated from already-published ENS records. No private keys or Dynamic user metadata."
+}

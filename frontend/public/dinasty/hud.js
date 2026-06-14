@@ -51,9 +51,11 @@ DN.hud = (function () {
       btn.disabled = true;
       status.textContent = 'Starting run...';
       H.pushThought('Frontend requested a new LLM-powered Railway colony run.', 'Backend', '#3FA89F');
-      DN.databridge.startDemoRun({ agents: 20, rooms: 4, voice_mode: 'llm' })
+      DN.databridge.startDemoRun()
         .then((result) => {
-          status.textContent = 'Loaded ' + (result.events || 'new') + ' events';
+          const agents = DN.databridge.getAgents ? DN.databridge.getAgents().length : 0;
+          const rooms = DN.databridge.getRooms ? DN.databridge.getRooms().length : 0;
+          status.textContent = 'Loaded ' + agents + ' agents · ' + rooms + ' rooms';
           H.pushThought('Backend run completed and the colony view loaded its events.', 'Backend', '#3FA89F');
         })
         .catch((err) => {
