@@ -566,7 +566,7 @@ DN.hud = (function () {
         const startedAt = Date.now();
         const timer = setInterval(() => {
           const phase = DN.lifecycle && DN.lifecycle.getPhase ? DN.lifecycle.getPhase() : '';
-          if (phase === 'egress_roam' || phase === 'idle' || Date.now() - startedAt > 180000) {
+          if (phase === 'egress_roam' || phase === 'idle' || Date.now() - startedAt > 480000) {
             clearInterval(timer);
             btn.disabled = false;
             status.textContent = phase === 'egress_roam' ? 'Roaming · click Run to loop' : 'Run ready';

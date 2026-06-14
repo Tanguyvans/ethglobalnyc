@@ -1,7 +1,8 @@
 // Di-nasty — lifecycle controller. State machine for the demo arc:
 //   0 idle → 1 kickoff → 2 scouting → 3 kg_forming → 4 recruitment →
 //   5 converge → 6 ingress → 7 debate → 8 resolution → 9 egress_roam
-// Frontend-paced (synthetic timing). Owns ant activation + crystal show.
+// Frontend-paced visual timing. Owns ant activation + crystal show while the
+// backend run uses the selected fixture and public scouting data.
 // Resolution wires the run's forecast decisions into the Arc forecast
 // contract and claims payouts for winning ants.
 window.DN = window.DN || {};
@@ -14,14 +15,14 @@ DN.lifecycle = (function () {
   // duration per phase in seconds; 'idle' and 'egress_roam' are open-ended
   const DURATIONS = {
     idle:        Infinity,
-    kickoff:      1.5,
-    scouting:     8.0,
-    kg_forming:  10.0,
-    recruitment:  4.0,
-    converge:     6.0,
-    ingress:      4.0,
-    debate:      10.0,   // user-tuned: 10s of fast multi-agent debate
-    resolution:   3.0,
+    kickoff:      4.0,
+    scouting:    24.0,
+    kg_forming:  22.0,
+    recruitment:  8.0,
+    converge:    12.0,
+    ingress:      8.0,
+    debate:      25.0,
+    resolution:   8.0,
     egress_roam: Infinity
   };
   const NEXT = {
@@ -83,6 +84,15 @@ DN.lifecycle = (function () {
     return (window.DN_CONFIG && window.DN_CONFIG.FORECAST && window.DN_CONFIG.FORECAST.CONTRACT) || '';
   }
 
+  function configuredRun() {
+    return (window.DN_CONFIG && window.DN_CONFIG.RUN) || {};
+  }
+
+  function configuredForecastWalletStore() {
+    const forecast = (window.DN_CONFIG && window.DN_CONFIG.FORECAST) || {};
+    return forecast.WALLET_STORE || forecast.wallet_store || '';
+  }
+
   // Look up the currently selected game's cached metadata (home/away
   // team etc.) so settleForecastDemo has the right `home_team` /
   // `away_team` for the API.
@@ -91,7 +101,14 @@ DN.lifecycle = (function () {
     const key = selectedMatch();
     const found = games.find((g) => g.market_key === key);
     if (found) return found;
-    return { market_key: key, home_team: 'Brazil', away_team: 'Morocco' };
+    return {
+      market_key: key,
+      match_id: key,
+      market_type: 'three_way',
+      home_team: 'Brazil',
+      away_team: 'Morocco',
+      name: 'Brazil vs Morocco'
+    };
   }
 
   function winnerSideFor(winner, meta) {
@@ -214,19 +231,33 @@ DN.lifecycle = (function () {
 
   function startBackendRun() {
     if (L.runPromise) return L.runPromise;
-    if (!DN.databridge || !DN.databridge.startDemoRun) {
+    if (!DN.databridge || !DN.databridge.startScoutingRun) {
       L.runPromise = Promise.resolve(null);
       return L.runPromise;
     }
-    if (DN.logTerm) DN.logTerm.push('SYSTEM', 'LLM debate run kicked off in the background.');
-    L.runPromise = DN.databridge.startDemoRun()
+    const meta = selectedGameMeta();
+    const runCfg = configuredRun();
+    const matchName = meta.name || [meta.home_team, meta.away_team].filter(Boolean).join(' vs ');
+    if (DN.logTerm) {
+      DN.logTerm.push('SYSTEM', 'Public fixture run kicked off for ' + matchName + ' (this can take a minute).');
+    }
+    L.runPromise = DN.databridge.startScoutingRun({
+      match: matchName,
+      match_id: meta.match_id || meta.market_key,
+      data_mode: 'public',
+      include_deepseek_scout: true,
+      agents: Math.min(Number(runCfg.agents || 200), 200),
+      rooms: Math.min(Number(runCfg.rooms || 12), 50),
+      seed: Number.isFinite(Number(runCfg.seed)) ? Number(runCfg.seed) : Math.floor(Math.random() * 10000),
+      voice_mode: runCfg.voice_mode || 'llm',
+    })
       .then((res) => {
         if (res && res.id) {
           L.runId = res.id;
           if (DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(res.id);
           if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
           if (DN.hud && DN.hud._pollComms) DN.hud._pollComms();
-          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Backend run ' + res.id + ' complete — forecast stakes ready.');
+          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Fixture run ' + res.id + ' complete — selected-match forecast stakes ready.');
         }
         return res || null;
       })
@@ -446,6 +477,7 @@ DN.lifecycle = (function () {
     }
     const meta = selectedGameMeta();
     const contract = configuredContract();
+    const walletStore = configuredForecastWalletStore();
     const run = await startBackendRun();
     const runId = (run && run.id) || L.runId || (DN.databridge && DN.databridge.runId) || null;
     const marketKey = runMarketKey(meta, runId);
@@ -460,6 +492,7 @@ DN.lifecycle = (function () {
         market_type: meta.market_type || 'three_way',
         metadata_uri: meta.market_key || marketKey,
         run_id: runId || undefined,
+        wallet_store: walletStore || undefined,
         max_stakers: 12,
         fee_bps: 1000
       });
@@ -498,6 +531,7 @@ DN.lifecycle = (function () {
         winner,
         home_team: meta.home_team,
         away_team: meta.away_team,
+        wallet_store: walletStore || undefined,
         winning_agents: winningAgents
       });
       logForecastChainTrail('SETTLE', settled);

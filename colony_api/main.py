@@ -851,7 +851,18 @@ def _forecast_wallet_store_argument(wallet_store: str) -> str:
         return str(target)
 
     configured = os.environ.get("COLONY_API_FORECAST_WALLET_STORE") or wallet_store
-    return str(_safe_repo_path(configured).relative_to(REPO_ROOT))
+    try:
+        path = _safe_repo_path(configured)
+    except HTTPException as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Forecast signing wallets are not configured. Set "
+                "COLONY_API_FORECAST_WALLETS_JSON or COLONY_API_FORECAST_WALLET_STORE "
+                "to a private-key wallet store before expecting Arc USDC stake/claim transactions."
+            ),
+        ) from exc
+    return str(path.relative_to(REPO_ROOT))
 
 
 def _x402_wallet_store_argument(wallet_store: str) -> str:
