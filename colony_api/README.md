@@ -96,6 +96,33 @@ private keys and no Dynamic user metadata. It lets Railway reuse the same
 `ant_0000` ... `ant_0199` wallet addresses and ENS names instead of minting new
 wallets during a frontend demo click.
 
+## Get Ants
+
+For a quick frontend-to-backend smoke test, use `GET /ants`. This reads the
+committed public wallet registry and does not require a completed run.
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/ants
+```
+
+Response shape:
+
+```json
+{
+  "count": 200,
+  "source": "colony/data/agent-wallets.dynamic.200.public.json",
+  "agents": [
+    {
+      "agent_id": "ant_0000",
+      "name": "ant-0000",
+      "ens_name": "root-fable-0.colonny.eth",
+      "wallet_address": "0x3fB467e269e4C0BfdeAA99086f7854d3590A078D",
+      "wallet_provider": "dynamic"
+    }
+  ]
+}
+```
+
 ## Poll Run Status
 
 ```bash

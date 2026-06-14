@@ -112,6 +112,16 @@ DN.databridge = (function () {
   B.getForecasts = function () { return forecasts.slice(); };
   B.getSummary = function () { return summary; };
   B.getAgent = function (agentId) { return records.find((r) => r.agent_id === agentId) || null; };
+  B.fetchAgents = function () {
+    if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
+    return fetch(apiUrl + '/ants')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((payload) => {
+        records = payload.agents || [];
+        B.agents = records;
+        return payload;
+      });
+  };
 
   function parseJsonl(txt) {
     return txt
@@ -141,15 +151,23 @@ DN.databridge = (function () {
 
   function loadLatestRailwayRun() {
     if (!apiUrl) return Promise.reject(new Error('no api url configured'));
+    return latestSuccessfulRunId()
+      .then((runId) => {
+        B.runId = runId;
+        B.source = apiUrl + '/runs/' + runId + '/events';
+        return loadEvents(B.source);
+      });
+  }
+
+  function latestSuccessfulRunId() {
+    if (!apiUrl) return Promise.reject(new Error('no api url configured'));
+    if (B.runId) return Promise.resolve(B.runId);
     return fetch(apiUrl + '/runs')
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((payload) => {
         const runs = (payload.runs || []).filter((run) => run.status === 'succeeded');
         if (!runs.length) throw new Error('no successful runs yet');
-        const latest = runs[0];
-        B.runId = latest.id;
-        B.source = apiUrl + '/runs/' + latest.id + '/events';
-        return loadEvents(B.source);
+        return runs[0].id;
       });
   }
 

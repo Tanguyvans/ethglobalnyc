@@ -43,9 +43,29 @@ DN.hud = (function () {
     if (!root) return;
     root.innerHTML =
       '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
-      '<button class="backend-btn" id="backend-run">Run LLM agents</button>';
+      '<div class="backend-actions">' +
+        '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
+        '<button class="backend-btn" id="backend-run">Run LLM agents</button>' +
+      '</div>';
     const btn = $('backend-run');
+    const antsBtn = $('backend-ants');
     const status = $('backend-status');
+    antsBtn.addEventListener('click', () => {
+      if (!DN.databridge || !DN.databridge.fetchAgents) return;
+      antsBtn.disabled = true;
+      status.textContent = 'Getting ants...';
+      DN.databridge.fetchAgents()
+        .then((payload) => {
+          const count = payload.count != null ? payload.count : (payload.agents || []).length;
+          status.textContent = count + ' ants loaded';
+          H.pushThought('Frontend fetched ' + count + ' ants from the Railway API.', 'Backend', '#3FA89F');
+        })
+        .catch((err) => {
+          status.textContent = 'Ant fetch error';
+          H.pushThought('Could not fetch ants: ' + (err.message || err), 'Backend', '#D96E54');
+        })
+        .finally(() => { antsBtn.disabled = false; });
+    });
     btn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startDemoRun) return;
       btn.disabled = true;

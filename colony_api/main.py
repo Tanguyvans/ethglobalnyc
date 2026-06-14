@@ -8,8 +8,10 @@ an SSE stream to the frontend or demo tooling.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import uuid
@@ -27,6 +29,22 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNS_ROOT = REPO_ROOT / "colony" / "runs" / "api"
 RUNS_ROOT = Path(os.environ.get("COLONY_API_RUNS_DIR", str(DEFAULT_RUNS_ROOT))).resolve()
 RUN_DEMO = REPO_ROOT / "colony" / "run_demo.py"
+DEFAULT_PUBLIC_WALLET_STORE = "colony/data/agent-wallets.dynamic.200.public.json"
+
+ENS_ADJECTIVES = [
+    "amber",
+    "brisk",
+    "cold",
+    "ember",
+    "fable",
+    "gold",
+    "iron",
+    "lumen",
+    "onyx",
+    "quiet",
+    "sable",
+    "silver",
+]
 
 
 class DemoRunRequest(BaseModel):
@@ -37,7 +55,7 @@ class DemoRunRequest(BaseModel):
     debug: bool = False
     agent_wallets: bool = True
     wallet_provider: Literal["local", "dynamic"] | None = "dynamic"
-    wallet_store: str | None = "colony/data/agent-wallets.dynamic.200.public.json"
+    wallet_store: str | None = DEFAULT_PUBLIC_WALLET_STORE
 
 
 class RunRecord(BaseModel):
@@ -88,6 +106,15 @@ def _safe_artifact_path(run_id: str, relative_path: str) -> Path:
     return target
 
 
+def _safe_repo_path(path_value: str) -> Path:
+    target = (REPO_ROOT / path_value).resolve() if not Path(path_value).is_absolute() else Path(path_value).resolve()
+    if target != REPO_ROOT and REPO_ROOT not in target.parents:
+        raise HTTPException(status_code=400, detail="Path escapes repository")
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail=f"File not found: {path_value}")
+    return target
+
+
 def _latest_compact_dir(run_id: str) -> Path | None:
     compact_root = _run_dir(run_id) / "compact"
     if not compact_root.exists():
@@ -125,6 +152,44 @@ def _env_int(name: str, default: int) -> int:
         return int(os.environ.get(name, str(default)))
     except ValueError:
         return default
+
+
+def _default_wallet_store() -> str:
+    return os.environ.get("COLONY_API_DEFAULT_WALLET_STORE", DEFAULT_PUBLIC_WALLET_STORE)
+
+
+def _agent_number(agent_id: str) -> str:
+    match = re.search(r"(\d+)$", agent_id)
+    if not match:
+        return "0"
+    return str(int(match.group(1)))
+
+
+def _root_ens_name(agent_id: str) -> str:
+    digest = hashlib.sha256(agent_id.encode("utf-8")).digest()
+    adjective = ENS_ADJECTIVES[digest[0] % len(ENS_ADJECTIVES)]
+    parent = os.environ.get("COLONY_ENS_PARENT", "colonny.eth").strip().lower().strip(".")
+    return f"root-{adjective}-{_agent_number(agent_id)}.{parent}"
+
+
+def _read_public_ants() -> list[dict]:
+    store_path = _safe_repo_path(_default_wallet_store())
+    payload = json.loads(store_path.read_text(encoding="utf-8"))
+    wallets = payload.get("wallets") or {}
+    ants = []
+    for agent_id, wallet in sorted(wallets.items()):
+        address = str(wallet.get("address") or "")
+        ants.append(
+            {
+                "agent_id": agent_id,
+                "name": agent_id.replace("_", "-"),
+                "ens_name": _root_ens_name(agent_id),
+                "wallet_address": address,
+                "wallet_provider": str(wallet.get("provider") or payload.get("provider") or ""),
+                "chains": wallet.get("chains") or {},
+            }
+        )
+    return ants
 
 
 def _build_command(request: DemoRunRequest, run_dir: Path) -> list[str]:
@@ -224,6 +289,7 @@ def get_config() -> dict:
         "endpoints": {
             "health": "/health",
             "config": "/config",
+            "ants": "/ants",
             "start_demo_run": "/runs/demo",
             "list_runs": "/runs",
             "run": "/runs/{run_id}",
@@ -239,10 +305,7 @@ def get_config() -> dict:
             "voice_mode": os.environ.get("COLONY_API_DEFAULT_VOICE_MODE", "llm"),
             "agent_wallets": _env_bool("COLONY_API_DEFAULT_AGENT_WALLETS", True),
             "wallet_provider": wallet_provider,
-            "wallet_store": os.environ.get(
-                "COLONY_API_DEFAULT_WALLET_STORE",
-                "colony/data/agent-wallets.dynamic.200.public.json",
-            ),
+            "wallet_store": _default_wallet_store(),
         },
         "limits": {
             "agents": {"min": 1, "max": 500},
@@ -260,6 +323,16 @@ def get_config() -> dict:
             "genome_id",
             "lineage_id",
         ],
+    }
+
+
+@app.get("/ants")
+def get_ants() -> dict:
+    ants = _read_public_ants()
+    return {
+        "count": len(ants),
+        "source": _default_wallet_store(),
+        "agents": ants,
     }
 
 
