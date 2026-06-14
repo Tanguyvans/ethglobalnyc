@@ -332,8 +332,30 @@ DN.kgview = (function () {
     return Object.assign({}, group, center);
   }
 
+  function isFixtureOnly(values) {
+    if (!values.length || values.length > 6) return false;
+    const counts = {};
+    values.forEach((node) => {
+      const type = typeFor(node);
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return (counts.match || 0) === 1 && (counts.team || 0) >= 2 && values.every((node) => ['match', 'team'].includes(typeFor(node)));
+  }
+
   function positionedNodes() {
     const values = Array.from(nodes.values());
+    if (isFixtureOnly(values)) {
+      const match = values.find((node) => typeFor(node) === 'match');
+      const teams = values.filter((node) => typeFor(node) === 'team');
+      const placed = [];
+      if (teams[0]) placed.push({ node: teams[0], group: groupFor(teams[0]), groupIndex: 0, compact: false, focused: true, fixture: true, x: 300, y: 230 });
+      if (match) placed.push({ node: match, group: groupFor(match), groupIndex: 0, compact: false, focused: true, fixture: true, x: 470, y: 230 });
+      if (teams[1]) placed.push({ node: teams[1], group: groupFor(teams[1]), groupIndex: 1, compact: false, focused: true, fixture: true, x: 640, y: 230 });
+      teams.slice(2).forEach((node, index) => {
+        placed.push({ node, group: groupFor(node), groupIndex: index + 2, compact: false, focused: true, fixture: true, x: 360 + index * 110, y: 330 });
+      });
+      return { nodes: placed, compact: false, focused: true, fixture: true };
+    }
     const grouped = {};
     values.forEach((node) => {
       const group = groupFor(node);
@@ -362,7 +384,7 @@ DN.kgview = (function () {
         });
       });
     });
-    return { nodes: placed, compact, focused };
+    return { nodes: placed, compact, focused, fixture: false };
   }
 
   function renderLegend() {
@@ -397,6 +419,7 @@ DN.kgview = (function () {
   }
 
   function groupBackgrounds(placed, compact) {
+    if (placed.some((item) => item.fixture)) return '';
     const byGroup = {};
     placed.forEach((item) => {
       byGroup[item.group.id] = byGroup[item.group.id] || { group: item.group, count: 0 };
@@ -428,6 +451,7 @@ DN.kgview = (function () {
       return '<line class="kg-selected-edge" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"></line>';
     }).join('') : '';
     const bandMarkup = relationBands(byId).map((band) => {
+      if (layout.fixture) return '';
       const mx = (band.a.x + band.b.x) / 2;
       const my = (band.a.y + band.b.y) / 2 - 48;
       const width = Math.min(14, 2 + Math.sqrt(band.count));
@@ -438,15 +462,18 @@ DN.kgview = (function () {
       const id = node.entity_id || node.id;
       const type = typeFor(node);
       const color = colors[type] || item.group.color || colors.default;
-      const radius = layout.compact
+      const radius = layout.fixture
+        ? (type === 'match' ? 28 : 24)
+        : layout.compact
         ? (type === 'match' ? 24 : type === 'team' ? 21 : type === 'player' ? 17 : type === 'club' ? 16 : 14)
         : layout.focused
           ? (type === 'match' ? 15 : type === 'team' ? 13 : type === 'player' ? 9 : type === 'club' ? 9 : 7)
           : (type === 'match' ? 8 : type === 'team' ? 7 : 5);
-      const label = (layout.compact || (layout.focused && (type === 'match' || type === 'team' || (['player', 'club'].includes(type) && item.groupIndex < 10))) || (item.groupIndex < 3 && (type === 'match' || type === 'team')))
-        ? '<text y="' + (radius + (layout.compact ? 26 : layout.focused ? 17 : 13)) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>'
+      const label = (layout.fixture || layout.compact || (layout.focused && (type === 'match' || type === 'team' || (['player', 'club'].includes(type) && item.groupIndex < 10))) || (item.groupIndex < 3 && (type === 'match' || type === 'team')))
+        ? '<text y="' + (radius + (layout.fixture ? 26 : layout.compact ? 26 : layout.focused ? 17 : 13)) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>'
         : '';
       const classes = 'kg-node' +
+        (layout.fixture ? ' fixture' : '') +
         (layout.focused ? ' focused' : '') +
         (layout.compact ? ' compact' : '') +
         (id === selectedId ? ' selected' : '') +
@@ -457,7 +484,10 @@ DN.kgview = (function () {
         label +
       '</g>';
     }).join('');
-    svg.innerHTML = groupBackgrounds(placed, layout.focused) + bandMarkup + selectedLines + nodeMarkup;
+    const fixtureNote = layout.fixture
+      ? '<text class="kg-empty-note" x="470" y="330">No roster/player KG stored for this fixture yet. Run Scout to generate players and clubs.</text>'
+      : '';
+    svg.innerHTML = groupBackgrounds(placed, layout.focused) + bandMarkup + selectedLines + nodeMarkup + fixtureNote;
   }
 
   K.reset = function (title) {
