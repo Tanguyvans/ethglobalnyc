@@ -1900,7 +1900,29 @@ def get_ants() -> dict:
     return {
         "count": len(ants),
         "source": _default_wallet_store(),
+        "children_source": str(CHILD_ANTS_PATH),
         "agents": ants,
+    }
+
+
+@app.get("/ants/children")
+def get_child_ants() -> dict:
+    children = _read_child_ants()
+    return {
+        "count": len(children),
+        "source": str(CHILD_ANTS_PATH),
+        "exists": CHILD_ANTS_PATH.exists(),
+        "agents": children,
+    }
+
+
+@app.get("/ants/{agent_id}.json")
+def get_ant_profile(agent_id: str) -> dict:
+    ant = _find_parent_ant(agent_id)
+    return {
+        "schema": "ensip-26",
+        "kind": "colony_ant",
+        "profile": ant,
     }
 
 
