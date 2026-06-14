@@ -183,6 +183,40 @@ DN.hud = (function () {
       ].filter(Boolean).join(' '));
     }
 
+    function isUsefulKgType(type) {
+      return [
+        'scout',
+        'finding',
+        'evidence_claim',
+        'debate_claim',
+        'prediction',
+        'predictor',
+        'source',
+        'source_domain',
+        'source_domain_profile',
+        'source_kind',
+        'source_quality',
+        'source_recency',
+        'metric',
+        'player',
+        'player_stat_line',
+        'player_match_profile',
+        'team_match_profile',
+        'availability_event',
+        'availability_status',
+        'body_part',
+        'formation',
+        'position',
+        'club',
+        'scouting_topic',
+        'team_scouting_topic',
+        'scouting_gap',
+        'claim_type',
+        'claim_impact',
+        'claim_quality',
+      ].includes(type);
+    }
+
     function selectedKgGraph(graph, target) {
       if (!graph || !target || !target.match) return graph;
       const entities = graph.entities || [];
@@ -195,6 +229,7 @@ DN.hud = (function () {
       const matchNeedle = norm(match.name || (match.home_team + ' vs ' + match.away_team));
       const matchId = match.match_id || match.market_key;
       const byId = new Map();
+      const selectedCoreIds = new Set();
       entities.forEach((entity) => {
         const id = entityId(entity);
         if (id) byId.set(id, entity);
@@ -207,9 +242,18 @@ DN.hud = (function () {
         const text = entityText(entity);
         const isSelectedMatch = id === matchId || norm(entity.name) === matchNeedle ||
           (norm(attrs.team1) === norm(match.home_team) && norm(attrs.team2) === norm(match.away_team));
-        const mentionsTeam = teamNeedle && text.includes(teamNeedle);
-        const mentionsOpponent = opponentNeedle && text.includes(opponentNeedle);
-        if (isSelectedMatch || mentionsTeam || (entity.entity_type === 'team' && mentionsOpponent)) keep.add(id);
+        const isSelectedTeam = entity.entity_type === 'team' && norm(entity.name) === teamNeedle;
+        const isOpponentTeam = entity.entity_type === 'team' && norm(entity.name) === opponentNeedle;
+        const usefulType = isUsefulKgType(entity.entity_type);
+        const mentionsSelectedContext = (teamNeedle && text.includes(teamNeedle)) ||
+          (opponentNeedle && text.includes(opponentNeedle)) ||
+          (matchNeedle && text.includes(matchNeedle));
+        if (isSelectedMatch || isSelectedTeam || isOpponentTeam) {
+          keep.add(id);
+          selectedCoreIds.add(id);
+        } else if (usefulType && mentionsSelectedContext) {
+          keep.add(id);
+        }
       });
 
       const seeds = new Set(keep);
@@ -217,8 +261,12 @@ DN.hud = (function () {
         const source = edgeSource(edge);
         const targetId = edgeTarget(edge);
         if (!source || !targetId) return;
-        if (seeds.has(source)) keep.add(targetId);
-        if (seeds.has(targetId)) keep.add(source);
+        const sourceEntity = byId.get(source);
+        const targetEntity = byId.get(targetId);
+        const sourceAllowed = selectedCoreIds.has(source) || isUsefulKgType(sourceEntity && sourceEntity.entity_type);
+        const targetAllowed = selectedCoreIds.has(targetId) || isUsefulKgType(targetEntity && targetEntity.entity_type);
+        if (seeds.has(source) && targetAllowed) keep.add(targetId);
+        if (seeds.has(targetId) && sourceAllowed) keep.add(source);
       });
 
       const scopedEntities = entities.filter((entity) => keep.has(entityId(entity)));
