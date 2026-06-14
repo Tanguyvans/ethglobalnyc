@@ -88,11 +88,121 @@ def openfootball_match_context_from_tournament_match(match_entity: dict) -> Matc
     round_id = str(match_entity["entity_id"]).replace("match:", "round:")
     market = stats = odds = news = 0.5
     source_url = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
+    source_title = "openfootball/worldcup.json 2026 fixture"
+    source_fields = {
+        "source_title": source_title,
+        "source_url": source_url,
+        "source_domain": "raw.githubusercontent.com",
+        "source_kind": "reference",
+        "source_quality": "strong",
+        "extraction_method": "openfootball_fixture_row",
+    }
     schedule = " ".join(
         str(attrs.get(key) or "")
         for key in ("date", "time", "round", "group", "ground")
         if attrs.get(key)
     )
+
+    def with_openfootball_source(claim: dict, metrics: dict) -> dict:
+        claim.update(source_fields)
+        claim["metrics"] = {key: value for key, value in metrics.items() if value not in {None, ""}}
+        return claim
+
+    shared_metrics = {
+        "home_team": home_team,
+        "away_team": away_team,
+        "match_date": attrs.get("date"),
+        "kickoff_time": attrs.get("time"),
+        "stage": attrs.get("round") or attrs.get("stage"),
+        "group": attrs.get("group"),
+        "venue": attrs.get("ground") or attrs.get("venue"),
+        "source_dataset": "openfootball/worldcup.json",
+    }
+    home_team_metrics = {
+        **shared_metrics,
+        "team": home_team,
+        "side": "home",
+        "opponent": away_team,
+    }
+    away_team_metrics = {
+        **shared_metrics,
+        "team": away_team,
+        "side": "away",
+        "opponent": home_team,
+    }
+    fixture_claims = [
+        with_openfootball_source(
+            _mock_claim(
+                claim_type="match_schedule",
+                subject=f"{home_team} vs {away_team}",
+                team=home_team,
+                claim=(
+                    f"OpenFootball lists {home_team} vs {away_team}"
+                    + (f" on {attrs.get('date')}" if attrs.get("date") else "")
+                    + (f" at {attrs.get('time')}" if attrs.get("time") else "")
+                    + (f" in {attrs.get('ground')}." if attrs.get("ground") else ".")
+                ),
+                impact="context_home",
+                confidence=0.96,
+                source_title=source_title,
+                source_url=source_url,
+            ),
+            home_team_metrics,
+        ),
+        with_openfootball_source(
+            _mock_claim(
+                claim_type="match_schedule",
+                subject=f"{away_team} vs {home_team}",
+                team=away_team,
+                claim=(
+                    f"OpenFootball lists {away_team} as the away side against {home_team}"
+                    + (f" in {attrs.get('group')}." if attrs.get("group") else ".")
+                ),
+                impact="context_away",
+                confidence=0.96,
+                source_title=source_title,
+                source_url=source_url,
+            ),
+            away_team_metrics,
+        ),
+    ]
+    team_profile_claims = [
+        with_openfootball_source(
+            _mock_claim(
+                claim_type="team_profile",
+                subject=home_team,
+                team=home_team,
+                claim=(
+                    f"OpenFootball identifies {home_team} as the home team"
+                    + (f" in {attrs.get('group')}" if attrs.get("group") else "")
+                    + f" for the fixture against {away_team}."
+                ),
+                impact="context_home",
+                confidence=0.94,
+                source_title=source_title,
+                source_url=source_url,
+            ),
+            home_team_metrics,
+        ),
+        with_openfootball_source(
+            _mock_claim(
+                claim_type="team_profile",
+                subject=away_team,
+                team=away_team,
+                claim=(
+                    f"OpenFootball identifies {away_team} as the away team"
+                    + (f" in {attrs.get('group')}" if attrs.get("group") else "")
+                    + f" for the fixture against {home_team}."
+                ),
+                impact="context_away",
+                confidence=0.94,
+                source_title=source_title,
+                source_url=source_url,
+            ),
+            away_team_metrics,
+        ),
+    ]
+
     return MatchContext(
         round_id=round_id,
         home_team=home_team,
@@ -123,35 +233,27 @@ def openfootball_match_context_from_tournament_match(match_entity: dict) -> Matc
                     f"{home_team} vs {away_team}: {schedule or 'schedule pending'}."
                 ),
                 citations=[source_url],
-                evidence_claims=[
-                    _mock_claim(
-                        claim_type="match_schedule",
-                        subject=f"{home_team} vs {away_team}",
-                        team=home_team,
-                        claim=(
-                            f"OpenFootball lists {home_team} vs {away_team}"
-                            + (f" at {attrs.get('ground')}." if attrs.get("ground") else ".")
-                        ),
-                        impact="context_home",
-                        confidence=0.96,
-                        source_title="openfootball/worldcup.json 2026 fixture",
-                        source_url=source_url,
-                    ),
-                    _mock_claim(
-                        claim_type="match_schedule",
-                        subject=f"{away_team} vs {home_team}",
-                        team=away_team,
-                        claim=(
-                            f"OpenFootball lists {away_team} as the away side against {home_team}"
-                            + (f" in {attrs.get('group')}." if attrs.get("group") else ".")
-                        ),
-                        impact="context_away",
-                        confidence=0.96,
-                        source_title="openfootball/worldcup.json 2026 fixture",
-                        source_url=source_url,
-                    ),
-                ],
-            )
+                evidence_claims=fixture_claims,
+            ),
+            _finding(
+                round_id=round_id,
+                key="openfootball_team_profiles",
+                scout_name="openfootball_fixture_scout",
+                access_level="public",
+                source_type="retrieval",
+                finding_name="openfootball_team_profile_rows",
+                home_probability=market,
+                market=market,
+                confidence=0.94,
+                summary=(
+                    "Built team-profile KG nodes from the same OpenFootball fixture row: "
+                    f"{home_team} home, {away_team} away"
+                    + (f", {attrs.get('group')}" if attrs.get("group") else "")
+                    + "."
+                ),
+                citations=[source_url],
+                evidence_claims=team_profile_claims,
+            ),
         ],
     )
 
