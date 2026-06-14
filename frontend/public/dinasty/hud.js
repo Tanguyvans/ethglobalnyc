@@ -451,18 +451,45 @@ DN.hud = (function () {
     kgBtn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.fetchWorldCupKg) return;
       kgBtn.disabled = true;
-      status.textContent = 'Getting KG...';
-      DN.databridge.fetchWorldCupKg()
+      status.textContent = 'Looking for scout KG...';
+
+      function renderKg(payload, sourceLabel) {
+        const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
+        const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
+        const scoped = selectedKgGraph(payload, selectedGame);
+        const scopedEntities = scoped.entity_count != null ? scoped.entity_count : (scoped.entities || []).length;
+        const scopedLinks = scoped.relationship_count != null ? scoped.relationship_count : (scoped.relationships || []).length;
+        const title = (selectedGame && selectedGame.name ? selectedGame.name : 'Selected fixture') + ' KG';
+        if (DN.kgview) DN.kgview.showGraph(scoped, title);
+        status.textContent = scopedEntities + ' ' + sourceLabel + ' KG entities · ' + scopedLinks + ' links';
+        H.pushThought('Frontend loaded ' + sourceLabel + ' KG for ' + selectedGame.name + ': ' + scopedEntities + ' of ' + entities + ' entities, ' + scopedLinks + ' of ' + links + ' links.', 'Backend', '#3FA89F');
+      }
+
+      const scoutKg = DN.databridge.fetchScoutingKgForMatch
+        ? DN.databridge.fetchScoutingKgForMatch({
+            match: selectedGame.name,
+            match_id: selectedGame.match_id || selectedGame.market_key,
+            market_key: selectedGame.market_key,
+          })
+        : Promise.resolve(null);
+
+      scoutKg
         .then((payload) => {
-          const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
-          const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
-          const scoped = selectedKgGraph(payload, selectedGame);
-          const scopedEntities = scoped.entity_count != null ? scoped.entity_count : (scoped.entities || []).length;
-          const scopedLinks = scoped.relationship_count != null ? scoped.relationship_count : (scoped.relationships || []).length;
-          const title = (selectedGame && selectedGame.name ? selectedGame.name : 'Selected fixture') + ' KG';
-          if (DN.kgview) DN.kgview.showGraph(scoped, title);
-          status.textContent = scopedEntities + ' selected KG entities · ' + scopedLinks + ' links';
-          H.pushThought('Frontend loaded scoped KG for ' + selectedGame.name + ': ' + scopedEntities + ' of ' + entities + ' entities, ' + scopedLinks + ' of ' + links + ' links.', 'Backend', '#3FA89F');
+          if (payload) {
+            if (DN.logTerm) DN.logTerm.push('KG', 'Loaded stored scout KG ' + (payload.source_run_id || '') + ' for ' + selectedGame.name + '.');
+            renderKg(payload, 'scout');
+            return null;
+          }
+          status.textContent = 'No scout KG yet · loading fixture KG...';
+          if (DN.logTerm) DN.logTerm.push('KG', 'No stored scout KG found for ' + selectedGame.name + '; loading static fixture KG.');
+          return DN.databridge.fetchWorldCupKg()
+            .then((fallback) => renderKg(fallback, 'fixture'));
+        })
+        .catch((err) => {
+          if (!DN.databridge.fetchWorldCupKg) throw err;
+          status.textContent = 'Scout KG lookup failed · loading fixture KG...';
+          return DN.databridge.fetchWorldCupKg()
+            .then((fallback) => renderKg(fallback, 'fixture'));
         })
         .catch((err) => {
           status.textContent = 'KG fetch error';
@@ -470,6 +497,7 @@ DN.hud = (function () {
         })
         .finally(() => { kgBtn.disabled = false; });
     });
+
     scoutBtn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startScoutingRun) return;
       setScoutingBusy(true);

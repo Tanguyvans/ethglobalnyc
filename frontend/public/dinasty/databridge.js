@@ -246,6 +246,67 @@ DN.databridge = (function () {
       });
   };
 
+  function kgMatchKey(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function runMatchesScoutingTarget(run, opts) {
+    if (!run || run.kind !== 'scouting' || run.status !== 'succeeded') return false;
+    opts = opts || {};
+    const wantedId = opts.match_id || opts.market_key || '';
+    const wantedName = kgMatchKey(opts.match || opts.name || '');
+    const runId = run.match_id || '';
+    const runName = kgMatchKey(run.match || '');
+    if (wantedId && runId && wantedId === runId) return true;
+    if (wantedName && runName && wantedName === runName) return true;
+    const command = Array.isArray(run.command) ? run.command.map(String) : [];
+    return Boolean(
+      (wantedId && command.includes(wantedId)) ||
+      (wantedName && command.some((part) => kgMatchKey(part) === wantedName))
+    );
+  }
+
+  B.fetchRuns = function () {
+    return apiJson('/runs')
+      .then((payload) => {
+        B.runs = payload.runs || [];
+        return payload;
+      });
+  };
+
+  B.fetchRunKg = function (runId) {
+    if (!runId) return Promise.reject(new Error('run id required'));
+    return apiJson('/runs/' + encodeURIComponent(runId) + '/kg')
+      .then((payload) => {
+        payload.source_run_id = runId;
+        return payload;
+      });
+  };
+
+  B.fetchScoutingKgForMatch = function (opts) {
+    return B.fetchRuns()
+      .then((payload) => {
+        const runs = (payload.runs || []).filter((run) => runMatchesScoutingTarget(run, opts));
+        function tryRun(index) {
+          const run = runs[index];
+          if (!run) return null;
+          return B.fetchRunKg(run.id)
+            .then((kg) => {
+              kg.source_run = run;
+              kg.source_run_id = run.id;
+              return kg;
+            })
+            .catch(() => tryRun(index + 1));
+        }
+        return tryRun(0);
+      });
+  };
+
   function compactScoutingLabel(value, max) {
     const label = String(value || '').replace(/_/g, ' ');
     return label.length > max ? label.slice(0, max - 3) + '...' : label;

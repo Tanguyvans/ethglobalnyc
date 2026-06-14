@@ -1771,6 +1771,7 @@ def start_scouting_run(request: ScoutingRunRequest, background_tasks: Background
         "events_path": str(run_dir / "events.jsonl"),
         "compact_runs_dir": str(run_dir / "compact"),
         "match": request.match,
+        "match_id": request.match_id,
         "data_mode": request.data_mode,
     }
     _write_metadata(run_id, metadata)
@@ -1780,6 +1781,7 @@ def start_scouting_run(request: ScoutingRunRequest, background_tasks: Background
             "event_type": "kg_stage",
             "stage": "scouting_queued",
             "match": request.match,
+            "match_id": request.match_id,
             "data_mode": request.data_mode,
             "include_deepseek_scout": request.include_deepseek_scout,
         },

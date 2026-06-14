@@ -333,10 +333,12 @@ curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/events
 curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/kg
 ```
 
-The frontend's `Get KG` button still reads the committed tournament KG from
-`/kg/world-cup`, but it scopes the overlay to the selected fixture and its two
-teams before rendering. That avoids loading unrelated global match/team context
-for pairs such as Norway vs Senegal.
+The frontend's `Get KG` button first searches `/runs` for the latest successful
+scouting run whose `match` or `match_id` matches the selected fixture, then loads
+`/runs/{run_id}/kg`. If no stored scout KG exists, it falls back to the committed
+tournament graph at `/kg/world-cup` and scopes that graph to the selected fixture
+and its two teams. That fallback is intentionally small; run `Scout` first when
+you need generated player, club, and evidence context for that fixture.
 
 ## Reproduce An Ant
 
