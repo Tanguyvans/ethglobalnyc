@@ -176,6 +176,18 @@ DN.lifecycle = (function () {
         amount_usdc: receipt.amount_usdc || '',
       });
     });
+    (receipt.receipts || []).forEach((tx) => {
+      if (!tx || !tx.tx_hash) return;
+      out.push({
+        action: receipt.action || step.action || tx.transfer_id || 'fund',
+        hash: tx.tx_hash,
+        explorer_url: tx.explorer_url || explorerTxUrl(tx.tx_hash, explorer),
+        agent_id: tx.agent_id || '',
+        wallet: tx.to || '',
+        outcome: '',
+        amount_usdc: tx.amount_usdc || '',
+      });
+    });
     if (receipt.tx_hash) {
       out.push({
         action: receipt.action || step.action || 'tx',

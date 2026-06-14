@@ -139,6 +139,8 @@ class ForecastDemoSetupRequest(ForecastCreateMarketRequest):
     run_id: str | None = None
     max_stakers: int = Field(default=3, ge=1, le=25)
     stake_scale: float = Field(default=0.0001, gt=0.0, le=1.0)
+    fund_stakers: bool | None = None
+    fund_amount: str = "0.01"
 
 
 class ForecastSettleRequest(BaseModel):
@@ -607,6 +609,66 @@ def _fund_child_wallet(agent_id: str, wallet_store: str, request: AntReproduceRe
         "stderr": result.stderr[-1200:],
         "receipt": receipt,
     }
+
+
+def _fund_forecast_stakers(wallet_store: str, stakes: list[ForecastStakeInstruction], amount: str, broadcast: bool) -> dict:
+    agents = sorted({stake.agent for stake in stakes if stake.agent})
+    if not agents:
+        return {"status": "skipped", "reason": "no stakers"}
+    if not FUND_AGENTS_CLI.exists():
+        return {"status": "skipped", "reason": "arc/fund-agents.mjs is missing"}
+    out_path = RUNS_ROOT / "funding" / f"forecast-stakers-{int(time.time())}.json"
+    command = [
+        "node",
+        str(FUND_AGENTS_CLI),
+        "--wallet-store",
+        wallet_store,
+        "--amount",
+        amount,
+        "--out",
+        str(out_path),
+    ]
+    for agent in agents:
+        command.extend(["--agent", agent])
+    if broadcast:
+        command.append("--broadcast")
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(REPO_ROOT),
+            env=_x402_env(),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not fund forecast stakers: {exc}") from exc
+
+    receipt = {}
+    if out_path.exists():
+        try:
+            receipt = json.loads(out_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            receipt = {}
+    status = "funded" if broadcast and completed.returncode == 0 else "planned" if completed.returncode == 0 else "failed"
+    payload = {
+        "ok": completed.returncode == 0,
+        "action": "fund-forecast-stakers",
+        "status": status,
+        "broadcast": broadcast,
+        "agents": agents,
+        "amount_usdc": amount,
+        "command": command,
+        "stdout": completed.stdout.strip(),
+        "stderr": completed.stderr.strip(),
+        "returncode": completed.returncode,
+        "receipt_path": str(out_path),
+        "receipt": receipt,
+    }
+    if completed.returncode != 0:
+        raise HTTPException(status_code=500, detail=payload)
+    return payload
 
 
 def _read_public_ants() -> list[dict]:
@@ -1442,6 +1504,19 @@ def setup_forecast_demo(request: ForecastDemoSetupRequest) -> dict:
         metadata_uri=request.metadata_uri if request.metadata_uri != DEFAULT_FORECAST_MARKET_KEY else request.market_key,
     )
     steps.append(create_forecast_market(market_request))
+
+    should_fund_stakers = request.fund_stakers
+    if should_fund_stakers is None:
+        should_fund_stakers = _env_bool("COLONY_API_FORECAST_PREFUND_STAKERS", True)
+    if should_fund_stakers:
+        steps.append(
+            _fund_forecast_stakers(
+                wallet_store,
+                stakes,
+                request.fund_amount,
+                _env_bool("COLONY_API_FORECAST_BROADCAST_FUNDING", True),
+            )
+        )
 
     for stake in stakes:
         if request.market_type == "binary" and stake.outcome == "draw":
