@@ -29,6 +29,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNS_ROOT = REPO_ROOT / "colony" / "runs" / "api"
 RUNS_ROOT = Path(os.environ.get("COLONY_API_RUNS_DIR", str(DEFAULT_RUNS_ROOT))).resolve()
 RUN_DEMO = REPO_ROOT / "colony" / "run_demo.py"
+RUN_MATCH = REPO_ROOT / "colony" / "run_match.py"
+WORLD_CUP_KG = REPO_ROOT / "colony" / "data" / "world_cup_kg.json"
+WORLD_CUP_KG_SUMMARY = REPO_ROOT / "colony" / "data" / "world_cup_kg.summary.md"
 DEFAULT_PUBLIC_WALLET_STORE = "colony/data/agent-wallets.dynamic.200.public.json"
 
 ENS_ADJECTIVES = [
@@ -53,6 +56,26 @@ class DemoRunRequest(BaseModel):
     seed: int | None = Field(default=205, ge=0)
     voice_mode: Literal["template", "llm"] = "llm"
     debug: bool = False
+    agent_wallets: bool = True
+    wallet_provider: Literal["local", "dynamic"] | None = "dynamic"
+    wallet_store: str | None = DEFAULT_PUBLIC_WALLET_STORE
+
+
+class ScoutingRunRequest(BaseModel):
+    match: str = "Brazil vs Morocco"
+    match_id: str | None = None
+    data_mode: Literal["synthetic", "public"] = "public"
+    refresh_data: bool = False
+    include_deepseek_scout: bool = True
+    include_camel: bool = False
+    include_x: bool = False
+    include_telegram: bool = False
+    include_polygun: bool = False
+    agents: int = Field(default=20, ge=1, le=200)
+    rooms: int = Field(default=5, ge=1, le=50)
+    seed: int = Field(default=12, ge=0)
+    voice_mode: Literal["template", "llm"] = "template"
+    debug: bool = True
     agent_wallets: bool = True
     wallet_provider: Literal["local", "dynamic"] | None = "dynamic"
     wallet_store: str | None = DEFAULT_PUBLIC_WALLET_STORE
@@ -123,6 +146,16 @@ def _latest_compact_dir(run_id: str) -> Path | None:
     if not children:
         return None
     return sorted(children)[-1]
+
+
+def _latest_compact_artifact(run_id: str, filename: str) -> Path:
+    latest = _latest_compact_dir(run_id)
+    if latest is None:
+        raise HTTPException(status_code=404, detail=f"No compact artifacts for run: {run_id}")
+    path = latest / filename
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail=f"Artifact not found: {filename}")
+    return path
 
 
 def _read_events(run_id: str) -> list[dict]:
@@ -220,6 +253,52 @@ def _build_command(request: DemoRunRequest, run_dir: Path) -> list[str]:
     return command
 
 
+def _build_scouting_command(request: ScoutingRunRequest, run_dir: Path) -> list[str]:
+    command = [
+        sys.executable,
+        str(RUN_MATCH),
+        "--kg",
+        str(WORLD_CUP_KG),
+        "--match",
+        request.match,
+        "--data-mode",
+        request.data_mode,
+        "--agents",
+        str(request.agents),
+        "--rooms",
+        str(request.rooms),
+        "--seed",
+        str(request.seed),
+        "--runs-dir",
+        str(run_dir / "compact"),
+        "--voice-mode",
+        request.voice_mode,
+    ]
+    if request.match_id:
+        command.extend(["--match-id", request.match_id])
+    if request.refresh_data:
+        command.append("--refresh-data")
+    if request.include_deepseek_scout:
+        command.append("--include-deepseek-scout")
+    if request.include_camel:
+        command.append("--include-camel")
+    if request.include_x:
+        command.append("--include-x")
+    if request.include_telegram:
+        command.append("--include-telegram")
+    if request.include_polygun:
+        command.append("--include-polygun")
+    if request.debug:
+        command.append("--debug")
+    if request.agent_wallets:
+        command.append("--agent-wallets")
+        if request.wallet_provider:
+            command.extend(["--wallet-provider", request.wallet_provider])
+        if request.wallet_store:
+            command.extend(["--wallet-store", request.wallet_store])
+    return command
+
+
 def _execute_run(run_id: str, command: list[str]) -> None:
     metadata = _read_metadata(run_id)
     metadata["status"] = "running"
@@ -250,6 +329,10 @@ def _execute_run(run_id: str, command: list[str]) -> None:
     latest = _latest_compact_dir(run_id)
     if latest is not None:
         metadata["latest_compact_dir"] = str(latest)
+        compact_events = latest / "events.compact.jsonl"
+        root_events = run_dir / "events.jsonl"
+        if compact_events.exists() and not root_events.exists():
+            root_events.write_text(compact_events.read_text(encoding="utf-8"), encoding="utf-8")
     _write_metadata(run_id, metadata)
 
 
@@ -290,6 +373,9 @@ def get_config() -> dict:
             "health": "/health",
             "config": "/config",
             "ants": "/ants",
+            "world_cup_kg": "/kg/world-cup",
+            "world_cup_kg_summary": "/kg/world-cup/summary",
+            "start_scouting_run": "/scouting/run",
             "start_demo_run": "/runs/demo",
             "list_runs": "/runs",
             "run": "/runs/{run_id}",
@@ -297,6 +383,9 @@ def get_config() -> dict:
             "stream": "/runs/{run_id}/stream",
             "agents": "/runs/{run_id}/agents",
             "rooms": "/runs/{run_id}/rooms",
+            "run_kg": "/runs/{run_id}/kg",
+            "run_kg_manifest": "/runs/{run_id}/kg/manifest",
+            "run_scouting_audit": "/runs/{run_id}/scouting-audit",
         },
         "defaults": {
             "agents": _env_int("COLONY_API_DEFAULT_AGENTS", 200),
@@ -334,6 +423,53 @@ def get_ants() -> dict:
         "source": _default_wallet_store(),
         "agents": ants,
     }
+
+
+@app.get("/kg/world-cup")
+def get_world_cup_kg() -> dict:
+    path = _safe_repo_path(str(WORLD_CUP_KG.relative_to(REPO_ROOT)))
+    graph = json.loads(path.read_text(encoding="utf-8"))
+    graph["entity_count"] = len(graph.get("entities") or [])
+    graph["relationship_count"] = len(graph.get("relationships") or [])
+    return graph
+
+
+@app.get("/kg/world-cup/summary", response_class=PlainTextResponse)
+def get_world_cup_kg_summary() -> PlainTextResponse:
+    path = _safe_repo_path(str(WORLD_CUP_KG_SUMMARY.relative_to(REPO_ROOT)))
+    return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="text/markdown")
+
+
+@app.post("/scouting/run", response_model=RunRecord, status_code=202)
+def start_scouting_run(request: ScoutingRunRequest, background_tasks: BackgroundTasks) -> dict:
+    if not RUN_MATCH.exists():
+        raise HTTPException(status_code=500, detail="colony/run_match.py is missing")
+    if not WORLD_CUP_KG.exists():
+        raise HTTPException(status_code=500, detail="World Cup KG is missing")
+
+    RUNS_ROOT.mkdir(parents=True, exist_ok=True)
+    run_id = f"scout_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    run_dir = _run_dir(run_id)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    command = _build_scouting_command(request, run_dir)
+    metadata = {
+        "id": run_id,
+        "kind": "scouting",
+        "status": "queued",
+        "created_at": _utc_now(),
+        "started_at": None,
+        "completed_at": None,
+        "returncode": None,
+        "command": command,
+        "run_dir": str(run_dir),
+        "events_path": str(run_dir / "events.jsonl"),
+        "compact_runs_dir": str(run_dir / "compact"),
+        "match": request.match,
+        "data_mode": request.data_mode,
+    }
+    _write_metadata(run_id, metadata)
+    background_tasks.add_task(_execute_run, run_id, command)
+    return metadata
 
 
 @app.post("/runs/demo", response_model=RunRecord, status_code=202)
@@ -394,6 +530,9 @@ def get_run(run_id: str) -> dict:
                 "summary": f"/runs/{run_id}/artifacts/{relative}/summary.md",
                 "decision": f"/runs/{run_id}/artifacts/{relative}/decision.compact.json",
                 "social_feed": f"/runs/{run_id}/artifacts/{relative}/social_feed.md",
+                "kg": f"/runs/{run_id}/kg",
+                "kg_manifest": f"/runs/{run_id}/kg/manifest",
+                "scouting_audit": f"/runs/{run_id}/scouting-audit",
             }
         )
     return metadata
@@ -444,6 +583,30 @@ def get_run_rooms(run_id: str) -> dict:
         "count": len(rooms),
         "rooms": rooms,
     }
+
+
+@app.get("/runs/{run_id}/kg")
+def get_run_kg(run_id: str) -> dict:
+    _read_metadata(run_id)
+    path = _latest_compact_artifact(run_id, "world_graph.json")
+    graph = json.loads(path.read_text(encoding="utf-8"))
+    graph["entity_count"] = len(graph.get("entities") or [])
+    graph["relationship_count"] = len(graph.get("relationships") or [])
+    return graph
+
+
+@app.get("/runs/{run_id}/kg/manifest")
+def get_run_kg_manifest(run_id: str) -> dict:
+    _read_metadata(run_id)
+    path = _latest_compact_artifact(run_id, "kg_manifest.json")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/runs/{run_id}/scouting-audit")
+def get_run_scouting_audit(run_id: str) -> dict:
+    _read_metadata(run_id)
+    path = _latest_compact_artifact(run_id, "scouting_audit.json")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @app.get("/runs/{run_id}/stream")

@@ -122,6 +122,40 @@ DN.databridge = (function () {
         return payload;
       });
   };
+  B.fetchWorldCupKg = function () {
+    if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
+    return fetch(apiUrl + '/kg/world-cup')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((payload) => {
+        B.worldCupKg = payload;
+        return payload;
+      });
+  };
+  B.startScoutingRun = function (opts) {
+    if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
+    const body = Object.assign(
+      {
+        match: 'Brazil vs Morocco',
+        data_mode: 'public',
+        include_deepseek_scout: true,
+        agents: 20,
+        rooms: 5,
+        seed: 12,
+        voice_mode: 'template',
+      },
+      opts || {},
+    );
+    return fetch(apiUrl + '/scouting/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
+      .then((run) => {
+        B.runId = run.id;
+        return pollScoutingRun(run.id);
+      });
+  };
 
   function parseJsonl(txt) {
     return txt
@@ -216,6 +250,32 @@ DN.databridge = (function () {
             } else if (run.status === 'failed' || ++tries > 120) {
               clearInterval(timer);
               reject(new Error(run.status === 'failed' ? 'Backend run failed.' : 'Backend run timed out.'));
+            }
+          })
+          .catch((err) => {
+            clearInterval(timer);
+            reject(err);
+          });
+      }, 1000);
+    });
+  }
+
+  function pollScoutingRun(runId) {
+    return new Promise((resolve, reject) => {
+      let tries = 0;
+      const timer = setInterval(() => {
+        fetch(apiUrl + '/runs/' + runId)
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .then((run) => {
+            if (run.status === 'succeeded') {
+              clearInterval(timer);
+              Promise.all([
+                fetch(apiUrl + '/runs/' + runId + '/kg/manifest').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+                fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+              ]).then(([manifest, audit]) => resolve({ id: runId, run, manifest, audit }));
+            } else if (run.status === 'failed' || ++tries > 300) {
+              clearInterval(timer);
+              reject(new Error(run.status === 'failed' ? 'Scouting run failed.' : 'Scouting run timed out.'));
             }
           })
           .catch((err) => {

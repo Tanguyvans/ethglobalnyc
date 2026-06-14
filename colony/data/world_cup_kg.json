@@ -1,0 +1,6817 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "matches": 104,
+        "source": "openfootball/worldcup.json"
+      },
+      "entity_id": "tournament:world_cup_2026",
+      "entity_type": "tournament",
+      "name": "World Cup 2026"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 1"
+      },
+      "entity_id": "stage:matchday_1",
+      "entity_type": "stage",
+      "name": "Matchday 1"
+    },
+    {
+      "attributes": {
+        "ground": "Mexico City"
+      },
+      "entity_id": "venue:mexico_city",
+      "entity_type": "venue",
+      "name": "Mexico City"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-11",
+        "ground": "Mexico City",
+        "group": "Group A",
+        "num": null,
+        "round": "Matchday 1",
+        "score": {
+          "ft": [
+            2,
+            0
+          ],
+          "ht": [
+            1,
+            0
+          ]
+        },
+        "team1": "Mexico",
+        "team2": "South Africa",
+        "time": "13:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "entity_type": "match",
+      "name": "Mexico vs South Africa"
+    },
+    {
+      "attributes": {
+        "group": "Group A"
+      },
+      "entity_id": "group:group_a",
+      "entity_type": "group",
+      "name": "Group A"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:mexico",
+      "entity_type": "team",
+      "name": "Mexico"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:south_africa",
+      "entity_type": "team",
+      "name": "South Africa"
+    },
+    {
+      "attributes": {
+        "ground": "Guadalajara (Zapopan)"
+      },
+      "entity_id": "venue:guadalajara_zapopan",
+      "entity_type": "venue",
+      "name": "Guadalajara (Zapopan)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-11",
+        "ground": "Guadalajara (Zapopan)",
+        "group": "Group A",
+        "num": null,
+        "round": "Matchday 1",
+        "score": {
+          "ft": [
+            2,
+            1
+          ],
+          "ht": [
+            0,
+            0
+          ]
+        },
+        "team1": "South Korea",
+        "team2": "Czech Republic",
+        "time": "20:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "entity_type": "match",
+      "name": "South Korea vs Czech Republic"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:south_korea",
+      "entity_type": "team",
+      "name": "South Korea"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:czech_republic",
+      "entity_type": "team",
+      "name": "Czech Republic"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 8"
+      },
+      "entity_id": "stage:matchday_8",
+      "entity_type": "stage",
+      "name": "Matchday 8"
+    },
+    {
+      "attributes": {
+        "ground": "Atlanta"
+      },
+      "entity_id": "venue:atlanta",
+      "entity_type": "venue",
+      "name": "Atlanta"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-18",
+        "ground": "Atlanta",
+        "group": "Group A",
+        "num": null,
+        "round": "Matchday 8",
+        "score": null,
+        "team1": "Czech Republic",
+        "team2": "South Africa",
+        "time": "12:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "entity_type": "match",
+      "name": "Czech Republic vs South Africa"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-18",
+        "ground": "Guadalajara (Zapopan)",
+        "group": "Group A",
+        "num": null,
+        "round": "Matchday 8",
+        "score": null,
+        "team1": "Mexico",
+        "team2": "South Korea",
+        "time": "19:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "entity_type": "match",
+      "name": "Mexico vs South Korea"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 14"
+      },
+      "entity_id": "stage:matchday_14",
+      "entity_type": "stage",
+      "name": "Matchday 14"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-24",
+        "ground": "Mexico City",
+        "group": "Group A",
+        "num": null,
+        "round": "Matchday 14",
+        "score": null,
+        "team1": "Czech Republic",
+        "team2": "Mexico",
+        "time": "19:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "entity_type": "match",
+      "name": "Czech Republic vs Mexico"
+    },
+    {
+      "attributes": {
+        "ground": "Monterrey (Guadalupe)"
+      },
+      "entity_id": "venue:monterrey_guadalupe",
+      "entity_type": "venue",
+      "name": "Monterrey (Guadalupe)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-24",
+        "ground": "Monterrey (Guadalupe)",
+        "group": "Group A",
+        "num": null,
+        "round": "Matchday 14",
+        "score": null,
+        "team1": "South Africa",
+        "team2": "South Korea",
+        "time": "19:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "entity_type": "match",
+      "name": "South Africa vs South Korea"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 2"
+      },
+      "entity_id": "stage:matchday_2",
+      "entity_type": "stage",
+      "name": "Matchday 2"
+    },
+    {
+      "attributes": {
+        "ground": "Toronto"
+      },
+      "entity_id": "venue:toronto",
+      "entity_type": "venue",
+      "name": "Toronto"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-12",
+        "ground": "Toronto",
+        "group": "Group B",
+        "num": null,
+        "round": "Matchday 2",
+        "score": {
+          "ft": [
+            1,
+            1
+          ],
+          "ht": [
+            0,
+            1
+          ]
+        },
+        "team1": "Canada",
+        "team2": "Bosnia & Herzegovina",
+        "time": "15:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "entity_type": "match",
+      "name": "Canada vs Bosnia & Herzegovina"
+    },
+    {
+      "attributes": {
+        "group": "Group B"
+      },
+      "entity_id": "group:group_b",
+      "entity_type": "group",
+      "name": "Group B"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:canada",
+      "entity_type": "team",
+      "name": "Canada"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:bosnia_herzegovina",
+      "entity_type": "team",
+      "name": "Bosnia & Herzegovina"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 3"
+      },
+      "entity_id": "stage:matchday_3",
+      "entity_type": "stage",
+      "name": "Matchday 3"
+    },
+    {
+      "attributes": {
+        "ground": "San Francisco Bay Area (Santa Clara)"
+      },
+      "entity_id": "venue:san_francisco_bay_area_santa_clara",
+      "entity_type": "venue",
+      "name": "San Francisco Bay Area (Santa Clara)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-13",
+        "ground": "San Francisco Bay Area (Santa Clara)",
+        "group": "Group B",
+        "num": null,
+        "round": "Matchday 3",
+        "score": null,
+        "team1": "Qatar",
+        "team2": "Switzerland",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "entity_type": "match",
+      "name": "Qatar vs Switzerland"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:qatar",
+      "entity_type": "team",
+      "name": "Qatar"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:switzerland",
+      "entity_type": "team",
+      "name": "Switzerland"
+    },
+    {
+      "attributes": {
+        "ground": "Los Angeles (Inglewood)"
+      },
+      "entity_id": "venue:los_angeles_inglewood",
+      "entity_type": "venue",
+      "name": "Los Angeles (Inglewood)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-18",
+        "ground": "Los Angeles (Inglewood)",
+        "group": "Group B",
+        "num": null,
+        "round": "Matchday 8",
+        "score": null,
+        "team1": "Switzerland",
+        "team2": "Bosnia & Herzegovina",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "entity_type": "match",
+      "name": "Switzerland vs Bosnia & Herzegovina"
+    },
+    {
+      "attributes": {
+        "ground": "Vancouver"
+      },
+      "entity_id": "venue:vancouver",
+      "entity_type": "venue",
+      "name": "Vancouver"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-18",
+        "ground": "Vancouver",
+        "group": "Group B",
+        "num": null,
+        "round": "Matchday 8",
+        "score": null,
+        "team1": "Canada",
+        "team2": "Qatar",
+        "time": "15:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "entity_type": "match",
+      "name": "Canada vs Qatar"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-24",
+        "ground": "Vancouver",
+        "group": "Group B",
+        "num": null,
+        "round": "Matchday 14",
+        "score": null,
+        "team1": "Switzerland",
+        "team2": "Canada",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "entity_type": "match",
+      "name": "Switzerland vs Canada"
+    },
+    {
+      "attributes": {
+        "ground": "Seattle"
+      },
+      "entity_id": "venue:seattle",
+      "entity_type": "venue",
+      "name": "Seattle"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-24",
+        "ground": "Seattle",
+        "group": "Group B",
+        "num": null,
+        "round": "Matchday 14",
+        "score": null,
+        "team1": "Bosnia & Herzegovina",
+        "team2": "Qatar",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "entity_type": "match",
+      "name": "Bosnia & Herzegovina vs Qatar"
+    },
+    {
+      "attributes": {
+        "ground": "New York/New Jersey (East Rutherford)"
+      },
+      "entity_id": "venue:new_york_new_jersey_east_rutherford",
+      "entity_type": "venue",
+      "name": "New York/New Jersey (East Rutherford)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-13",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": "Group C",
+        "num": null,
+        "round": "Matchday 3",
+        "score": null,
+        "team1": "Brazil",
+        "team2": "Morocco",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "entity_type": "match",
+      "name": "Brazil vs Morocco"
+    },
+    {
+      "attributes": {
+        "group": "Group C"
+      },
+      "entity_id": "group:group_c",
+      "entity_type": "group",
+      "name": "Group C"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:brazil",
+      "entity_type": "team",
+      "name": "Brazil"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:morocco",
+      "entity_type": "team",
+      "name": "Morocco"
+    },
+    {
+      "attributes": {
+        "ground": "Boston (Foxborough)"
+      },
+      "entity_id": "venue:boston_foxborough",
+      "entity_type": "venue",
+      "name": "Boston (Foxborough)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-13",
+        "ground": "Boston (Foxborough)",
+        "group": "Group C",
+        "num": null,
+        "round": "Matchday 3",
+        "score": null,
+        "team1": "Haiti",
+        "team2": "Scotland",
+        "time": "21:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "entity_type": "match",
+      "name": "Haiti vs Scotland"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:haiti",
+      "entity_type": "team",
+      "name": "Haiti"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:scotland",
+      "entity_type": "team",
+      "name": "Scotland"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 9"
+      },
+      "entity_id": "stage:matchday_9",
+      "entity_type": "stage",
+      "name": "Matchday 9"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-19",
+        "ground": "Boston (Foxborough)",
+        "group": "Group C",
+        "num": null,
+        "round": "Matchday 9",
+        "score": null,
+        "team1": "Scotland",
+        "team2": "Morocco",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "entity_type": "match",
+      "name": "Scotland vs Morocco"
+    },
+    {
+      "attributes": {
+        "ground": "Philadelphia"
+      },
+      "entity_id": "venue:philadelphia",
+      "entity_type": "venue",
+      "name": "Philadelphia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-19",
+        "ground": "Philadelphia",
+        "group": "Group C",
+        "num": null,
+        "round": "Matchday 9",
+        "score": null,
+        "team1": "Brazil",
+        "team2": "Haiti",
+        "time": "20:30 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "entity_type": "match",
+      "name": "Brazil vs Haiti"
+    },
+    {
+      "attributes": {
+        "ground": "Miami (Miami Gardens)"
+      },
+      "entity_id": "venue:miami_miami_gardens",
+      "entity_type": "venue",
+      "name": "Miami (Miami Gardens)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-24",
+        "ground": "Miami (Miami Gardens)",
+        "group": "Group C",
+        "num": null,
+        "round": "Matchday 14",
+        "score": null,
+        "team1": "Scotland",
+        "team2": "Brazil",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "entity_type": "match",
+      "name": "Scotland vs Brazil"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-24",
+        "ground": "Atlanta",
+        "group": "Group C",
+        "num": null,
+        "round": "Matchday 14",
+        "score": null,
+        "team1": "Morocco",
+        "team2": "Haiti",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "entity_type": "match",
+      "name": "Morocco vs Haiti"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-12",
+        "ground": "Los Angeles (Inglewood)",
+        "group": "Group D",
+        "num": null,
+        "round": "Matchday 2",
+        "score": {
+          "ft": [
+            4,
+            1
+          ],
+          "ht": [
+            3,
+            0
+          ]
+        },
+        "team1": "USA",
+        "team2": "Paraguay",
+        "time": "18:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "entity_type": "match",
+      "name": "USA vs Paraguay"
+    },
+    {
+      "attributes": {
+        "group": "Group D"
+      },
+      "entity_id": "group:group_d",
+      "entity_type": "group",
+      "name": "Group D"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:usa",
+      "entity_type": "team",
+      "name": "USA"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:paraguay",
+      "entity_type": "team",
+      "name": "Paraguay"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-13",
+        "ground": "Vancouver",
+        "group": "Group D",
+        "num": null,
+        "round": "Matchday 3",
+        "score": null,
+        "team1": "Australia",
+        "team2": "Turkey",
+        "time": "21:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "entity_type": "match",
+      "name": "Australia vs Turkey"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:australia",
+      "entity_type": "team",
+      "name": "Australia"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:turkey",
+      "entity_type": "team",
+      "name": "Turkey"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-19",
+        "ground": "Seattle",
+        "group": "Group D",
+        "num": null,
+        "round": "Matchday 9",
+        "score": null,
+        "team1": "USA",
+        "team2": "Australia",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "entity_type": "match",
+      "name": "USA vs Australia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-19",
+        "ground": "San Francisco Bay Area (Santa Clara)",
+        "group": "Group D",
+        "num": null,
+        "round": "Matchday 9",
+        "score": null,
+        "team1": "Turkey",
+        "team2": "Paraguay",
+        "time": "20:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "entity_type": "match",
+      "name": "Turkey vs Paraguay"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 15"
+      },
+      "entity_id": "stage:matchday_15",
+      "entity_type": "stage",
+      "name": "Matchday 15"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-25",
+        "ground": "Los Angeles (Inglewood)",
+        "group": "Group D",
+        "num": null,
+        "round": "Matchday 15",
+        "score": null,
+        "team1": "Turkey",
+        "team2": "USA",
+        "time": "19:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "entity_type": "match",
+      "name": "Turkey vs USA"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-25",
+        "ground": "San Francisco Bay Area (Santa Clara)",
+        "group": "Group D",
+        "num": null,
+        "round": "Matchday 15",
+        "score": null,
+        "team1": "Paraguay",
+        "team2": "Australia",
+        "time": "19:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "entity_type": "match",
+      "name": "Paraguay vs Australia"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 4"
+      },
+      "entity_id": "stage:matchday_4",
+      "entity_type": "stage",
+      "name": "Matchday 4"
+    },
+    {
+      "attributes": {
+        "ground": "Houston"
+      },
+      "entity_id": "venue:houston",
+      "entity_type": "venue",
+      "name": "Houston"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-14",
+        "ground": "Houston",
+        "group": "Group E",
+        "num": null,
+        "round": "Matchday 4",
+        "score": null,
+        "team1": "Germany",
+        "team2": "Curaçao",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "entity_type": "match",
+      "name": "Germany vs Curaçao"
+    },
+    {
+      "attributes": {
+        "group": "Group E"
+      },
+      "entity_id": "group:group_e",
+      "entity_type": "group",
+      "name": "Group E"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:germany",
+      "entity_type": "team",
+      "name": "Germany"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:cura_ao",
+      "entity_type": "team",
+      "name": "Curaçao"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-14",
+        "ground": "Philadelphia",
+        "group": "Group E",
+        "num": null,
+        "round": "Matchday 4",
+        "score": null,
+        "team1": "Ivory Coast",
+        "team2": "Ecuador",
+        "time": "19:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "entity_type": "match",
+      "name": "Ivory Coast vs Ecuador"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:ivory_coast",
+      "entity_type": "team",
+      "name": "Ivory Coast"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:ecuador",
+      "entity_type": "team",
+      "name": "Ecuador"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 10"
+      },
+      "entity_id": "stage:matchday_10",
+      "entity_type": "stage",
+      "name": "Matchday 10"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-20",
+        "ground": "Toronto",
+        "group": "Group E",
+        "num": null,
+        "round": "Matchday 10",
+        "score": null,
+        "team1": "Germany",
+        "team2": "Ivory Coast",
+        "time": "16:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "entity_type": "match",
+      "name": "Germany vs Ivory Coast"
+    },
+    {
+      "attributes": {
+        "ground": "Kansas City"
+      },
+      "entity_id": "venue:kansas_city",
+      "entity_type": "venue",
+      "name": "Kansas City"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-20",
+        "ground": "Kansas City",
+        "group": "Group E",
+        "num": null,
+        "round": "Matchday 10",
+        "score": null,
+        "team1": "Ecuador",
+        "team2": "Curaçao",
+        "time": "19:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "entity_type": "match",
+      "name": "Ecuador vs Curaçao"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-25",
+        "ground": "Philadelphia",
+        "group": "Group E",
+        "num": null,
+        "round": "Matchday 15",
+        "score": null,
+        "team1": "Curaçao",
+        "team2": "Ivory Coast",
+        "time": "16:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "entity_type": "match",
+      "name": "Curaçao vs Ivory Coast"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-25",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": "Group E",
+        "num": null,
+        "round": "Matchday 15",
+        "score": null,
+        "team1": "Ecuador",
+        "team2": "Germany",
+        "time": "16:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "entity_type": "match",
+      "name": "Ecuador vs Germany"
+    },
+    {
+      "attributes": {
+        "ground": "Dallas (Arlington)"
+      },
+      "entity_id": "venue:dallas_arlington",
+      "entity_type": "venue",
+      "name": "Dallas (Arlington)"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-14",
+        "ground": "Dallas (Arlington)",
+        "group": "Group F",
+        "num": null,
+        "round": "Matchday 4",
+        "score": null,
+        "team1": "Netherlands",
+        "team2": "Japan",
+        "time": "15:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "entity_type": "match",
+      "name": "Netherlands vs Japan"
+    },
+    {
+      "attributes": {
+        "group": "Group F"
+      },
+      "entity_id": "group:group_f",
+      "entity_type": "group",
+      "name": "Group F"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:netherlands",
+      "entity_type": "team",
+      "name": "Netherlands"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:japan",
+      "entity_type": "team",
+      "name": "Japan"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-14",
+        "ground": "Monterrey (Guadalupe)",
+        "group": "Group F",
+        "num": null,
+        "round": "Matchday 4",
+        "score": null,
+        "team1": "Sweden",
+        "team2": "Tunisia",
+        "time": "20:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "entity_type": "match",
+      "name": "Sweden vs Tunisia"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:sweden",
+      "entity_type": "team",
+      "name": "Sweden"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:tunisia",
+      "entity_type": "team",
+      "name": "Tunisia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-20",
+        "ground": "Houston",
+        "group": "Group F",
+        "num": null,
+        "round": "Matchday 10",
+        "score": null,
+        "team1": "Netherlands",
+        "team2": "Sweden",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "entity_type": "match",
+      "name": "Netherlands vs Sweden"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-20",
+        "ground": "Monterrey (Guadalupe)",
+        "group": "Group F",
+        "num": null,
+        "round": "Matchday 10",
+        "score": null,
+        "team1": "Tunisia",
+        "team2": "Japan",
+        "time": "22:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "entity_type": "match",
+      "name": "Tunisia vs Japan"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-25",
+        "ground": "Dallas (Arlington)",
+        "group": "Group F",
+        "num": null,
+        "round": "Matchday 15",
+        "score": null,
+        "team1": "Japan",
+        "team2": "Sweden",
+        "time": "18:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "entity_type": "match",
+      "name": "Japan vs Sweden"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-25",
+        "ground": "Kansas City",
+        "group": "Group F",
+        "num": null,
+        "round": "Matchday 15",
+        "score": null,
+        "team1": "Tunisia",
+        "team2": "Netherlands",
+        "time": "18:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "entity_type": "match",
+      "name": "Tunisia vs Netherlands"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 5"
+      },
+      "entity_id": "stage:matchday_5",
+      "entity_type": "stage",
+      "name": "Matchday 5"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-15",
+        "ground": "Seattle",
+        "group": "Group G",
+        "num": null,
+        "round": "Matchday 5",
+        "score": null,
+        "team1": "Belgium",
+        "team2": "Egypt",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "entity_type": "match",
+      "name": "Belgium vs Egypt"
+    },
+    {
+      "attributes": {
+        "group": "Group G"
+      },
+      "entity_id": "group:group_g",
+      "entity_type": "group",
+      "name": "Group G"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:belgium",
+      "entity_type": "team",
+      "name": "Belgium"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:egypt",
+      "entity_type": "team",
+      "name": "Egypt"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-15",
+        "ground": "Los Angeles (Inglewood)",
+        "group": "Group G",
+        "num": null,
+        "round": "Matchday 5",
+        "score": null,
+        "team1": "Iran",
+        "team2": "New Zealand",
+        "time": "18:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "entity_type": "match",
+      "name": "Iran vs New Zealand"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:iran",
+      "entity_type": "team",
+      "name": "Iran"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:new_zealand",
+      "entity_type": "team",
+      "name": "New Zealand"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 11"
+      },
+      "entity_id": "stage:matchday_11",
+      "entity_type": "stage",
+      "name": "Matchday 11"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-21",
+        "ground": "Los Angeles (Inglewood)",
+        "group": "Group G",
+        "num": null,
+        "round": "Matchday 11",
+        "score": null,
+        "team1": "Belgium",
+        "team2": "Iran",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "entity_type": "match",
+      "name": "Belgium vs Iran"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-21",
+        "ground": "Vancouver",
+        "group": "Group G",
+        "num": null,
+        "round": "Matchday 11",
+        "score": null,
+        "team1": "New Zealand",
+        "team2": "Egypt",
+        "time": "18:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "entity_type": "match",
+      "name": "New Zealand vs Egypt"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 16"
+      },
+      "entity_id": "stage:matchday_16",
+      "entity_type": "stage",
+      "name": "Matchday 16"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-26",
+        "ground": "Seattle",
+        "group": "Group G",
+        "num": null,
+        "round": "Matchday 16",
+        "score": null,
+        "team1": "Egypt",
+        "team2": "Iran",
+        "time": "20:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "entity_type": "match",
+      "name": "Egypt vs Iran"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-26",
+        "ground": "Vancouver",
+        "group": "Group G",
+        "num": null,
+        "round": "Matchday 16",
+        "score": null,
+        "team1": "New Zealand",
+        "team2": "Belgium",
+        "time": "20:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "entity_type": "match",
+      "name": "New Zealand vs Belgium"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-15",
+        "ground": "Atlanta",
+        "group": "Group H",
+        "num": null,
+        "round": "Matchday 5",
+        "score": null,
+        "team1": "Spain",
+        "team2": "Cape Verde",
+        "time": "12:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "entity_type": "match",
+      "name": "Spain vs Cape Verde"
+    },
+    {
+      "attributes": {
+        "group": "Group H"
+      },
+      "entity_id": "group:group_h",
+      "entity_type": "group",
+      "name": "Group H"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:spain",
+      "entity_type": "team",
+      "name": "Spain"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:cape_verde",
+      "entity_type": "team",
+      "name": "Cape Verde"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-15",
+        "ground": "Miami (Miami Gardens)",
+        "group": "Group H",
+        "num": null,
+        "round": "Matchday 5",
+        "score": null,
+        "team1": "Saudi Arabia",
+        "team2": "Uruguay",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "entity_type": "match",
+      "name": "Saudi Arabia vs Uruguay"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:saudi_arabia",
+      "entity_type": "team",
+      "name": "Saudi Arabia"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:uruguay",
+      "entity_type": "team",
+      "name": "Uruguay"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-21",
+        "ground": "Atlanta",
+        "group": "Group H",
+        "num": null,
+        "round": "Matchday 11",
+        "score": null,
+        "team1": "Spain",
+        "team2": "Saudi Arabia",
+        "time": "12:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "entity_type": "match",
+      "name": "Spain vs Saudi Arabia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-21",
+        "ground": "Miami (Miami Gardens)",
+        "group": "Group H",
+        "num": null,
+        "round": "Matchday 11",
+        "score": null,
+        "team1": "Uruguay",
+        "team2": "Cape Verde",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "entity_type": "match",
+      "name": "Uruguay vs Cape Verde"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-26",
+        "ground": "Houston",
+        "group": "Group H",
+        "num": null,
+        "round": "Matchday 16",
+        "score": null,
+        "team1": "Cape Verde",
+        "team2": "Saudi Arabia",
+        "time": "19:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "entity_type": "match",
+      "name": "Cape Verde vs Saudi Arabia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-26",
+        "ground": "Guadalajara (Zapopan)",
+        "group": "Group H",
+        "num": null,
+        "round": "Matchday 16",
+        "score": null,
+        "team1": "Uruguay",
+        "team2": "Spain",
+        "time": "18:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "entity_type": "match",
+      "name": "Uruguay vs Spain"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 6"
+      },
+      "entity_id": "stage:matchday_6",
+      "entity_type": "stage",
+      "name": "Matchday 6"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-16",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": "Group I",
+        "num": null,
+        "round": "Matchday 6",
+        "score": null,
+        "team1": "France",
+        "team2": "Senegal",
+        "time": "15:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "entity_type": "match",
+      "name": "France vs Senegal"
+    },
+    {
+      "attributes": {
+        "group": "Group I"
+      },
+      "entity_id": "group:group_i",
+      "entity_type": "group",
+      "name": "Group I"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:france",
+      "entity_type": "team",
+      "name": "France"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:senegal",
+      "entity_type": "team",
+      "name": "Senegal"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-16",
+        "ground": "Boston (Foxborough)",
+        "group": "Group I",
+        "num": null,
+        "round": "Matchday 6",
+        "score": null,
+        "team1": "Iraq",
+        "team2": "Norway",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "entity_type": "match",
+      "name": "Iraq vs Norway"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:iraq",
+      "entity_type": "team",
+      "name": "Iraq"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:norway",
+      "entity_type": "team",
+      "name": "Norway"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 12"
+      },
+      "entity_id": "stage:matchday_12",
+      "entity_type": "stage",
+      "name": "Matchday 12"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-22",
+        "ground": "Philadelphia",
+        "group": "Group I",
+        "num": null,
+        "round": "Matchday 12",
+        "score": null,
+        "team1": "France",
+        "team2": "Iraq",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "entity_type": "match",
+      "name": "France vs Iraq"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-22",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": "Group I",
+        "num": null,
+        "round": "Matchday 12",
+        "score": null,
+        "team1": "Norway",
+        "team2": "Senegal",
+        "time": "20:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "entity_type": "match",
+      "name": "Norway vs Senegal"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-26",
+        "ground": "Boston (Foxborough)",
+        "group": "Group I",
+        "num": null,
+        "round": "Matchday 16",
+        "score": null,
+        "team1": "Norway",
+        "team2": "France",
+        "time": "15:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "entity_type": "match",
+      "name": "Norway vs France"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-26",
+        "ground": "Toronto",
+        "group": "Group I",
+        "num": null,
+        "round": "Matchday 16",
+        "score": null,
+        "team1": "Senegal",
+        "team2": "Iraq",
+        "time": "15:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "entity_type": "match",
+      "name": "Senegal vs Iraq"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-16",
+        "ground": "Kansas City",
+        "group": "Group J",
+        "num": null,
+        "round": "Matchday 6",
+        "score": null,
+        "team1": "Argentina",
+        "team2": "Algeria",
+        "time": "20:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "entity_type": "match",
+      "name": "Argentina vs Algeria"
+    },
+    {
+      "attributes": {
+        "group": "Group J"
+      },
+      "entity_id": "group:group_j",
+      "entity_type": "group",
+      "name": "Group J"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:argentina",
+      "entity_type": "team",
+      "name": "Argentina"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:algeria",
+      "entity_type": "team",
+      "name": "Algeria"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-16",
+        "ground": "San Francisco Bay Area (Santa Clara)",
+        "group": "Group J",
+        "num": null,
+        "round": "Matchday 6",
+        "score": null,
+        "team1": "Austria",
+        "team2": "Jordan",
+        "time": "21:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "entity_type": "match",
+      "name": "Austria vs Jordan"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:austria",
+      "entity_type": "team",
+      "name": "Austria"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:jordan",
+      "entity_type": "team",
+      "name": "Jordan"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-22",
+        "ground": "Dallas (Arlington)",
+        "group": "Group J",
+        "num": null,
+        "round": "Matchday 12",
+        "score": null,
+        "team1": "Argentina",
+        "team2": "Austria",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "entity_type": "match",
+      "name": "Argentina vs Austria"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-22",
+        "ground": "San Francisco Bay Area (Santa Clara)",
+        "group": "Group J",
+        "num": null,
+        "round": "Matchday 12",
+        "score": null,
+        "team1": "Jordan",
+        "team2": "Algeria",
+        "time": "20:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "entity_type": "match",
+      "name": "Jordan vs Algeria"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 17"
+      },
+      "entity_id": "stage:matchday_17",
+      "entity_type": "stage",
+      "name": "Matchday 17"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-27",
+        "ground": "Kansas City",
+        "group": "Group J",
+        "num": null,
+        "round": "Matchday 17",
+        "score": null,
+        "team1": "Algeria",
+        "team2": "Austria",
+        "time": "21:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "entity_type": "match",
+      "name": "Algeria vs Austria"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-27",
+        "ground": "Dallas (Arlington)",
+        "group": "Group J",
+        "num": null,
+        "round": "Matchday 17",
+        "score": null,
+        "team1": "Jordan",
+        "team2": "Argentina",
+        "time": "21:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "entity_type": "match",
+      "name": "Jordan vs Argentina"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 7"
+      },
+      "entity_id": "stage:matchday_7",
+      "entity_type": "stage",
+      "name": "Matchday 7"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-17",
+        "ground": "Houston",
+        "group": "Group K",
+        "num": null,
+        "round": "Matchday 7",
+        "score": null,
+        "team1": "Portugal",
+        "team2": "DR Congo",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "entity_type": "match",
+      "name": "Portugal vs DR Congo"
+    },
+    {
+      "attributes": {
+        "group": "Group K"
+      },
+      "entity_id": "group:group_k",
+      "entity_type": "group",
+      "name": "Group K"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:portugal",
+      "entity_type": "team",
+      "name": "Portugal"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:dr_congo",
+      "entity_type": "team",
+      "name": "DR Congo"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-17",
+        "ground": "Mexico City",
+        "group": "Group K",
+        "num": null,
+        "round": "Matchday 7",
+        "score": null,
+        "team1": "Uzbekistan",
+        "team2": "Colombia",
+        "time": "20:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "entity_type": "match",
+      "name": "Uzbekistan vs Colombia"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:uzbekistan",
+      "entity_type": "team",
+      "name": "Uzbekistan"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:colombia",
+      "entity_type": "team",
+      "name": "Colombia"
+    },
+    {
+      "attributes": {
+        "round": "Matchday 13"
+      },
+      "entity_id": "stage:matchday_13",
+      "entity_type": "stage",
+      "name": "Matchday 13"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-23",
+        "ground": "Houston",
+        "group": "Group K",
+        "num": null,
+        "round": "Matchday 13",
+        "score": null,
+        "team1": "Portugal",
+        "team2": "Uzbekistan",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "entity_type": "match",
+      "name": "Portugal vs Uzbekistan"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-23",
+        "ground": "Guadalajara (Zapopan)",
+        "group": "Group K",
+        "num": null,
+        "round": "Matchday 13",
+        "score": null,
+        "team1": "Colombia",
+        "team2": "DR Congo",
+        "time": "20:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "entity_type": "match",
+      "name": "Colombia vs DR Congo"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-27",
+        "ground": "Miami (Miami Gardens)",
+        "group": "Group K",
+        "num": null,
+        "round": "Matchday 17",
+        "score": null,
+        "team1": "Colombia",
+        "team2": "Portugal",
+        "time": "19:30 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "entity_type": "match",
+      "name": "Colombia vs Portugal"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-27",
+        "ground": "Atlanta",
+        "group": "Group K",
+        "num": null,
+        "round": "Matchday 17",
+        "score": null,
+        "team1": "DR Congo",
+        "team2": "Uzbekistan",
+        "time": "19:30 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "entity_type": "match",
+      "name": "DR Congo vs Uzbekistan"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-17",
+        "ground": "Dallas (Arlington)",
+        "group": "Group L",
+        "num": null,
+        "round": "Matchday 7",
+        "score": null,
+        "team1": "England",
+        "team2": "Croatia",
+        "time": "15:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "entity_type": "match",
+      "name": "England vs Croatia"
+    },
+    {
+      "attributes": {
+        "group": "Group L"
+      },
+      "entity_id": "group:group_l",
+      "entity_type": "group",
+      "name": "Group L"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:england",
+      "entity_type": "team",
+      "name": "England"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:croatia",
+      "entity_type": "team",
+      "name": "Croatia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-17",
+        "ground": "Toronto",
+        "group": "Group L",
+        "num": null,
+        "round": "Matchday 7",
+        "score": null,
+        "team1": "Ghana",
+        "team2": "Panama",
+        "time": "19:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "entity_type": "match",
+      "name": "Ghana vs Panama"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:ghana",
+      "entity_type": "team",
+      "name": "Ghana"
+    },
+    {
+      "attributes": {},
+      "entity_id": "team:panama",
+      "entity_type": "team",
+      "name": "Panama"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-23",
+        "ground": "Boston (Foxborough)",
+        "group": "Group L",
+        "num": null,
+        "round": "Matchday 13",
+        "score": null,
+        "team1": "England",
+        "team2": "Ghana",
+        "time": "16:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "entity_type": "match",
+      "name": "England vs Ghana"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-23",
+        "ground": "Toronto",
+        "group": "Group L",
+        "num": null,
+        "round": "Matchday 13",
+        "score": null,
+        "team1": "Panama",
+        "team2": "Croatia",
+        "time": "19:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "entity_type": "match",
+      "name": "Panama vs Croatia"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-27",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": "Group L",
+        "num": null,
+        "round": "Matchday 17",
+        "score": null,
+        "team1": "Panama",
+        "team2": "England",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "entity_type": "match",
+      "name": "Panama vs England"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-27",
+        "ground": "Philadelphia",
+        "group": "Group L",
+        "num": null,
+        "round": "Matchday 17",
+        "score": null,
+        "team1": "Croatia",
+        "team2": "Ghana",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "entity_type": "match",
+      "name": "Croatia vs Ghana"
+    },
+    {
+      "attributes": {
+        "round": "Round of 32"
+      },
+      "entity_id": "stage:round_of_32",
+      "entity_type": "stage",
+      "name": "Round of 32"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-28",
+        "ground": "Los Angeles (Inglewood)",
+        "group": null,
+        "num": 73,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "2A",
+        "team2": "2B",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:073",
+      "entity_type": "match",
+      "name": "2A vs 2B"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-29",
+        "ground": "Boston (Foxborough)",
+        "group": null,
+        "num": 74,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1E",
+        "team2": "3A/B/C/D/F",
+        "time": "16:30 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:074",
+      "entity_type": "match",
+      "name": "1E vs 3A/B/C/D/F"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-29",
+        "ground": "Monterrey (Guadalupe)",
+        "group": null,
+        "num": 75,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1F",
+        "team2": "2C",
+        "time": "19:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:075",
+      "entity_type": "match",
+      "name": "1F vs 2C"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-29",
+        "ground": "Houston",
+        "group": null,
+        "num": 76,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1C",
+        "team2": "2F",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:076",
+      "entity_type": "match",
+      "name": "1C vs 2F"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-30",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": null,
+        "num": 77,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1I",
+        "team2": "3C/D/F/G/H",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:077",
+      "entity_type": "match",
+      "name": "1I vs 3C/D/F/G/H"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-30",
+        "ground": "Dallas (Arlington)",
+        "group": null,
+        "num": 78,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "2E",
+        "team2": "2I",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:078",
+      "entity_type": "match",
+      "name": "2E vs 2I"
+    },
+    {
+      "attributes": {
+        "date": "2026-06-30",
+        "ground": "Mexico City",
+        "group": null,
+        "num": 79,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1A",
+        "team2": "3C/E/F/H/I",
+        "time": "19:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:079",
+      "entity_type": "match",
+      "name": "1A vs 3C/E/F/H/I"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-01",
+        "ground": "Atlanta",
+        "group": null,
+        "num": 80,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1L",
+        "team2": "3E/H/I/J/K",
+        "time": "12:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:080",
+      "entity_type": "match",
+      "name": "1L vs 3E/H/I/J/K"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-01",
+        "ground": "San Francisco Bay Area (Santa Clara)",
+        "group": null,
+        "num": 81,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1D",
+        "team2": "3B/E/F/I/J",
+        "time": "17:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:081",
+      "entity_type": "match",
+      "name": "1D vs 3B/E/F/I/J"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-01",
+        "ground": "Seattle",
+        "group": null,
+        "num": 82,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1G",
+        "team2": "3A/E/H/I/J",
+        "time": "13:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:082",
+      "entity_type": "match",
+      "name": "1G vs 3A/E/H/I/J"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-02",
+        "ground": "Toronto",
+        "group": null,
+        "num": 83,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "2K",
+        "team2": "2L",
+        "time": "19:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:083",
+      "entity_type": "match",
+      "name": "2K vs 2L"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-02",
+        "ground": "Los Angeles (Inglewood)",
+        "group": null,
+        "num": 84,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1H",
+        "team2": "2J",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:084",
+      "entity_type": "match",
+      "name": "1H vs 2J"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-02",
+        "ground": "Vancouver",
+        "group": null,
+        "num": 85,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1B",
+        "team2": "3E/F/G/I/J",
+        "time": "20:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:085",
+      "entity_type": "match",
+      "name": "1B vs 3E/F/G/I/J"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-03",
+        "ground": "Miami (Miami Gardens)",
+        "group": null,
+        "num": 86,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1J",
+        "team2": "2H",
+        "time": "18:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:086",
+      "entity_type": "match",
+      "name": "1J vs 2H"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-03",
+        "ground": "Kansas City",
+        "group": null,
+        "num": 87,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "1K",
+        "team2": "3D/E/I/J/L",
+        "time": "20:30 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:087",
+      "entity_type": "match",
+      "name": "1K vs 3D/E/I/J/L"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-03",
+        "ground": "Dallas (Arlington)",
+        "group": null,
+        "num": 88,
+        "round": "Round of 32",
+        "score": null,
+        "team1": "2D",
+        "team2": "2G",
+        "time": "13:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:088",
+      "entity_type": "match",
+      "name": "2D vs 2G"
+    },
+    {
+      "attributes": {
+        "round": "Round of 16"
+      },
+      "entity_id": "stage:round_of_16",
+      "entity_type": "stage",
+      "name": "Round of 16"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-04",
+        "ground": "Philadelphia",
+        "group": null,
+        "num": 89,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W74",
+        "team2": "W77",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:089",
+      "entity_type": "match",
+      "name": "W74 vs W77"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-04",
+        "ground": "Houston",
+        "group": null,
+        "num": 90,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W73",
+        "team2": "W75",
+        "time": "12:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:090",
+      "entity_type": "match",
+      "name": "W73 vs W75"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-05",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": null,
+        "num": 91,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W76",
+        "team2": "W78",
+        "time": "16:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:091",
+      "entity_type": "match",
+      "name": "W76 vs W78"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-05",
+        "ground": "Mexico City",
+        "group": null,
+        "num": 92,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W79",
+        "team2": "W80",
+        "time": "18:00 UTC-6"
+      },
+      "entity_id": "match:world_cup_2026:092",
+      "entity_type": "match",
+      "name": "W79 vs W80"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-06",
+        "ground": "Dallas (Arlington)",
+        "group": null,
+        "num": 93,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W83",
+        "team2": "W84",
+        "time": "14:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:093",
+      "entity_type": "match",
+      "name": "W83 vs W84"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-06",
+        "ground": "Seattle",
+        "group": null,
+        "num": 94,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W81",
+        "team2": "W82",
+        "time": "17:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:094",
+      "entity_type": "match",
+      "name": "W81 vs W82"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-07",
+        "ground": "Atlanta",
+        "group": null,
+        "num": 95,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W86",
+        "team2": "W88",
+        "time": "12:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:095",
+      "entity_type": "match",
+      "name": "W86 vs W88"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-07",
+        "ground": "Vancouver",
+        "group": null,
+        "num": 96,
+        "round": "Round of 16",
+        "score": null,
+        "team1": "W85",
+        "team2": "W87",
+        "time": "13:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:096",
+      "entity_type": "match",
+      "name": "W85 vs W87"
+    },
+    {
+      "attributes": {
+        "round": "Quarter-final"
+      },
+      "entity_id": "stage:quarter_final",
+      "entity_type": "stage",
+      "name": "Quarter-final"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-09",
+        "ground": "Boston (Foxborough)",
+        "group": null,
+        "num": 97,
+        "round": "Quarter-final",
+        "score": null,
+        "team1": "W89",
+        "team2": "W90",
+        "time": "16:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:097",
+      "entity_type": "match",
+      "name": "W89 vs W90"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-10",
+        "ground": "Los Angeles (Inglewood)",
+        "group": null,
+        "num": 98,
+        "round": "Quarter-final",
+        "score": null,
+        "team1": "W93",
+        "team2": "W94",
+        "time": "12:00 UTC-7"
+      },
+      "entity_id": "match:world_cup_2026:098",
+      "entity_type": "match",
+      "name": "W93 vs W94"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-11",
+        "ground": "Miami (Miami Gardens)",
+        "group": null,
+        "num": 99,
+        "round": "Quarter-final",
+        "score": null,
+        "team1": "W91",
+        "team2": "W92",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:099",
+      "entity_type": "match",
+      "name": "W91 vs W92"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-11",
+        "ground": "Kansas City",
+        "group": null,
+        "num": 100,
+        "round": "Quarter-final",
+        "score": null,
+        "team1": "W95",
+        "team2": "W96",
+        "time": "20:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:100",
+      "entity_type": "match",
+      "name": "W95 vs W96"
+    },
+    {
+      "attributes": {
+        "round": "Semi-final"
+      },
+      "entity_id": "stage:semi_final",
+      "entity_type": "stage",
+      "name": "Semi-final"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-14",
+        "ground": "Dallas (Arlington)",
+        "group": null,
+        "num": 101,
+        "round": "Semi-final",
+        "score": null,
+        "team1": "W97",
+        "team2": "W98",
+        "time": "14:00 UTC-5"
+      },
+      "entity_id": "match:world_cup_2026:101",
+      "entity_type": "match",
+      "name": "W97 vs W98"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-15",
+        "ground": "Atlanta",
+        "group": null,
+        "num": 102,
+        "round": "Semi-final",
+        "score": null,
+        "team1": "W99",
+        "team2": "W100",
+        "time": "15:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:102",
+      "entity_type": "match",
+      "name": "W99 vs W100"
+    },
+    {
+      "attributes": {
+        "round": "Match for third place"
+      },
+      "entity_id": "stage:match_for_third_place",
+      "entity_type": "stage",
+      "name": "Match for third place"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-18",
+        "ground": "Miami (Miami Gardens)",
+        "group": null,
+        "num": 103,
+        "round": "Match for third place",
+        "score": null,
+        "team1": "L101",
+        "team2": "L102",
+        "time": "17:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:103",
+      "entity_type": "match",
+      "name": "L101 vs L102"
+    },
+    {
+      "attributes": {
+        "round": "Final"
+      },
+      "entity_id": "stage:final",
+      "entity_type": "stage",
+      "name": "Final"
+    },
+    {
+      "attributes": {
+        "date": "2026-07-19",
+        "ground": "New York/New Jersey (East Rutherford)",
+        "group": null,
+        "num": 104,
+        "round": "Final",
+        "score": null,
+        "team1": "W101",
+        "team2": "W102",
+        "time": "15:00 UTC-4"
+      },
+      "entity_id": "match:world_cup_2026:104",
+      "entity_type": "match",
+      "name": "W101 vs W102"
+    }
+  ],
+  "graph_id": "tournament:world_cup_2026",
+  "relationships": [
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "target_id": "stage:matchday_1",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "target_id": "venue:mexico_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_a",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:mexico",
+      "target_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:south_africa",
+      "target_id": "match:world_cup_2026:001:2026_06_11_mexico_south_africa",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "target_id": "stage:matchday_1",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "target_id": "venue:guadalajara_zapopan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:south_korea",
+      "target_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:czech_republic",
+      "target_id": "match:world_cup_2026:002:2026_06_11_south_korea_czech_republic",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "target_id": "stage:matchday_8",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:czech_republic",
+      "target_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:south_africa",
+      "target_id": "match:world_cup_2026:003:2026_06_18_czech_republic_south_africa",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "target_id": "stage:matchday_8",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "target_id": "venue:guadalajara_zapopan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:mexico",
+      "target_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:south_korea",
+      "target_id": "match:world_cup_2026:004:2026_06_18_mexico_south_korea",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "target_id": "stage:matchday_14",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "target_id": "venue:mexico_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:czech_republic",
+      "target_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:mexico",
+      "target_id": "match:world_cup_2026:005:2026_06_24_czech_republic_mexico",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "target_id": "stage:matchday_14",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "target_id": "venue:monterrey_guadalupe",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:south_africa",
+      "target_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:south_korea",
+      "target_id": "match:world_cup_2026:006:2026_06_24_south_africa_south_korea",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "target_id": "stage:matchday_2",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "target_id": "venue:toronto",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_b",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:canada",
+      "target_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:bosnia_herzegovina",
+      "target_id": "match:world_cup_2026:007:2026_06_12_canada_bosnia_herzegovina",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "target_id": "stage:matchday_3",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "target_id": "venue:san_francisco_bay_area_santa_clara",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:qatar",
+      "target_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:switzerland",
+      "target_id": "match:world_cup_2026:008:2026_06_13_qatar_switzerland",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "target_id": "stage:matchday_8",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:switzerland",
+      "target_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:bosnia_herzegovina",
+      "target_id": "match:world_cup_2026:009:2026_06_18_switzerland_bosnia_herzegovina",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "target_id": "stage:matchday_8",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:canada",
+      "target_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:qatar",
+      "target_id": "match:world_cup_2026:010:2026_06_18_canada_qatar",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "target_id": "stage:matchday_14",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:switzerland",
+      "target_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:canada",
+      "target_id": "match:world_cup_2026:011:2026_06_24_switzerland_canada",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "target_id": "stage:matchday_14",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "target_id": "venue:seattle",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:bosnia_herzegovina",
+      "target_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:qatar",
+      "target_id": "match:world_cup_2026:012:2026_06_24_bosnia_herzegovina_qatar",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "target_id": "stage:matchday_3",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_c",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:brazil",
+      "target_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:morocco",
+      "target_id": "match:world_cup_2026:013:2026_06_13_brazil_morocco",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "target_id": "stage:matchday_3",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:haiti",
+      "target_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:scotland",
+      "target_id": "match:world_cup_2026:014:2026_06_13_haiti_scotland",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "target_id": "stage:matchday_9",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:scotland",
+      "target_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:morocco",
+      "target_id": "match:world_cup_2026:015:2026_06_19_scotland_morocco",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "target_id": "stage:matchday_9",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "target_id": "venue:philadelphia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:brazil",
+      "target_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:haiti",
+      "target_id": "match:world_cup_2026:016:2026_06_19_brazil_haiti",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "target_id": "stage:matchday_14",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:scotland",
+      "target_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:brazil",
+      "target_id": "match:world_cup_2026:017:2026_06_24_scotland_brazil",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "target_id": "stage:matchday_14",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:morocco",
+      "target_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:haiti",
+      "target_id": "match:world_cup_2026:018:2026_06_24_morocco_haiti",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "target_id": "stage:matchday_2",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_d",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:usa",
+      "target_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:paraguay",
+      "target_id": "match:world_cup_2026:019:2026_06_12_usa_paraguay",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "target_id": "stage:matchday_3",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:australia",
+      "target_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:turkey",
+      "target_id": "match:world_cup_2026:020:2026_06_13_australia_turkey",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "target_id": "stage:matchday_9",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "target_id": "venue:seattle",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:usa",
+      "target_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:australia",
+      "target_id": "match:world_cup_2026:021:2026_06_19_usa_australia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "target_id": "stage:matchday_9",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "target_id": "venue:san_francisco_bay_area_santa_clara",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:turkey",
+      "target_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:paraguay",
+      "target_id": "match:world_cup_2026:022:2026_06_19_turkey_paraguay",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "target_id": "stage:matchday_15",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:turkey",
+      "target_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:usa",
+      "target_id": "match:world_cup_2026:023:2026_06_25_turkey_usa",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "target_id": "stage:matchday_15",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "target_id": "venue:san_francisco_bay_area_santa_clara",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:paraguay",
+      "target_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:australia",
+      "target_id": "match:world_cup_2026:024:2026_06_25_paraguay_australia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "target_id": "stage:matchday_4",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_e",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:germany",
+      "target_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:cura_ao",
+      "target_id": "match:world_cup_2026:025:2026_06_14_germany_cura_ao",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "target_id": "stage:matchday_4",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "target_id": "venue:philadelphia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:ivory_coast",
+      "target_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:ecuador",
+      "target_id": "match:world_cup_2026:026:2026_06_14_ivory_coast_ecuador",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "target_id": "stage:matchday_10",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "target_id": "venue:toronto",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:germany",
+      "target_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:ivory_coast",
+      "target_id": "match:world_cup_2026:027:2026_06_20_germany_ivory_coast",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "target_id": "stage:matchday_10",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "target_id": "venue:kansas_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:ecuador",
+      "target_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:cura_ao",
+      "target_id": "match:world_cup_2026:028:2026_06_20_ecuador_cura_ao",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "target_id": "stage:matchday_15",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "target_id": "venue:philadelphia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:cura_ao",
+      "target_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:ivory_coast",
+      "target_id": "match:world_cup_2026:029:2026_06_25_cura_ao_ivory_coast",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "target_id": "stage:matchday_15",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:ecuador",
+      "target_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:germany",
+      "target_id": "match:world_cup_2026:030:2026_06_25_ecuador_germany",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "target_id": "stage:matchday_4",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_f",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:netherlands",
+      "target_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:japan",
+      "target_id": "match:world_cup_2026:031:2026_06_14_netherlands_japan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "target_id": "stage:matchday_4",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "target_id": "venue:monterrey_guadalupe",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:sweden",
+      "target_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:tunisia",
+      "target_id": "match:world_cup_2026:032:2026_06_14_sweden_tunisia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "target_id": "stage:matchday_10",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:netherlands",
+      "target_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:sweden",
+      "target_id": "match:world_cup_2026:033:2026_06_20_netherlands_sweden",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "target_id": "stage:matchday_10",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "target_id": "venue:monterrey_guadalupe",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:tunisia",
+      "target_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:japan",
+      "target_id": "match:world_cup_2026:034:2026_06_20_tunisia_japan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "target_id": "stage:matchday_15",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:japan",
+      "target_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:sweden",
+      "target_id": "match:world_cup_2026:035:2026_06_25_japan_sweden",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "target_id": "stage:matchday_15",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "target_id": "venue:kansas_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:tunisia",
+      "target_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:netherlands",
+      "target_id": "match:world_cup_2026:036:2026_06_25_tunisia_netherlands",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "target_id": "stage:matchday_5",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "target_id": "venue:seattle",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_g",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:belgium",
+      "target_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:egypt",
+      "target_id": "match:world_cup_2026:037:2026_06_15_belgium_egypt",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "target_id": "stage:matchday_5",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:iran",
+      "target_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:new_zealand",
+      "target_id": "match:world_cup_2026:038:2026_06_15_iran_new_zealand",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "target_id": "stage:matchday_11",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:belgium",
+      "target_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:iran",
+      "target_id": "match:world_cup_2026:039:2026_06_21_belgium_iran",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "target_id": "stage:matchday_11",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:new_zealand",
+      "target_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:egypt",
+      "target_id": "match:world_cup_2026:040:2026_06_21_new_zealand_egypt",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "target_id": "stage:matchday_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "target_id": "venue:seattle",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:egypt",
+      "target_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:iran",
+      "target_id": "match:world_cup_2026:041:2026_06_26_egypt_iran",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "target_id": "stage:matchday_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:new_zealand",
+      "target_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:belgium",
+      "target_id": "match:world_cup_2026:042:2026_06_26_new_zealand_belgium",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "target_id": "stage:matchday_5",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_h",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:spain",
+      "target_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:cape_verde",
+      "target_id": "match:world_cup_2026:043:2026_06_15_spain_cape_verde",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "target_id": "stage:matchday_5",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:saudi_arabia",
+      "target_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:uruguay",
+      "target_id": "match:world_cup_2026:044:2026_06_15_saudi_arabia_uruguay",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "target_id": "stage:matchday_11",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:spain",
+      "target_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:saudi_arabia",
+      "target_id": "match:world_cup_2026:045:2026_06_21_spain_saudi_arabia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "target_id": "stage:matchday_11",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:uruguay",
+      "target_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:cape_verde",
+      "target_id": "match:world_cup_2026:046:2026_06_21_uruguay_cape_verde",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "target_id": "stage:matchday_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:cape_verde",
+      "target_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:saudi_arabia",
+      "target_id": "match:world_cup_2026:047:2026_06_26_cape_verde_saudi_arabia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "target_id": "stage:matchday_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "target_id": "venue:guadalajara_zapopan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:uruguay",
+      "target_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:spain",
+      "target_id": "match:world_cup_2026:048:2026_06_26_uruguay_spain",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "target_id": "stage:matchday_6",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_i",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:france",
+      "target_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:senegal",
+      "target_id": "match:world_cup_2026:049:2026_06_16_france_senegal",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "target_id": "stage:matchday_6",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:iraq",
+      "target_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:norway",
+      "target_id": "match:world_cup_2026:050:2026_06_16_iraq_norway",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "target_id": "stage:matchday_12",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "target_id": "venue:philadelphia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:france",
+      "target_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:iraq",
+      "target_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "target_id": "stage:matchday_12",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:norway",
+      "target_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:senegal",
+      "target_id": "match:world_cup_2026:052:2026_06_22_norway_senegal",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "target_id": "stage:matchday_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:norway",
+      "target_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:france",
+      "target_id": "match:world_cup_2026:053:2026_06_26_norway_france",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "target_id": "stage:matchday_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "target_id": "venue:toronto",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:senegal",
+      "target_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:iraq",
+      "target_id": "match:world_cup_2026:054:2026_06_26_senegal_iraq",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "target_id": "stage:matchday_6",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "target_id": "venue:kansas_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_j",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:argentina",
+      "target_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:algeria",
+      "target_id": "match:world_cup_2026:055:2026_06_16_argentina_algeria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "target_id": "stage:matchday_6",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "target_id": "venue:san_francisco_bay_area_santa_clara",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:austria",
+      "target_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:jordan",
+      "target_id": "match:world_cup_2026:056:2026_06_16_austria_jordan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "target_id": "stage:matchday_12",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:argentina",
+      "target_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:austria",
+      "target_id": "match:world_cup_2026:057:2026_06_22_argentina_austria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "target_id": "stage:matchday_12",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "target_id": "venue:san_francisco_bay_area_santa_clara",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:jordan",
+      "target_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:algeria",
+      "target_id": "match:world_cup_2026:058:2026_06_22_jordan_algeria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "target_id": "stage:matchday_17",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "target_id": "venue:kansas_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:algeria",
+      "target_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:austria",
+      "target_id": "match:world_cup_2026:059:2026_06_27_algeria_austria",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "target_id": "stage:matchday_17",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:jordan",
+      "target_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:argentina",
+      "target_id": "match:world_cup_2026:060:2026_06_27_jordan_argentina",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "target_id": "stage:matchday_7",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_k",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:portugal",
+      "target_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:dr_congo",
+      "target_id": "match:world_cup_2026:061:2026_06_17_portugal_dr_congo",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "target_id": "stage:matchday_7",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "target_id": "venue:mexico_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:uzbekistan",
+      "target_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:colombia",
+      "target_id": "match:world_cup_2026:062:2026_06_17_uzbekistan_colombia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "target_id": "stage:matchday_13",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:portugal",
+      "target_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:uzbekistan",
+      "target_id": "match:world_cup_2026:063:2026_06_23_portugal_uzbekistan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "target_id": "stage:matchday_13",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "target_id": "venue:guadalajara_zapopan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:colombia",
+      "target_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:dr_congo",
+      "target_id": "match:world_cup_2026:064:2026_06_23_colombia_dr_congo",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "target_id": "stage:matchday_17",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:colombia",
+      "target_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:portugal",
+      "target_id": "match:world_cup_2026:065:2026_06_27_colombia_portugal",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "target_id": "stage:matchday_17",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:dr_congo",
+      "target_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:uzbekistan",
+      "target_id": "match:world_cup_2026:066:2026_06_27_dr_congo_uzbekistan",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "target_id": "stage:matchday_7",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "group:group_l",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:england",
+      "target_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:croatia",
+      "target_id": "match:world_cup_2026:067:2026_06_17_england_croatia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "target_id": "stage:matchday_7",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "target_id": "venue:toronto",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:ghana",
+      "target_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:panama",
+      "target_id": "match:world_cup_2026:068:2026_06_17_ghana_panama",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "target_id": "stage:matchday_13",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:england",
+      "target_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:ghana",
+      "target_id": "match:world_cup_2026:069:2026_06_23_england_ghana",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "target_id": "stage:matchday_13",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "target_id": "venue:toronto",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:panama",
+      "target_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:croatia",
+      "target_id": "match:world_cup_2026:070:2026_06_23_panama_croatia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "target_id": "stage:matchday_17",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:panama",
+      "target_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:england",
+      "target_id": "match:world_cup_2026:071:2026_06_27_panama_england",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "target_id": "stage:matchday_17",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "target_id": "venue:philadelphia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_group",
+      "source_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "home"
+      },
+      "relation_type": "plays_home_in",
+      "source_id": "team:croatia",
+      "target_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "weight": 1.0
+    },
+    {
+      "attributes": {
+        "side": "away"
+      },
+      "relation_type": "plays_away_in",
+      "source_id": "team:ghana",
+      "target_id": "match:world_cup_2026:072:2026_06_27_croatia_ghana",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:073",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:073",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:073",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:074",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:074",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:074",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:075",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:075",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:075",
+      "target_id": "venue:monterrey_guadalupe",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:076",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:076",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:076",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:077",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:077",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:077",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:078",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:078",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:078",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:079",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:079",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:079",
+      "target_id": "venue:mexico_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:080",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:080",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:080",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:081",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:081",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:081",
+      "target_id": "venue:san_francisco_bay_area_santa_clara",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:082",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:082",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:082",
+      "target_id": "venue:seattle",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:083",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:083",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:083",
+      "target_id": "venue:toronto",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:084",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:084",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:084",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:085",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:085",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:085",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:086",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:086",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:086",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:087",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:087",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:087",
+      "target_id": "venue:kansas_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:088",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:088",
+      "target_id": "stage:round_of_32",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:088",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:089",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:089",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:089",
+      "target_id": "venue:philadelphia",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:090",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:090",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:090",
+      "target_id": "venue:houston",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:091",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:091",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:091",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:092",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:092",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:092",
+      "target_id": "venue:mexico_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:093",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:093",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:093",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:094",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:094",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:094",
+      "target_id": "venue:seattle",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:095",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:095",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:095",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:096",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:096",
+      "target_id": "stage:round_of_16",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:096",
+      "target_id": "venue:vancouver",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:097",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:097",
+      "target_id": "stage:quarter_final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:097",
+      "target_id": "venue:boston_foxborough",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:098",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:098",
+      "target_id": "stage:quarter_final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:098",
+      "target_id": "venue:los_angeles_inglewood",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:099",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:099",
+      "target_id": "stage:quarter_final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:099",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:100",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:100",
+      "target_id": "stage:quarter_final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:100",
+      "target_id": "venue:kansas_city",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:101",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:101",
+      "target_id": "stage:semi_final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:101",
+      "target_id": "venue:dallas_arlington",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:102",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:102",
+      "target_id": "stage:semi_final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:102",
+      "target_id": "venue:atlanta",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:103",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:103",
+      "target_id": "stage:match_for_third_place",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:103",
+      "target_id": "venue:miami_miami_gardens",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "part_of",
+      "source_id": "match:world_cup_2026:104",
+      "target_id": "tournament:world_cup_2026",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "in_stage",
+      "source_id": "match:world_cup_2026:104",
+      "target_id": "stage:final",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "played_at",
+      "source_id": "match:world_cup_2026:104",
+      "target_id": "venue:new_york_new_jersey_east_rutherford",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:mexico",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:south_africa",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:south_korea",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:czech_republic",
+      "target_id": "group:group_a",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:canada",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:bosnia_herzegovina",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:qatar",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:switzerland",
+      "target_id": "group:group_b",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:brazil",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:morocco",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:haiti",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:scotland",
+      "target_id": "group:group_c",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:usa",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:paraguay",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:australia",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:turkey",
+      "target_id": "group:group_d",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:germany",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:cura_ao",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:ivory_coast",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:ecuador",
+      "target_id": "group:group_e",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:netherlands",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:japan",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:sweden",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:tunisia",
+      "target_id": "group:group_f",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:belgium",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:egypt",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:iran",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:new_zealand",
+      "target_id": "group:group_g",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:spain",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:cape_verde",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:saudi_arabia",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:uruguay",
+      "target_id": "group:group_h",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:france",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:senegal",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:iraq",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:norway",
+      "target_id": "group:group_i",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:argentina",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:algeria",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:austria",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:jordan",
+      "target_id": "group:group_j",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:portugal",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:dr_congo",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:uzbekistan",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:colombia",
+      "target_id": "group:group_k",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:england",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:croatia",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:ghana",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    },
+    {
+      "attributes": {},
+      "relation_type": "member_of",
+      "source_id": "team:panama",
+      "target_id": "group:group_l",
+      "weight": 1.0
+    }
+  ],
+  "round_id": "world_cup_2026"
+}

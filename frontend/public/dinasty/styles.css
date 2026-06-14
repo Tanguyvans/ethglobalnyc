@@ -74,15 +74,15 @@ body.underground #atmos {
 /* ---------- backend run test ---------- */
 #backend {
   position: absolute; top: 24px; right: 24px; display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px 8px 12px; max-width: 370px;
+  padding: 8px 10px 8px 12px; max-width: 520px;
 }
 .backend-copy { min-width: 0; }
 .backend-k { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-faint); font-weight: 650; }
 .backend-s { margin-top: 2px; font-size: 11px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.backend-actions { display: flex; align-items: center; gap: 7px; flex: none; }
+.backend-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex: none; flex-wrap: wrap; }
 .backend-btn {
   border: 1px solid var(--gold-deep); border-radius: 4px; background: var(--gold); color: #2a1d08;
-  font: 700 11px var(--font); padding: 8px 10px; cursor: pointer; white-space: nowrap;
+  font: 700 11px var(--font); padding: 7px 9px; cursor: pointer; white-space: nowrap;
 }
 .backend-btn.secondary { background: var(--slot); color: var(--ink); border-color: var(--border-strong); }
 .backend-btn:disabled { opacity: 0.58; cursor: wait; }

@@ -44,27 +44,87 @@ DN.hud = (function () {
     root.innerHTML =
       '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
       '<div class="backend-actions">' +
+        '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
+        '<button class="backend-btn secondary" id="backend-kg">Get KG</button>' +
+        '<button class="backend-btn secondary" id="backend-scout">Run scouting</button>' +
         '<button class="backend-btn" id="backend-run">Run LLM agents</button>' +
       '</div>';
     const btn = $('backend-run');
+    const antsBtn = $('backend-ants');
+    const kgBtn = $('backend-kg');
+    const scoutBtn = $('backend-scout');
     const status = $('backend-status');
 
     // Auto-fetch ants from the Railway API every 15s, then bind each
     // record (wallet/ENS/etc.) to a scene ant so clicking a worker shows
     // its on-chain identity. Errors are kept quiet so the status bar
     // doesn't flicker between transient network issues.
-    function pollAgents() {
-      if (!DN.databridge || !DN.databridge.fetchAgents) return;
-      DN.databridge.fetchAgents()
+    function pollAgents(showErrors) {
+      if (!DN.databridge || !DN.databridge.fetchAgents) return Promise.resolve(null);
+      return DN.databridge.fetchAgents()
         .then((payload) => {
           const records = payload.agents || [];
           status.textContent = records.length + ' ants · live';
           if (DN.ants && DN.ants.bindAgentRecords) DN.ants.bindAgentRecords(records);
+          return records;
         })
-        .catch(() => { /* keep last good status */ });
+        .catch((err) => {
+          if (showErrors) {
+            status.textContent = 'Ant fetch error';
+            H.pushThought('Could not fetch ants: ' + (err.message || err), 'Backend', '#D96E54');
+          }
+          return null;
+        });
     }
-    pollAgents();
-    setInterval(pollAgents, 15000);
+    pollAgents(false);
+    setInterval(() => pollAgents(false), 15000);
+
+    antsBtn.addEventListener('click', () => {
+      antsBtn.disabled = true;
+      status.textContent = 'Getting ants...';
+      pollAgents(true)
+        .then((records) => {
+          if (records) H.pushThought('Frontend fetched ' + records.length + ' ants from the Railway API.', 'Backend', '#3FA89F');
+        })
+        .finally(() => { antsBtn.disabled = false; });
+    });
+    kgBtn.addEventListener('click', () => {
+      if (!DN.databridge || !DN.databridge.fetchWorldCupKg) return;
+      kgBtn.disabled = true;
+      status.textContent = 'Getting KG...';
+      DN.databridge.fetchWorldCupKg()
+        .then((payload) => {
+          const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
+          const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
+          status.textContent = entities + ' KG entities · ' + links + ' links';
+          H.pushThought('Frontend loaded the World Cup KG from Railway: ' + entities + ' entities, ' + links + ' links.', 'Backend', '#3FA89F');
+        })
+        .catch((err) => {
+          status.textContent = 'KG fetch error';
+          H.pushThought('Could not fetch KG: ' + (err.message || err), 'Backend', '#D96E54');
+        })
+        .finally(() => { kgBtn.disabled = false; });
+    });
+    scoutBtn.addEventListener('click', () => {
+      if (!DN.databridge || !DN.databridge.startScoutingRun) return;
+      scoutBtn.disabled = true;
+      status.textContent = 'Scouting...';
+      H.pushThought('Frontend started a public-data KG scouting run on Railway.', 'Backend', '#3FA89F');
+      DN.databridge.startScoutingRun()
+        .then((result) => {
+          const manifest = result.manifest || {};
+          const entities = manifest.entity_count || 0;
+          const links = manifest.relationship_count || 0;
+          const ready = manifest.validation && manifest.validation.kg_load_ready === false ? 'needs review' : 'ready';
+          status.textContent = 'Scouting ' + ready + ' · ' + entities + ' entities';
+          H.pushThought('Scouting finished: ' + entities + ' KG entities and ' + links + ' relationships.', 'Backend', '#3FA89F');
+        })
+        .catch((err) => {
+          status.textContent = 'Scouting error';
+          H.pushThought('Scouting failed: ' + (err.message || err), 'Backend', '#D96E54');
+        })
+        .finally(() => { scoutBtn.disabled = false; });
+    });
     btn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startDemoRun) return;
       btn.disabled = true;

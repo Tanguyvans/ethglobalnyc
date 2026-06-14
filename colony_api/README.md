@@ -123,6 +123,48 @@ Response shape:
 }
 ```
 
+## Get KG
+
+For a static KG smoke test, use `GET /kg/world-cup`. This serves the committed
+World Cup tournament graph.
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/kg/world-cup
+curl https://ethglobalnyc-production.up.railway.app/kg/world-cup/summary
+```
+
+The graph response includes convenience counts:
+
+```json
+{
+  "graph_id": "tournament:world_cup_2026",
+  "entity_count": 204,
+  "relationship_count": 588,
+  "entities": [],
+  "relationships": []
+}
+```
+
+## Run Scouting
+
+The frontend can start a public-data KG scouting run with `POST /scouting/run`.
+By default this runs `colony/run_match.py` for Brazil vs Morocco with public
+data and the DeepSeek structured scouting agents enabled.
+
+```bash
+curl -X POST https://ethglobalnyc-production.up.railway.app/scouting/run \
+  -H "Content-Type: application/json" \
+  -d '{"match":"Brazil vs Morocco","data_mode":"public","include_deepseek_scout":true,"agents":20,"rooms":5,"seed":12,"voice_mode":"template"}'
+```
+
+When the run succeeds, fetch the generated KG artifacts:
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/kg
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/kg/manifest
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/scouting-audit
+```
+
 ## Poll Run Status
 
 ```bash
@@ -138,7 +180,10 @@ When complete, the response includes links such as:
     "events": "/runs/run_.../events",
     "stream": "/runs/run_.../stream",
     "summary": "/runs/run_.../artifacts/compact/.../summary.md",
-    "decision": "/runs/run_.../artifacts/compact/.../decision.compact.json"
+    "decision": "/runs/run_.../artifacts/compact/.../decision.compact.json",
+    "kg": "/runs/run_.../kg",
+    "kg_manifest": "/runs/run_.../kg/manifest",
+    "scouting_audit": "/runs/run_.../scouting-audit"
   }
 }
 ```
