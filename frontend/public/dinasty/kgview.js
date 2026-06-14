@@ -160,6 +160,26 @@ DN.kgview = (function () {
     return related.length + ' connected nodes';
   }
 
+  function contextMatchMarkup(node, related) {
+    const type = typeFor(node);
+    if (!['stage', 'venue', 'group', 'tournament'].includes(type)) return '';
+    const matches = related.filter((item) => typeFor(item.node) === 'match');
+    if (!matches.length) return '';
+    return '<div class="kg-subhead">Context data from linked matches</div>' +
+      '<div class="kg-links">' +
+      matches.slice(0, 8).map((item) => {
+        const attrs = item.node.attributes || {};
+        const bits = [attrs.date, attrs.time, attrs.ground].filter(Boolean).join(' · ');
+        return '<a href="' + nodeUrl(item.id) + '" data-kg-jump="' + encodeURIComponent(item.id) + '">' +
+          '<i>match</i>' +
+          '<span>' + escapeHtml(shortLabel(labelFor(item.node))) + (bits ? ' · ' + escapeHtml(bits) : '') + '</span>' +
+          '<em>open</em>' +
+        '</a>';
+      }).join('') +
+      (matches.length > 8 ? '<div class="kg-more">+' + (matches.length - 8) + ' more matches in this context</div>' : '') +
+      '</div>';
+  }
+
   function renderDetail(id) {
     const node = nodes.get(id);
     if (!node || !detailEl) return;
@@ -181,6 +201,7 @@ DN.kgview = (function () {
         '</a>'
       ).join('') + (hiddenCount ? '<div class="kg-more">+' + hiddenCount + ' more linked nodes</div>' : '') + '</div>'
       : '<div class="kg-more">No loaded links yet.</div>';
+    const contextMarkup = contextMatchMarkup(node, related);
 
     detailEl.innerHTML =
       '<div class="kg-detail-head">' +
@@ -189,6 +210,7 @@ DN.kgview = (function () {
       '</div>' +
       '<p>' + escapeHtml(describeNode(node, related)) + '</p>' +
       attrMarkup +
+      contextMarkup +
       '<div class="kg-subhead">Linked nodes</div>' +
       linksMarkup;
 
