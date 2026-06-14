@@ -884,7 +884,7 @@ DN.hud = (function () {
         const parentId = rec.agent_id;
         reproduceBtn.disabled = true;
         reproduceBtn.textContent = 'Creating child...';
-        H.pushThought('Creating a child ant from ' + (ens || parentId) + ': ENS lineage, wallet, and funding plan.', 'Lineage', '#5FB84A');
+        H.pushThought('Creating a child ant from ' + (ens || parentId) + ': ENS lineage, destination wallet, and treasury funding plan.', 'Lineage', '#5FB84A');
         if (DN.logTerm) DN.logTerm.push('LINEAGE', 'Reproducing ' + (ens || parentId) + ' into a new ENS-linked child ant.');
         DN.databridge.reproduceAnt({ parent_agent_id: parentId })
           .then((payload) => {
@@ -892,10 +892,11 @@ DN.hud = (function () {
             const childName = child.ens_name || child.agent_id || 'child ant';
             const funding = child.funding || {};
             const fundStatus = funding.status ? ' · funding ' + funding.status : '';
-            const walletLine = child.wallet_address ? ' wallet=' + child.wallet_address : '';
+            const walletLine = child.wallet_address ? ' destination_wallet=' + child.wallet_address : '';
             const profileLine = child.profile_url || (child.agent_id && DN.databridge && DN.databridge.apiUrl ? DN.databridge.apiUrl + '/ants/' + child.agent_id + '.json' : '');
             if (DN.logTerm) {
               DN.logTerm.push('LINEAGE', 'Created ' + childName + ' agent_id=' + (child.agent_id || '?') + walletLine + fundStatus + '.');
+              DN.logTerm.push('LINEAGE', 'Funding source: ARC treasury/project ENS wallet; child wallet is the destination.');
               if (profileLine) DN.logTerm.push('LINEAGE', 'Profile JSON ' + profileLine);
               if (payload.source) DN.logTerm.push('LINEAGE', 'Persisted child record at ' + payload.source);
             }
