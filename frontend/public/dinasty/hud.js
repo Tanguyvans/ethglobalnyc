@@ -192,18 +192,59 @@ DN.hud = (function () {
       const byId = new Map();
       const selectedCoreIds = new Set();
       const keep = new Set();
+      const selectedTeamNames = new Set([homeNeedle, awayNeedle].filter(Boolean));
 
       entities.forEach((entity) => {
         const id = entityId(entity);
         if (id) byId.set(id, entity);
       });
 
+      function isSelectedTeamName(value) {
+        return selectedTeamNames.has(norm(value));
+      }
+
+      function isSelectedPlayerData(entity) {
+        const attrs = (entity && entity.attributes) || {};
+        const type = entity && (entity.entity_type || entity.type);
+        if (!['player', 'player_match_profile', 'player_stat_line', 'availability_event'].includes(type)) return false;
+        return isSelectedTeamName(attrs.team);
+      }
+
+      function isSelectedTeamProfile(entity) {
+        const attrs = (entity && entity.attributes) || {};
+        const type = entity && (entity.entity_type || entity.type);
+        if (type !== 'team_match_profile') return false;
+        if (!isSelectedTeamName(attrs.team)) return false;
+        return !attrs.match_id || attrs.match_id === matchId || norm(attrs.match_id) === norm(matchId);
+      }
+
+      function isSelectedEvidence(entity) {
+        const type = entity && (entity.entity_type || entity.type);
+        if (!['finding', 'evidence_claim', 'debate_claim', 'prediction'].includes(type)) return false;
+        return false;
+      }
+
+      function canExpandTo(entity) {
+        const type = entity && (entity.entity_type || entity.type);
+        return [
+          'player',
+          'player_match_profile',
+          'player_stat_line',
+          'team_match_profile',
+          'club',
+          'position',
+          'availability_event',
+          'availability_status',
+          'body_part',
+          'formation',
+        ].includes(type);
+      }
+
       entities.forEach((entity) => {
         const id = entityId(entity);
         if (!id) return;
         const attrs = entity.attributes || {};
         const type = entity.entity_type || entity.type;
-        const text = entityText(entity);
         const attrHome = norm(attrs.team1 || attrs.home_team);
         const attrAway = norm(attrs.team2 || attrs.away_team);
         const isSelectedMatch = id === matchId ||
@@ -211,31 +252,26 @@ DN.hud = (function () {
           (attrHome === homeNeedle && attrAway === awayNeedle) ||
           (attrHome === awayNeedle && attrAway === homeNeedle);
         const isSelectedTeam = type === 'team' && (norm(entity.name) === homeNeedle || norm(entity.name) === awayNeedle);
-        const usefulType = isUsefulKgType(type);
-        const mentionsSelectedContext =
-          (homeNeedle && text.includes(homeNeedle)) ||
-          (awayNeedle && text.includes(awayNeedle)) ||
-          (matchNeedle && text.includes(matchNeedle));
-        if (isSelectedMatch || isSelectedTeam) {
+        if (isSelectedMatch || isSelectedTeam || isSelectedPlayerData(entity) || isSelectedTeamProfile(entity) || isSelectedEvidence(entity)) {
           keep.add(id);
           selectedCoreIds.add(id);
-        } else if (usefulType && mentionsSelectedContext) {
-          keep.add(id);
         }
       });
 
-      const seeds = new Set(keep);
-      relationships.forEach((edge) => {
-        const source = edgeSource(edge);
-        const target = edgeTarget(edge);
-        if (!source || !target) return;
-        const sourceEntity = byId.get(source);
-        const targetEntity = byId.get(target);
-        const sourceAllowed = selectedCoreIds.has(source) || isUsefulKgType(sourceEntity && (sourceEntity.entity_type || sourceEntity.type));
-        const targetAllowed = selectedCoreIds.has(target) || isUsefulKgType(targetEntity && (targetEntity.entity_type || targetEntity.type));
-        if (seeds.has(source) && targetAllowed) keep.add(target);
-        if (seeds.has(target) && sourceAllowed) keep.add(source);
-      });
+      for (let pass = 0; pass < 3; pass++) {
+        const seeds = new Set(keep);
+        relationships.forEach((edge) => {
+          const source = edgeSource(edge);
+          const target = edgeTarget(edge);
+          if (!source || !target) return;
+          const sourceEntity = byId.get(source);
+          const targetEntity = byId.get(target);
+          const sourceAllowed = selectedCoreIds.has(source) || canExpandTo(sourceEntity);
+          const targetAllowed = selectedCoreIds.has(target) || canExpandTo(targetEntity);
+          if (seeds.has(source) && targetAllowed) keep.add(target);
+          if (seeds.has(target) && sourceAllowed) keep.add(source);
+        });
+      }
 
       const scopedEntities = entities.filter((entity) => keep.has(entityId(entity)));
       const scopedRelationships = relationships.filter((edge) => keep.has(edgeSource(edge)) && keep.has(edgeTarget(edge)));

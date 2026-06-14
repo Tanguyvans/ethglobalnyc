@@ -127,6 +127,7 @@ body.underground #atmos {
 .kg-band { fill: none; stroke: rgba(74,58,30,0.18); stroke-linecap: round; }
 .kg-node { cursor: pointer; }
 .kg-node circle { stroke: rgba(255,255,255,0.78); stroke-width: 1.4; filter: drop-shadow(0 1px 0 rgba(74,58,30,0.2)); }
+.kg-node.focused circle { stroke-width: 1.7; filter: drop-shadow(0 1.5px 0 rgba(74,58,30,0.22)); }
 .kg-node.compact circle { stroke-width: 1.8; filter: drop-shadow(0 2px 0 rgba(74,58,30,0.22)); }
 .kg-node:hover circle { stroke: #fff; stroke-width: 2.4; }
 .kg-node.dim { opacity: 0.25; }
@@ -144,6 +145,7 @@ body.underground #atmos {
   100% { filter: drop-shadow(0 1px 0 rgba(74,58,30,0.2)); }
 }
 .kg-node text { fill: var(--ink-soft); font: 700 9px var(--font); text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(243,235,211,0.88); stroke-width: 3px; }
+.kg-node.focused text { font-size: 10px; stroke-width: 3.2px; }
 .kg-node.compact text { font-size: 11px; stroke-width: 3.5px; }
 .kg-selected-edge { stroke: rgba(176,126,28,0.58); stroke-width: 2.2; stroke-linecap: round; }
 .kg-detail {

@@ -22,15 +22,19 @@ DN.kgview = (function () {
     evidence_claim: '#4E7E2A',
     source: '#5E5440',
     player: '#B07E1C',
+    club: '#4F8FA8',
+    position: '#6C8F3D',
     default: '#2C2820',
   };
   const groupDefs = [
     { id: 'matches', label: 'Matches', types: ['match', 'match_result'], x: 470, y: 220, color: '#3FA89F' },
-    { id: 'teams', label: 'Teams', types: ['team', 'team_match_profile', 'player', 'player_match_profile', 'player_stat_line'], x: 250, y: 255, color: '#E8A23D' },
-    { id: 'scouts', label: 'Scouts', types: ['scout', 'scout_match_profile', 'prediction', 'predictor', 'genome'], x: 690, y: 255, color: '#8E79C4' },
-    { id: 'evidence', label: 'Evidence', types: ['finding', 'evidence_claim', 'debate_claim', 'scouting_topic', 'team_scouting_topic', 'scouting_gap'], x: 470, y: 360, color: '#D96E54' },
-    { id: 'sources', label: 'Sources', types: ['source', 'source_domain', 'source_domain_profile', 'source_kind', 'source_quality', 'source_recency'], x: 790, y: 125, color: '#5E5440' },
-    { id: 'context', label: 'Context', types: ['venue', 'group', 'stage', 'claim_type', 'claim_impact', 'claim_quality', 'metric', 'formation', 'position', 'club', 'availability_event', 'availability_status', 'body_part'], x: 150, y: 125, color: '#4E7E2A' },
+    { id: 'teams', label: 'Teams', types: ['team', 'team_match_profile'], x: 210, y: 230, color: '#E8A23D' },
+    { id: 'players', label: 'Players', types: ['player', 'player_match_profile', 'player_stat_line'], x: 390, y: 345, color: '#B07E1C' },
+    { id: 'clubs', label: 'Clubs', types: ['club'], x: 650, y: 230, color: '#4F8FA8' },
+    { id: 'scouts', label: 'Scouts', types: ['scout', 'scout_match_profile', 'prediction', 'predictor', 'genome'], x: 735, y: 345, color: '#8E79C4' },
+    { id: 'evidence', label: 'Evidence', types: ['finding', 'evidence_claim', 'debate_claim', 'scouting_topic', 'team_scouting_topic', 'scouting_gap'], x: 470, y: 115, color: '#D96E54' },
+    { id: 'sources', label: 'Sources', types: ['source', 'source_domain', 'source_domain_profile', 'source_kind', 'source_quality', 'source_recency'], x: 800, y: 115, color: '#5E5440' },
+    { id: 'context', label: 'Context', types: ['venue', 'group', 'stage', 'claim_type', 'claim_impact', 'claim_quality', 'metric', 'formation', 'position', 'availability_event', 'availability_status', 'body_part'], x: 150, y: 115, color: '#4E7E2A' },
   ];
   const groupByType = {};
   groupDefs.forEach((group) => group.types.forEach((type) => { groupByType[type] = group; }));
@@ -315,11 +319,13 @@ DN.kgview = (function () {
   function compactGroup(group) {
     const centers = {
       matches: { x: 470, y: 220 },
-      teams: { x: 315, y: 255 },
-      evidence: { x: 470, y: 350 },
-      sources: { x: 625, y: 255 },
-      scouts: { x: 625, y: 350 },
-      context: { x: 315, y: 350 },
+      teams: { x: 280, y: 235 },
+      players: { x: 420, y: 340 },
+      clubs: { x: 670, y: 235 },
+      evidence: { x: 470, y: 120 },
+      sources: { x: 720, y: 120 },
+      scouts: { x: 660, y: 345 },
+      context: { x: 220, y: 120 },
       other: { x: 470, y: 120 },
     };
     const center = centers[group.id] || centers.other;
@@ -334,27 +340,29 @@ DN.kgview = (function () {
       grouped[group.id] = grouped[group.id] || [];
       grouped[group.id].push(node);
     });
-    const compact = values.length > 0 && values.length <= 24;
+    const focused = values.length > 0 && values.length <= 140;
+    const compact = values.length > 0 && values.length <= 32;
     const placed = [];
     Object.keys(grouped).forEach((groupId) => {
       const groupNodes = grouped[groupId];
       const baseGroup = groupFor(groupNodes[0]);
-      const group = compact ? compactGroup(baseGroup) : baseGroup;
+      const group = focused ? compactGroup(baseGroup) : baseGroup;
       const count = Math.max(groupNodes.length, 1);
       groupNodes.forEach((node, index) => {
         const angle = index * 2.399963229728653;
-        const radius = count < 2 ? 0 : 12 + Math.sqrt(index / count) * (compact ? Math.min(58, 24 + count * 8) : Math.min(96, 18 + count * 2.1));
+        const radius = count < 2 ? 0 : 12 + Math.sqrt(index / count) * (focused ? Math.min(92, 26 + count * 4.6) : Math.min(96, 18 + count * 2.1));
         placed.push({
           node,
           group,
           groupIndex: index,
           compact,
+          focused,
           x: group.x + Math.cos(angle) * radius,
           y: group.y + Math.sin(angle) * radius,
         });
       });
     });
-    return { nodes: placed, compact };
+    return { nodes: placed, compact, focused };
   }
 
   function renderLegend() {
@@ -398,7 +406,7 @@ DN.kgview = (function () {
       const group = byGroup[groupId].group;
       const count = byGroup[groupId].count;
       if (!count) return '';
-      const radius = compact ? Math.min(174, 82 + Math.sqrt(count) * 19) : Math.min(124, 46 + Math.sqrt(count) * 8);
+      const radius = compact ? Math.min(190, 92 + Math.sqrt(count) * 22) : Math.min(150, 56 + Math.sqrt(count) * 10);
       return '<g class="kg-group">' +
         '<circle cx="' + group.x + '" cy="' + group.y + '" r="' + radius + '" style="--kg-color:' + group.color + '"></circle>' +
         '<text x="' + group.x + '" y="' + (group.y - radius - 11) + '">' + escapeHtml(group.label) + ' · ' + count + '</text>' +
@@ -430,11 +438,16 @@ DN.kgview = (function () {
       const id = node.entity_id || node.id;
       const type = typeFor(node);
       const color = colors[type] || item.group.color || colors.default;
-      const radius = layout.compact ? (type === 'match' ? 15 : type === 'team' ? 13 : 10) : (type === 'match' ? 8 : type === 'team' ? 7 : 5);
-      const label = (layout.compact || (item.groupIndex < 3 && (type === 'match' || type === 'team')))
-        ? '<text y="' + (radius + (layout.compact ? 20 : 13)) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>'
+      const radius = layout.compact
+        ? (type === 'match' ? 24 : type === 'team' ? 21 : type === 'player' ? 17 : type === 'club' ? 16 : 14)
+        : layout.focused
+          ? (type === 'match' ? 15 : type === 'team' ? 13 : type === 'player' ? 9 : type === 'club' ? 9 : 7)
+          : (type === 'match' ? 8 : type === 'team' ? 7 : 5);
+      const label = (layout.compact || (layout.focused && (type === 'match' || type === 'team' || (['player', 'club'].includes(type) && item.groupIndex < 10))) || (item.groupIndex < 3 && (type === 'match' || type === 'team')))
+        ? '<text y="' + (radius + (layout.compact ? 26 : layout.focused ? 17 : 13)) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>'
         : '';
       const classes = 'kg-node' +
+        (layout.focused ? ' focused' : '') +
         (layout.compact ? ' compact' : '') +
         (id === selectedId ? ' selected' : '') +
         (selectedRelatedIds && !selectedRelatedIds.has(id) ? ' dim' : '') +
@@ -444,7 +457,7 @@ DN.kgview = (function () {
         label +
       '</g>';
     }).join('');
-    svg.innerHTML = groupBackgrounds(placed, layout.compact) + bandMarkup + selectedLines + nodeMarkup;
+    svg.innerHTML = groupBackgrounds(placed, layout.focused) + bandMarkup + selectedLines + nodeMarkup;
   }
 
   K.reset = function (title) {
