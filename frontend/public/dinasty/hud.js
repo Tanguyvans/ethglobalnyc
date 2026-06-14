@@ -343,6 +343,14 @@ DN.hud = (function () {
       status.textContent = 'Scouting ' + team + '...';
       H.pushThought('Frontend started a public-data KG scouting run for ' + team + '.', 'Backend', '#3FA89F');
       if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting ' + team + ' in ' + (match.name || 'selected match') + '.');
+      if (DN.kgview && DN.kgview.showScoutingProgress) {
+        DN.kgview.showScoutingProgress({
+          match: match.name || ((match.home_team || team) + ' vs ' + (match.away_team || 'opponent')),
+          matchId: match.match_id || match.market_key || null,
+          team,
+          opponent: target && target.side === 'home' ? match.away_team : match.home_team,
+        });
+      }
       DN.databridge.startScoutingRun({
         match: match.name || ((match.home_team || team) + ' vs ' + (match.away_team || 'opponent')),
         match_id: match.match_id || match.market_key || null,

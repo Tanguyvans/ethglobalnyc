@@ -292,7 +292,14 @@ DN.databridge = (function () {
       .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
       .then((run) => {
         B.runId = run.id;
-        if (DN.kgview) DN.kgview.reset('Live scouting KG');
+        if (DN.kgview && DN.kgview.showScoutingProgress) {
+          DN.kgview.showScoutingProgress({
+            match: body.match,
+            matchId: body.match_id,
+          });
+        } else if (DN.kgview) {
+          DN.kgview.reset('Live scouting KG');
+        }
         if (DN.logTerm) DN.logTerm.push('SCOUT', 'Run ' + run.id + ' queued · opening event stream.');
         if (!window.EventSource) return pollScoutingRun(run.id);
         return streamScoutingRun(run.id);

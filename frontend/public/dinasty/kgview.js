@@ -104,6 +104,13 @@ DN.kgview = (function () {
     return String(value);
   }
 
+  function slug(value) {
+    return String(value || 'node')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'node';
+  }
+
   function nodeUrl(id) {
     return '#kg/' + encodeURIComponent(id);
   }
@@ -456,6 +463,53 @@ DN.kgview = (function () {
     (graph.relationships || []).forEach((relationship) => addEdge(relationship, true));
     render();
     K.status((graph.entity_count || nodes.size) + ' KG entities · ' + (graph.relationship_count || edges.length) + ' links');
+  };
+
+  K.showScoutingProgress = function (opts) {
+    opts = opts || {};
+    const match = opts.match || 'Selected match';
+    const parts = match.split(/\s+vs\s+/i);
+    const team = opts.team || parts[0] || 'Selected team';
+    const opponent = opts.opponent || parts[1] || 'Opponent';
+    const matchId = opts.matchId || ('scouting:match:' + slug(match));
+    const teamId = 'scouting:team:' + slug(team);
+    const opponentId = 'scouting:team:' + slug(opponent);
+    K.reset('Live scouting KG');
+    [
+      { entity_id: matchId, entity_type: 'match', name: match, attributes: { status: 'scouting', phase: 'waiting for KG entities' } },
+      { entity_id: teamId, entity_type: 'team', name: team, attributes: { role: 'selected scouting target' } },
+      { entity_id: opponentId, entity_type: 'team', name: opponent, attributes: { role: 'match opponent' } },
+      { entity_id: 'scouting:scout:form', entity_type: 'scout', name: 'form scout', attributes: { task: 'recent results and momentum' } },
+      { entity_id: 'scouting:scout:lineup', entity_type: 'scout', name: 'lineup scout', attributes: { task: 'lineups, roles, tactical shape' } },
+      { entity_id: 'scouting:scout:availability', entity_type: 'scout', name: 'availability scout', attributes: { task: 'injury and availability signals' } },
+      { entity_id: 'scouting:source:public', entity_type: 'source', name: 'public web sources', attributes: { status: 'querying' } },
+      { entity_id: 'scouting:finding:pending', entity_type: 'finding', name: 'pending findings', attributes: { status: 'agents are gathering evidence' } },
+    ].forEach((entity) => addNode(entity, true));
+    [
+      { source_id: teamId, relation_type: 'plays_in', target_id: matchId },
+      { source_id: opponentId, relation_type: 'plays_in', target_id: matchId },
+      { source_id: 'scouting:scout:form', relation_type: 'scouts', target_id: teamId },
+      { source_id: 'scouting:scout:lineup', relation_type: 'scouts', target_id: teamId },
+      { source_id: 'scouting:scout:availability', relation_type: 'scouts', target_id: teamId },
+      { source_id: 'scouting:source:public', relation_type: 'feeds', target_id: 'scouting:finding:pending' },
+      { source_id: 'scouting:finding:pending', relation_type: 'updates', target_id: matchId },
+    ].forEach((relationship) => addEdge(relationship, true));
+    render();
+    detailEl.innerHTML = '<div class="kg-detail-head"><div><b>scouting</b><strong>' + escapeHtml(team) + '</strong></div></div>' +
+      '<p>Agents are querying public sources. Real KG nodes will appear here as soon as the backend emits them.</p>' +
+      '<div class="kg-subhead">Active scouts</div>' +
+      '<div class="kg-links">' +
+        '<a href="#kg/scouting:scout:form" data-kg-jump="scouting%3Ascout%3Aform"><i>scout</i><span>form scout</span><em>running</em></a>' +
+        '<a href="#kg/scouting:scout:lineup" data-kg-jump="scouting%3Ascout%3Alineup"><i>scout</i><span>lineup scout</span><em>running</em></a>' +
+        '<a href="#kg/scouting:scout:availability" data-kg-jump="scouting%3Ascout%3Aavailability"><i>scout</i><span>availability scout</span><em>running</em></a>' +
+      '</div>';
+    detailEl.querySelectorAll('[data-kg-jump]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        selectNode(decodeURIComponent(link.getAttribute('data-kg-jump')));
+      });
+    });
+    K.status('Scouting agents running · waiting for first streamed KG nodes');
   };
 
   return K;
