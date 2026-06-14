@@ -395,13 +395,11 @@ DN.lifecycle = (function () {
     if (DN.logTerm) {
       DN.logTerm.push('SYSTEM', 'Backend LLM debate run kicked off — chambers will populate with real claims.');
     }
-    const meta = selectedGameMeta();
     L.runPromise = DN.databridge.startDemoRun({
       agents: Math.min(Number(runCfg.agents || 60), 200),
       rooms: Math.min(Number(runCfg.rooms || 5), 12),
       seed: Number.isFinite(Number(runCfg.seed)) ? Number(runCfg.seed) : Math.floor(Math.random() * 10000),
       match: meta.name || ((meta.home_team || 'Home') + ' vs ' + (meta.away_team || 'Away')),
-      match_id: meta.match_id || meta.market_key,
       voice_mode: runCfg.voice_mode || 'llm',
       // Bind the run to the selected fixture so /forecast/settle's
       // match_id check passes (otherwise settle errors with
