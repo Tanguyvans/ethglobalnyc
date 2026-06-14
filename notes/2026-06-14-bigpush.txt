@@ -1,0 +1,74 @@
+2026-06-14 — Big push review: what landed since I last looked (commit eb7d55f -> HEAD f285ae8)
+
+SCALE OF THE DELTA
+  93 commits, 127 files changed, +74,153 / -5,059 lines. Basically the whole project converged
+  over ~1 day. Authors: Tanguy VANSNICK (chain/backend/frontend, most of it), HemangVora
+  (frontend/animation), Adil H (notes + ENS). Branch: main. Several PR merges (#1 ant-reproduction-ens,
+  #2 ant-card-avatar-actions).
+
+>>> HEADLINE: the float -> real-USDC gap I flagged in 2026-06-13-colony_ens_dynamic.txt is being
+    CLOSED. The bankroll is no longer only a Python float — there is now a real Arc settlement
+    mirror + a deployed on-chain betting contract + real agent-to-agent x402 payments. <<<
+
+1. REAL ON-CHAIN ARC ECONOMY (new: contracts/ + arc/)
+   - contracts/src/ColonyForecastMarket.sol (+ test) — Foundry forecast/betting market, DEPLOYED to
+     Arc testnet at 0xc40a8f2e29fe061cd4c0fe92cc73b9b43f9ada87. Ants stake real USDC, vote one
+     outcome (group: home/draw/away; knockout: home/away), winners claim own stake + pro-rata share
+     of losing pool minus treasury fee (default 1000 bps = 10%). Refunds if match canceled.
+   - arc/ real payment rail (Tanguy):
+       x402-agent-service.mjs / x402-agent-pay.mjs / x402-agent-common.mjs / x402-gateway-deposit.mjs
+       / x402-transfer-status.mjs — REAL ant-to-ant x402 via Circle Gateway (EIP-3009 sign -> 402 ->
+       pay -> 200). Seller mode = agent_wallet (payTo resolves from wallet store, not treasury escrow).
+       Smoke tests passed with real Gateway transfer UUIDs (e.g. France/Senegal 2026-06-14,
+       d1b46270-...; amount 0.0003 USDC; status received). Receipts under arc/receipts/.
+       fund-agents.mjs — treasury seeds ant wallets (dry-run default, --broadcast to send).
+       ledger-to-transfers.mjs — mirrors internal economy events (balance_update, internal_stake,
+       payment_receipt, settlement_summary) into ONE native Arc USDC transfer per ant (nets deltas).
+       forecast-market.mjs — deploy/create-market/stake CLI for the contract.
+   - KNOWN SEAM (matches our own finding): Dynamic V3 MPC wallets can RECEIVE but cannot BUY via
+     x402 yet — Circle GatewayClient needs an EOA private key; the 200 Dynamic wallets have no raw
+     key, so buyer-side needs a Dynamic-backed BatchEvmSigner path, not GatewayClient({privateKey}).
+   - Native vs ERC-20: arc scripts use native Arc USDC (18dp), not the 0x3600 ERC-20 (6dp) interface.
+
+2. clickhouse_api/ — METERED KNOWLEDGE PLANE (new, FastAPI)
+   Implements the three clickhouse rules: (1) timestamp gate (ts <= as_of_ts enforced in SQL AND
+   re-checked per row in Python; test_gate.py proves no lookahead leak), (2) x402 metering (402->pay
+   ->200), (3) premium tier for Worldcoin-verified humanId (discount + higher caps). Structured
+   queries (no raw SQL/injection). This is the gated data pipeline we'd only scaffolded before.
+
+3. colony_api/ — BACKEND (new, FastAPI, deployed on Railway)
+   colony_api/main.py (~2350 lines) wraps the harness; frontend starts real runs, streams
+   status/events, loads JSONL artifacts. Prod: https://ethglobalnyc-production.up.railway.app
+
+4. frontend/ — LIVE DEMO UI (27 files)
+   The "dinasty" visualizer: hud.js, underground.js, lifecycle.js, kgview.js, ants.js, databridge.js.
+   Ant avatars/cards, paced demo logs, forecast tx trail, economy synced to selected run.
+
+5. COLONY HARNESS EXTENSIONS (36 files under colony/)
+   Onchain ant reproduction tied to ENS (+ confirmation endpoints, frontend logs), economy events,
+   scouting KG export (export_scouting_kg.py), big work in live_scouts.py, world_graph.py, social.py,
+   artifacts.py; test_scouting_quality.py; fast run mode without scouting.
+
+6. ENS / WORLDCOIN / POLYMARKET
+   ENS: worldcolony.eth mainnet setup, ENS-linked reproduction onchain, ant avatar URLs, primary
+   names (ens/worldcolony-ens-setup.md, notes/2026-06-14-ens-primary.txt). Naming fixed to worldcolony.
+   Worldcoin: human-verification + validation notes (2026-06-13-worldcoin-*).
+   Polymarket/polygun: analytics, telegram userbot, Turkey-Australia arbitrage scrape.
+
+7. NEW NOTES ADDED (13) — bet plans (brazil-morocco, qatar-switzerland), clickhouse + clickhouse-api,
+   colony_ens_dynamic (mine, now committed), FEwireColony, folder-cleanup-todo, pitchnotes,
+   polymarketanalytics, turkey-australia-arbitrage, worldcoin human-verification + validation,
+   2026-06-14-ens-primary. Untracked: notes/worldcolony_ethglobal_submission.md.
+
+WHERE THIS LEAVES US (my read)
+  - The money plane is no longer simulated-only: real Arc USDC settlement mirror + deployed betting
+    contract + real x402 agent payments all exist. The earlier "Python float, not real USDC" caveat
+    is being actively replaced.
+  - The single remaining seam on the economy: x402 BUYER-side from Dynamic MPC wallets (no raw key).
+    Local-EOA ants already buy/pay for real. This matches our 2026-06-13 finding exactly.
+  - What we proved in isolation (treasury funding, wallet->wallet USDC, Unlink private, Dynamic MPC
+    signing) is the same toolkit Tanguy wired into the product — consistent, no rework implied.
+
+SEE ALSO
+  arc/README.md (full runbook), contracts/src/ColonyForecastMarket.sol, clickhouse_api/README.md,
+  colony_api/README.md, notes/2026-06-13-colony_ens_dynamic.txt, notes/2026-06-13-treasury.txt

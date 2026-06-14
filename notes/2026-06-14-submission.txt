@@ -1,0 +1,37 @@
+================================================================================
+ETHGLOBAL SUBMISSION — WorldColony
+2026-06-14
+================================================================================
+
+FILES
+  submission/worldcolony_ethglobal_submission.original.md  - the template Adil added (copied from notes/Downloads)
+  submission/worldcolony_ethglobal_submission.FILLED.md    - the filled, copy-paste-ready version (Claude),
+                                                             grounded in the real tech stack, with honesty markers
+                                                             (✅ built / 🟡 partial / 📝 narrated)
+  notes/worldcolony_ethglobal_submission.md                - original template (also still in notes/)
+
+REFERENCE SESSIONS
+  Submission .md formulated with ChatGPT:
+    https://chatgpt.com/c/6a2e7147-23b8-83e8-859e-ac7235c45ad8
+    (NOTE: this is a private /c/ chat link — only opens for Adil, not a public /share/ link.)
+
+KEY CORRECTIONS made in the FILLED version (the template undersold the stack)
+  - Databases: ClickHouse (template said "None"/MongoDB).
+  - Languages: added Python (colony + both APIs), TypeScript.
+  - Frameworks: React + Vite + FastAPI + Three.js/react-three-fiber (not Next/Angular).
+  - Added the real systems: colony harness (Python), colony_api (FastAPI/Railway),
+    clickhouse_api (timestamp gate + x402 metering), PolyGun execution (Telethon),
+    Worldcoin AgentKit, Dynamic wallets, UMA oracle data, ENS mainnet + Sepolia subnames.
+  - Ethereum dev tools: web3.py / py-clob-client / Dynamic (NOT Hardhat — no contracts deployed).
+  - AI-tools text corrected: no custom smart contracts written; integrated existing protocols.
+
+STRONGEST SPONSOR TRACKS (all ✅): ENS, Worldcoin/World ID, ClickHouse, Polygon, Dynamic.
+PARTIAL/NARRATE-CAREFULLY: Circle/Arc (x402 pattern ✅, Arc settlement 🟡📝),
+  ENS offchain CCIP-Read (📝 planned), direct CLOB (🟡 built but US-geoblocked).
+
+VERIFIABLE ARTIFACTS FOR JUDGES
+  worldcolony.eth -> 0xe9E32Ca24aa1eF725F650b5489281FE621363AA9 (mainnet, live)
+  predictions.json (7 real on-chain PolyGun trades) + simulatedtransactions.json
+  5 Worldcoin-verified ants (humanId 0x41e49b…608f0) on World Chain
+  clickhouse_api/ + clickhouse/DATA_CATALOG.md ; 200 root-*.colonny.eth on Sepolia
+================================================================================
