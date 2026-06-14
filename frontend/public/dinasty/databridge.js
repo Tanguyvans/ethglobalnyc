@@ -408,6 +408,7 @@ DN.databridge = (function () {
       .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
       .then((run) => {
         B.runId = run.id;
+        if (B.resetCommsRun) B.resetCommsRun(run.id);
         if (DN.kgview && DN.kgview.showScoutingProgress) {
           DN.kgview.showScoutingProgress({
             match: body.match,

@@ -726,6 +726,7 @@ DN.lifecycle = (function () {
     L.runPromise = null;
     L.runError = null;
     L.phaseHold = false;
+    if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(null);
     if (ENTER.idle) ENTER.idle();
     enter('kickoff');
   };
