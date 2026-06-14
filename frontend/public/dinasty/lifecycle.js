@@ -614,6 +614,7 @@ DN.lifecycle = (function () {
         market_type: meta.market_type || 'three_way',
         metadata_uri: meta.market_key || marketKey,
         run_id: runId || undefined,
+        expected_match_id: meta.match_id || meta.market_key || undefined,
         wallet_store: walletStore || undefined,
         max_stakers: 12,
         wait_for_run_forecasts: true,

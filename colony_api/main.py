@@ -138,6 +138,7 @@ class ForecastDemoSetupRequest(ForecastCreateMarketRequest):
     wallet_store: str = DEFAULT_LOCAL_WALLET_STORE
     stakes: list[ForecastStakeInstruction] | None = None
     run_id: str | None = None
+    expected_match_id: str | None = None
     max_stakers: int = Field(default=3, ge=1, le=25)
     stake_scale: float = Field(default=0.0001, gt=0.0, le=1.0)
     fund_stakers: bool | None = None
@@ -1278,6 +1279,24 @@ def _stake_instructions_from_run(
     return stakes
 
 
+def _validate_forecast_run_match(run_id: str, expected_match_id: str | None) -> dict:
+    metadata = _read_metadata(run_id)
+    if not expected_match_id:
+        return metadata
+    actual = str(metadata.get("match_id") or "").strip()
+    expected = str(expected_match_id).strip()
+    if actual != expected:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Forecast run mismatch: "
+                f"run {run_id} is for match_id {actual or 'unknown'}, "
+                f"but the selected market expects {expected}."
+            ),
+        )
+    return metadata
+
+
 def _wait_for_run_stakes(
     *,
     run_id: str,
@@ -1549,7 +1568,9 @@ def setup_forecast_demo(request: ForecastDemoSetupRequest) -> dict:
     wallet_store = _forecast_wallet_store_argument(request.wallet_store)
     stakes = request.stakes
     stake_source = "request"
+    run_metadata: dict | None = None
     if stakes is None and request.run_id:
+        run_metadata = _validate_forecast_run_match(request.run_id, request.expected_match_id)
         should_wait = request.wait_for_run_forecasts
         if should_wait is None:
             should_wait = _env_bool("COLONY_API_FORECAST_WAIT_FOR_RUN", True)
@@ -1629,6 +1650,12 @@ def setup_forecast_demo(request: ForecastDemoSetupRequest) -> dict:
         "market_key": request.market_key,
         "market_type": request.market_type,
         "stake_source": stake_source,
+        "source_run": {
+            "run_id": request.run_id,
+            "match": (run_metadata or {}).get("match"),
+            "match_id": (run_metadata or {}).get("match_id"),
+            "status": (run_metadata or {}).get("status"),
+        } if request.run_id else None,
         "stakes": [_model_dump(stake) for stake in stakes],
         "steps": steps,
         "totals": totals.get("data"),
