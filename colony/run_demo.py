@@ -44,6 +44,8 @@ def parse_args() -> argparse.Namespace:
         help="Deprecated alias for --rooms, kept for older commands.",
     )
     parser.add_argument("--seed", type=int, default=None, help="Override RNG seed.")
+    parser.add_argument("--match", default=None, help="Override match label, for example 'Brazil vs Morocco'.")
+    parser.add_argument("--match-id", default=None, help="Override round/match id written into run artifacts.")
     parser.add_argument(
         "--population-state",
         default=None,
@@ -148,10 +150,38 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _parse_match_label(label: str) -> tuple[str, str]:
+    normalized = " ".join(label.replace(" v ", " vs ").split())
+    marker = " vs "
+    if marker in normalized:
+        home, away = normalized.split(marker, 1)
+        return home.strip() or "Home", away.strip() or "Away"
+    return normalized.strip() or "Home", "Away"
+
+
+def _apply_match_override(config: dict, *, match: str | None, match_id: str | None) -> dict:
+    if not match and not match_id:
+        return config
+    updated = json.loads(json.dumps(config))
+    updated_match = dict(updated.get("match") or {})
+    if match:
+        home, away = _parse_match_label(match)
+        updated_match["home_team"] = home
+        updated_match["away_team"] = away
+    if match_id:
+        updated["round_id"] = match_id
+    updated["match"] = updated_match
+    return updated
+
+
 def main() -> None:
     args = parse_args()
     load_env_file(args.env)
-    config = load_config(Path(args.config))
+    config = _apply_match_override(
+        load_config(Path(args.config)),
+        match=args.match,
+        match_id=args.match_id,
+    )
     population = config.get("population", {})
 
     if args.voice_mode == "llm":

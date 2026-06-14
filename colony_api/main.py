@@ -78,6 +78,8 @@ class DemoRunRequest(BaseModel):
     agents: int = Field(default=200, ge=1, le=500)
     rooms: int = Field(default=12, ge=1, le=50)
     seed: int | None = Field(default=205, ge=0)
+    match: str | None = None
+    match_id: str | None = None
     voice_mode: Literal["template", "llm"] = "llm"
     debug: bool = False
     agent_wallets: bool = True
@@ -815,6 +817,10 @@ def _build_command(request: DemoRunRequest, run_dir: Path) -> list[str]:
     ]
     if request.seed is not None:
         command.extend(["--seed", str(request.seed)])
+    if request.match:
+        command.extend(["--match", request.match])
+    if request.match_id:
+        command.extend(["--match-id", request.match_id])
     if request.debug:
         command.append("--debug")
     if request.agent_wallets:
@@ -1404,6 +1410,12 @@ def _validate_forecast_run_match(run_id: str, expected_match_id: str | None) -> 
     if not expected_match_id:
         return metadata
     actual = str(metadata.get("match_id") or "").strip()
+    if not actual:
+        command = [str(part) for part in metadata.get("command") or []]
+        for index, part in enumerate(command):
+            if part == "--match-id" and index + 1 < len(command):
+                actual = command[index + 1].strip()
+                break
     expected = str(expected_match_id).strip()
     if actual != expected:
         raise HTTPException(
@@ -2258,6 +2270,8 @@ def start_demo_run(request: DemoRunRequest, background_tasks: BackgroundTasks) -
         "run_dir": str(run_dir),
         "events_path": str(run_dir / "events.jsonl"),
         "compact_runs_dir": str(run_dir / "compact"),
+        "match": request.match,
+        "match_id": request.match_id,
     }
     _write_metadata(run_id, metadata)
     background_tasks.add_task(_execute_run, run_id, command)
