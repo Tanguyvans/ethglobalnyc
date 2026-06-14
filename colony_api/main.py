@@ -38,11 +38,13 @@ WORLD_CUP_KG = REPO_ROOT / "colony" / "data" / "world_cup_kg.json"
 WORLD_CUP_KG_SUMMARY = REPO_ROOT / "colony" / "data" / "world_cup_kg.summary.md"
 DEFAULT_PUBLIC_WALLET_STORE = "colony/data/agent-wallets.dynamic.200.public.json"
 DEFAULT_LOCAL_WALLET_STORE = "colony/secrets/agent-wallets.local.json"
+DEFAULT_FORECAST_MARKET_KEY = "worldcup:2026:brazil-morocco:frontend-demo"
 FORECAST_CLI = REPO_ROOT / "arc" / "forecast-market.mjs"
 X402_SERVICE_CLI = REPO_ROOT / "arc" / "x402-agent-service.mjs"
 X402_PAY_CLI = REPO_ROOT / "arc" / "x402-agent-pay.mjs"
 DEFAULT_FORECAST_CONTRACT = "0xc40a8f2e29fe061cd4c0fe92cc73b9b43f9ada87"
 CHILD_ANTS_PATH = RUNS_ROOT / "child_ants.json"
+ANT_STATE_PATH = RUNS_ROOT / "ant_state.json"
 FUND_AGENTS_CLI = REPO_ROOT / "arc" / "fund-agents.mjs"
 DEFAULT_PUBLIC_API_BASE_URL = "https://ethglobalnyc-production.up.railway.app"
 
@@ -119,11 +121,11 @@ class ForecastDeployRequest(BaseModel):
 
 class ForecastCreateMarketRequest(BaseModel):
     contract: str | None = None
-    market_key: str = "worldcup:2026:brazil-morocco:frontend-demo"
+    market_key: str = DEFAULT_FORECAST_MARKET_KEY
     market_type: Literal["three_way", "binary"] = "three_way"
     close_time: int = Field(default=0, ge=0)
     fee_bps: int = Field(default=1000, ge=0, le=2000)
-    metadata_uri: str = "worldcup:2026:brazil-morocco:frontend-demo"
+    metadata_uri: str = DEFAULT_FORECAST_MARKET_KEY
 
 
 class ForecastStakeInstruction(BaseModel):
@@ -138,6 +140,8 @@ class ForecastDemoSetupRequest(ForecastCreateMarketRequest):
     run_id: str | None = None
     max_stakers: int = Field(default=3, ge=1, le=25)
     stake_scale: float = Field(default=0.0001, gt=0.0, le=1.0)
+    fund_stakers: bool | None = None
+    fund_amount: str = "0.01"
 
 
 class ForecastSettleRequest(BaseModel):
@@ -172,6 +176,10 @@ class AntReproduceRequest(BaseModel):
     fund_amount: str = "0.05"
     fund_wallet: bool = True
     broadcast_funding: bool | None = None
+
+
+class AntKillRequest(BaseModel):
+    reason: str = "manual"
 
 
 def _utc_now() -> str:
@@ -345,6 +353,34 @@ def _write_child_ants(agents: list[dict]) -> None:
         "agents": agents,
     }
     CHILD_ANTS_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _read_ant_state() -> dict:
+    if not ANT_STATE_PATH.exists():
+        return {}
+    payload = json.loads(ANT_STATE_PATH.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and isinstance(payload.get("agents"), dict):
+        return dict(payload["agents"])
+    if isinstance(payload, dict):
+        return dict(payload)
+    return {}
+
+
+def _write_ant_state(state: dict) -> None:
+    ANT_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "updated_at": _utc_now(),
+        "agents": state,
+    }
+    ANT_STATE_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _apply_ant_state(record: dict, state: dict) -> dict:
+    agent_state = state.get(str(record.get("agent_id") or "")) or {}
+    if isinstance(agent_state, dict):
+        record.update(agent_state)
+    return record
 
 
 def _genome_tokens(genome_id: str) -> tuple[str, str]:
@@ -608,7 +644,68 @@ def _fund_child_wallet(agent_id: str, wallet_store: str, request: AntReproduceRe
     }
 
 
+def _fund_forecast_stakers(wallet_store: str, stakes: list[ForecastStakeInstruction], amount: str, broadcast: bool) -> dict:
+    agents = sorted({stake.agent for stake in stakes if stake.agent})
+    if not agents:
+        return {"status": "skipped", "reason": "no stakers"}
+    if not FUND_AGENTS_CLI.exists():
+        return {"status": "skipped", "reason": "arc/fund-agents.mjs is missing"}
+    out_path = RUNS_ROOT / "funding" / f"forecast-stakers-{int(time.time())}.json"
+    command = [
+        "node",
+        str(FUND_AGENTS_CLI),
+        "--wallet-store",
+        wallet_store,
+        "--amount",
+        amount,
+        "--out",
+        str(out_path),
+    ]
+    for agent in agents:
+        command.extend(["--agent", agent])
+    if broadcast:
+        command.append("--broadcast")
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(REPO_ROOT),
+            env=_x402_env(),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not fund forecast stakers: {exc}") from exc
+
+    receipt = {}
+    if out_path.exists():
+        try:
+            receipt = json.loads(out_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            receipt = {}
+    status = "funded" if broadcast and completed.returncode == 0 else "planned" if completed.returncode == 0 else "failed"
+    payload = {
+        "ok": completed.returncode == 0,
+        "action": "fund-forecast-stakers",
+        "status": status,
+        "broadcast": broadcast,
+        "agents": agents,
+        "amount_usdc": amount,
+        "command": command,
+        "stdout": completed.stdout.strip(),
+        "stderr": completed.stderr.strip(),
+        "returncode": completed.returncode,
+        "receipt_path": str(out_path),
+        "receipt": receipt,
+    }
+    if completed.returncode != 0:
+        raise HTTPException(status_code=500, detail=payload)
+    return payload
+
+
 def _read_public_ants() -> list[dict]:
+    state = _read_ant_state()
     store_path = _safe_repo_path(_default_wallet_store())
     payload = json.loads(store_path.read_text(encoding="utf-8"))
     wallets = payload.get("wallets") or {}
@@ -624,10 +721,9 @@ def _read_public_ants() -> list[dict]:
             "chains": wallet.get("chains") or {},
         }
         record.update(_avatar_record_fields(record))
-        ants.append(
-            record
-        )
-    return ants + _read_child_ants()
+        ants.append(_apply_ant_state(record, state))
+    children = [_apply_ant_state(child, state) for child in _read_child_ants()]
+    return ants + children
 
 
 def _build_command(request: DemoRunRequest, run_dir: Path) -> list[str]:
@@ -851,10 +947,6 @@ def _forecast_receipt_path(action: str) -> Path:
 
 
 def _wallet_store_env_payload(base_name: str) -> str:
-    direct = os.environ.get(base_name)
-    if direct:
-        return direct
-
     chunks: list[str] = []
     index = 0
     while True:
@@ -865,7 +957,10 @@ def _wallet_store_env_payload(base_name: str) -> str:
             break
         chunks.append(part)
         index += 1
-    return "".join(chunks)
+    if chunks:
+        return "".join(chunks)
+
+    return os.environ.get(base_name) or ""
 
 
 def _write_env_wallet_store(env_payload: str, *, env_name: str, target_dir: str) -> str:
@@ -1439,9 +1534,22 @@ def setup_forecast_demo(request: ForecastDemoSetupRequest) -> dict:
         market_type=request.market_type,
         close_time=request.close_time,
         fee_bps=request.fee_bps,
-        metadata_uri=request.metadata_uri,
+        metadata_uri=request.metadata_uri if request.metadata_uri != DEFAULT_FORECAST_MARKET_KEY else request.market_key,
     )
     steps.append(create_forecast_market(market_request))
+
+    should_fund_stakers = request.fund_stakers
+    if should_fund_stakers is None:
+        should_fund_stakers = _env_bool("COLONY_API_FORECAST_PREFUND_STAKERS", True)
+    if should_fund_stakers:
+        steps.append(
+            _fund_forecast_stakers(
+                wallet_store,
+                stakes,
+                request.fund_amount,
+                _env_bool("COLONY_API_FORECAST_BROADCAST_FUNDING", True),
+            )
+        )
 
     for stake in stakes:
         if request.market_type == "binary" and stake.outcome == "draw":
@@ -1778,6 +1886,29 @@ def reproduce_ant(request: AntReproduceRequest) -> dict:
         "wallet_store": wallet_store,
         "ens_parent": _ens_parent(),
         "source": str(CHILD_ANTS_PATH),
+    }
+
+
+@app.post("/ants/{agent_id}/kill")
+def kill_ant(agent_id: str, request: AntKillRequest | None = None) -> dict:
+    ant = _find_parent_ant(agent_id)
+    state = _read_ant_state()
+    reason = (request.reason if request else "manual").strip() or "manual"
+    agent_state = dict(state.get(str(ant.get("agent_id") or agent_id)) or {})
+    agent_state.update(
+        {
+            "status": "dead",
+            "killed_at": _utc_now(),
+            "kill_reason": reason,
+        }
+    )
+    state[str(ant.get("agent_id") or agent_id)] = agent_state
+    _write_ant_state(state)
+    ant.update(agent_state)
+    return {
+        "status": "killed",
+        "ant": ant,
+        "source": str(ANT_STATE_PATH),
     }
 
 

@@ -176,6 +176,18 @@ DN.lifecycle = (function () {
         amount_usdc: receipt.amount_usdc || '',
       });
     });
+    (receipt.receipts || []).forEach((tx) => {
+      if (!tx || !tx.tx_hash) return;
+      out.push({
+        action: receipt.action || step.action || tx.transfer_id || 'fund',
+        hash: tx.tx_hash,
+        explorer_url: tx.explorer_url || explorerTxUrl(tx.tx_hash, explorer),
+        agent_id: tx.agent_id || '',
+        wallet: tx.to || '',
+        outcome: '',
+        amount_usdc: tx.amount_usdc || '',
+      });
+    });
     if (receipt.tx_hash) {
       out.push({
         action: receipt.action || step.action || 'tx',
@@ -345,11 +357,10 @@ DN.lifecycle = (function () {
       startBackendRun();
     },
     scouting: () => {
-      // NOTE: previously we kicked startScoutingRun() here, which
-      // streamed SSE events from Railway and hammered kgview's SVG
-      // rebuild path while the 3D scene was already busy with scout
-      // animations — that was the source of the heavy lag. The KG
-      // overlay now stays closed during scouting; the cached KG is
+      // Previously kicked startScoutingRun() here which streamed SSE
+      // events from Railway and hammered kgview's SVG rebuild path
+      // while the 3D scene was already busy with scout animations —
+      // that was the source of the heavy lag. The cached KG is
       // streamed in via replayGraph during kg_forming instead.
       if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouts mining sources for findings.');
       // Wake a small scout party per colony, send each on a dedicated
@@ -412,43 +423,10 @@ DN.lifecycle = (function () {
       // one from each mound. Recruitment is purely a camera + on-chain
       // staging beat now.
       if (DN.logTerm) DN.logTerm.push('BIRTH', 'Population staking on the round — emerging next.');
-      if (DN.databridge && DN.databridge.setupForecastDemo) {
-        const meta = selectedGameMeta();
-        const contract = configuredContract();
-        if (DN.logTerm) DN.logTerm.push('STAKE', 'Staking demo market on ' + (meta.home_team || '?') + ' vs ' + (meta.away_team || '?') + ' …');
-        DN.databridge.setupForecastDemo({
-          contract: contract || undefined,
-          market_key: meta.market_key,
-          market_type: meta.market_type || 'three_way',
-          home_team: meta.home_team,
-          away_team: meta.away_team,
-          fee_bps: 1000
-        }).then((res) => {
-          L.marketKey = (res && res.market_key) || meta.market_key;
-          L.forecastStakes = (res && res.stakes) || [];
-          if (DN.logTerm) DN.logTerm.push('STAKE', 'Stakes committed · market_key ' + (L.marketKey || '?').slice(-12));
-        }).catch((err) => {
-          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Stake demo error: ' + (err && err.message || err));
-        });
-      }
+      if (DN.logTerm) DN.logTerm.push('STAKE', 'Waiting for selected-match forecasts before committing Arc stakes.');
     },
     converge: () => {
-      // Kick the backend LLM debate run now so it has phases 5→7 (~22s)
-      // to compute while ants walk to the crystal and back.
-      if (DN.databridge && DN.databridge.startDemoRun) {
-        if (DN.logTerm) DN.logTerm.push('SYSTEM', 'LLM debate run kicked off in the background.');
-        DN.databridge.startDemoRun().then(res => {
-          if (res && res.id) {
-            L.runId = res.id;
-            if (DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(res.id);
-            if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
-            if (DN.hud && DN.hud._pollComms) DN.hud._pollComms();
-            if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Backend run ' + res.id + ' complete — debate events ready.');
-          }
-        }).catch(err => {
-          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Backend run failed: ' + (err && err.message || err));
-        });
-      }
+      if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Selected fixture run is feeding the debate and economy.');
       // Send every visible worker to the crystal. To make them read as a
       // single-file line per colony (not a chaotic swarm) we:
       //   • bucket workers by colony
