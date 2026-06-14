@@ -529,6 +529,18 @@ def _avatar_svg(agent_id: str) -> str:
 
 
 def _resolve_reproduction_wallet_store(request: AntReproduceRequest, provider: str) -> Path:
+    env_payload = _wallet_store_env_payload("COLONY_API_REPRODUCTION_WALLETS_JSON")
+    if not env_payload and provider == "local":
+        env_payload = _wallet_store_env_payload("COLONY_API_FORECAST_WALLETS_JSON")
+    if env_payload:
+        return Path(
+            _write_env_wallet_store(
+                env_payload,
+                env_name="COLONY_API_REPRODUCTION_WALLETS_JSON",
+                target_dir="reproduction_wallets",
+            )
+        )
+
     configured = (
         request.wallet_store
         or os.environ.get("COLONY_API_REPRODUCTION_WALLET_STORE")
@@ -838,17 +850,46 @@ def _forecast_receipt_path(action: str) -> Path:
     return target
 
 
+def _wallet_store_env_payload(base_name: str) -> str:
+    direct = os.environ.get(base_name)
+    if direct:
+        return direct
+
+    chunks: list[str] = []
+    index = 0
+    while True:
+        part = os.environ.get(f"{base_name}_{index}")
+        if part is None:
+            part = os.environ.get(f"{base_name}_CHUNK_{index}")
+        if part is None:
+            break
+        chunks.append(part)
+        index += 1
+    return "".join(chunks)
+
+
+def _write_env_wallet_store(env_payload: str, *, env_name: str, target_dir: str) -> str:
+    try:
+        parsed = json.loads(env_payload)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{env_name} is not valid JSON. If Railway rejected the full value, split it into {env_name}_0, {env_name}_1, ...",
+        ) from exc
+    target = RUNS_ROOT / target_dir / "agent-wallets.env.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(parsed, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return str(target)
+
+
 def _forecast_wallet_store_argument(wallet_store: str) -> str:
-    env_payload = os.environ.get("COLONY_API_FORECAST_WALLETS_JSON")
+    env_payload = _wallet_store_env_payload("COLONY_API_FORECAST_WALLETS_JSON")
     if env_payload:
-        try:
-            parsed = json.loads(env_payload)
-        except json.JSONDecodeError as exc:
-            raise HTTPException(status_code=500, detail="COLONY_API_FORECAST_WALLETS_JSON is not valid JSON") from exc
-        target = RUNS_ROOT / "forecast_wallets" / "agent-wallets.env.json"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(parsed, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        return str(target)
+        return _write_env_wallet_store(
+            env_payload,
+            env_name="COLONY_API_FORECAST_WALLETS_JSON",
+            target_dir="forecast_wallets",
+        )
 
     configured = os.environ.get("COLONY_API_FORECAST_WALLET_STORE") or wallet_store
     try:
@@ -858,7 +899,8 @@ def _forecast_wallet_store_argument(wallet_store: str) -> str:
             status_code=500,
             detail=(
                 "Forecast signing wallets are not configured. Set "
-                "COLONY_API_FORECAST_WALLETS_JSON or COLONY_API_FORECAST_WALLET_STORE "
+                "COLONY_API_FORECAST_WALLETS_JSON, COLONY_API_FORECAST_WALLETS_JSON_0...N, "
+                "or COLONY_API_FORECAST_WALLET_STORE "
                 "to a private-key wallet store before expecting Arc USDC stake/claim transactions."
             ),
         ) from exc
@@ -866,16 +908,13 @@ def _forecast_wallet_store_argument(wallet_store: str) -> str:
 
 
 def _x402_wallet_store_argument(wallet_store: str) -> str:
-    env_payload = os.environ.get("COLONY_API_X402_WALLETS_JSON") or os.environ.get("COLONY_API_FORECAST_WALLETS_JSON")
+    env_payload = _wallet_store_env_payload("COLONY_API_X402_WALLETS_JSON") or _wallet_store_env_payload("COLONY_API_FORECAST_WALLETS_JSON")
     if env_payload:
-        try:
-            parsed = json.loads(env_payload)
-        except json.JSONDecodeError as exc:
-            raise HTTPException(status_code=500, detail="COLONY_API_X402_WALLETS_JSON is not valid JSON") from exc
-        target = RUNS_ROOT / "x402_wallets" / "agent-wallets.env.json"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(parsed, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        return str(target)
+        return _write_env_wallet_store(
+            env_payload,
+            env_name="COLONY_API_X402_WALLETS_JSON",
+            target_dir="x402_wallets",
+        )
 
     configured = os.environ.get("COLONY_API_X402_WALLET_STORE") or wallet_store
     return str(_safe_repo_path(configured).relative_to(REPO_ROOT))

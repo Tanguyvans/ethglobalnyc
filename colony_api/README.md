@@ -232,6 +232,39 @@ COLONY_API_X402_WALLETS_JSON='{"wallets":{...}}'
 COLONY_API_FORECAST_WALLETS_JSON='{"wallets":{...}}'
 ```
 
+Railway caps a single variable value, so a full 200-ant private local wallet
+store usually needs chunked variables instead of one huge JSON value. The API
+reassembles these in numeric order:
+
+```text
+COLONY_API_FORECAST_WALLETS_JSON_0=...
+COLONY_API_FORECAST_WALLETS_JSON_1=...
+COLONY_API_FORECAST_WALLETS_JSON_2=...
+```
+
+Use this locally to split the full colony signer file into Railway-sized chunks:
+
+```bash
+cd /Users/tanguyvans/Desktop/ethglobalnyc
+mkdir -p /tmp/colony-wallet-env
+node - <<'NODE'
+const fs = require('fs');
+const input = 'colony/secrets/agent-wallets.local.json';
+const prefix = 'COLONY_API_FORECAST_WALLETS_JSON';
+const chunkSize = 30000;
+const compact = JSON.stringify(JSON.parse(fs.readFileSync(input, 'utf8')));
+for (let offset = 0, index = 0; offset < compact.length; offset += chunkSize, index += 1) {
+  const name = `${prefix}_${index}`;
+  fs.writeFileSync(`/tmp/colony-wallet-env/${name}.txt`, compact.slice(offset, offset + chunkSize));
+  console.log(name);
+}
+NODE
+```
+
+Create each printed variable in Railway and paste the matching file content from
+`/tmp/colony-wallet-env`. `COLONY_API_X402_WALLETS_JSON_0...N` is also
+supported; if it is omitted, x402 falls back to the forecast wallet chunks.
+
 The committed Dynamic wallet registry is public-address only. Any endpoint that
 signs x402 payments or contract stakes needs local/test private-key wallets via
 those env vars or a configured private wallet-store path.
@@ -389,6 +422,20 @@ curl -X POST https://ethglobalnyc-production.up.railway.app/ants/reproduce \
 The response returns the `parent`, the created `child`, the wallet store used,
 and the `child_ants.json` source path. `GET /ants` includes these children after
 creation so the frontend can attach them to the visible colony.
+
+Created children are stored at:
+
+```text
+${COLONY_API_RUNS_DIR:-colony/runs/api}/child_ants.json
+```
+
+Their wallets are written to the selected reproduction wallet store. For local
+testnet signers the backend accepts `COLONY_API_REPRODUCTION_WALLETS_JSON_0...N`;
+if that is not set, local reproduction can start from the forecast wallet chunks
+and write the child wallet into
+`${COLONY_API_RUNS_DIR:-colony/runs/api}/reproduction_wallets/agent-wallets.env.json`.
+On Railway, set `COLONY_API_RUNS_DIR` to a mounted volume path if these children
+must survive redeploys/restarts.
 
 For `POST /runs/demo`, the first integration streams transport/status
 immediately. Most domain events arrive when `run_demo.py` writes `events.jsonl`

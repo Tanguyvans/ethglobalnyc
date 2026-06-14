@@ -70,6 +70,17 @@ configured, the ants can still forecast and debate, but they cannot send Arc USD
 In that case the Colony Log should say the forecast signing wallets are missing instead of
 pretending a contract transaction happened.
 
+For the full 200-ant colony on Railway, the private testnet wallet JSON is too large for one
+environment variable. The backend can now read it split across
+`COLONY_API_FORECAST_WALLETS_JSON_0`, `COLONY_API_FORECAST_WALLETS_JSON_1`, and so on, then
+rebuild the complete signer store before sending contract transactions. The addresses can stay
+public, but the private keys still live only in Railway env/private local files.
+
+When a new ant is created, its life record is stored in `child_ants.json` under the API runs
+directory, and its wallet is added to the selected reproduction wallet store. On Railway, that
+API runs directory should be a mounted volume if we want the new colony members to survive
+restarts.
+
 ## The headline experiment (our strongest demo moment)
 We can mark some family lines as **human-verified** (a real person vouched for the founder)
 and give them a head start — more starting money. Then we let the colony run and ask a real,
