@@ -889,13 +889,37 @@ DN.hud = (function () {
         DN.databridge.reproduceAnt({ parent_agent_id: parentId })
           .then((payload) => {
             const child = payload.child || {};
+            const childName = child.ens_name || child.agent_id || 'child ant';
+            const funding = child.funding || {};
+            const fundStatus = funding.status ? ' · funding ' + funding.status : '';
+            const walletLine = child.wallet_address ? ' wallet=' + child.wallet_address : '';
+            const profileLine = child.profile_url || (child.agent_id && DN.databridge && DN.databridge.apiUrl ? DN.databridge.apiUrl + '/ants/' + child.agent_id + '.json' : '');
+            if (DN.logTerm) {
+              DN.logTerm.push('LINEAGE', 'Created ' + childName + ' agent_id=' + (child.agent_id || '?') + walletLine + fundStatus + '.');
+              if (profileLine) DN.logTerm.push('LINEAGE', 'Profile JSON ' + profileLine);
+              if (payload.source) DN.logTerm.push('LINEAGE', 'Persisted child record at ' + payload.source);
+            }
             if (DN.ants && DN.ants.bindAgentRecords && DN.databridge.getAgents) DN.ants.bindAgentRecords(DN.databridge.getAgents());
             const target = DN.ants && DN.ants.attachChildRecord ? DN.ants.attachChildRecord(a, child) : null;
             if (target && DN.app && DN.app.selectAnt) DN.app.selectAnt(target);
-            const funding = child.funding || {};
-            const fundStatus = funding.status ? ' · funding ' + funding.status : '';
-            H.pushThought((child.ens_name || child.agent_id) + ' created from parent ' + (child.parent_ens_name || ens || parentId) + fundStatus + '.', 'Lineage', '#5FB84A');
-            if (DN.logTerm) DN.logTerm.push('LINEAGE', (child.ens_name || child.agent_id) + ' parent=' + (child.parent_ens_name || ens || parentId) + fundStatus + '.');
+            H.pushThought(childName + ' created from parent ' + (child.parent_ens_name || ens || parentId) + fundStatus + '.', 'Lineage', '#5FB84A');
+            if (DN.databridge && DN.databridge.fetchAgents) {
+              DN.databridge.fetchAgents().then((fresh) => {
+                const agents = (fresh && fresh.agents) || [];
+                if (DN.ants && DN.ants.bindAgentRecords) DN.ants.bindAgentRecords(agents);
+                const confirmed = agents.some((agent) => agent.agent_id === child.agent_id);
+                if (DN.logTerm) {
+                  DN.logTerm.push(
+                    'LINEAGE',
+                    confirmed
+                      ? childName + ' confirmed by backend /ants (' + agents.length + ' ants total).'
+                      : childName + ' was returned by reproduce but is not visible in /ants yet.',
+                  );
+                }
+              }).catch((err) => {
+                if (DN.logTerm) DN.logTerm.push('LINEAGE', 'Could not confirm child via /ants: ' + (err.message || err));
+              });
+            }
           })
           .catch((err) => {
             H.pushThought('Child ant creation failed: ' + (err.message || err), 'Lineage', '#D96E54');
