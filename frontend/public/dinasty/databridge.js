@@ -35,7 +35,7 @@ DN.databridge = (function () {
         'Round resolved — market home probability ' +
           Math.round(summary.market_home_probability * 100) +
           '%, $' + r1(summary.total_staked) + ' staked across ' + summary.population +
-          ' agents (' + summary.home_bets + ' home · ' + summary.away_bets + ' away · ' + summary.passes + ' pass).',
+          ' agents (' + summary.home_bets + ' home · ' + (summary.draw_bets || 0) + ' draw · ' + summary.away_bets + ' away).',
         'Forecast', COL.economy,
       ]);
     }
@@ -45,7 +45,7 @@ DN.databridge = (function () {
     });
     // strongest real bets
     forecasts
-      .filter((f) => f.side && f.side !== 'pass' && f.stake > 0)
+      .filter((f) => f.side && f.stake > 0)
       .sort((a, b) => b.stake - a.stake)
       .slice(0, 8)
       .forEach((f) => {
@@ -509,16 +509,10 @@ DN.databridge = (function () {
   function pollScoutingRun(runId) {
     return new Promise((resolve, reject) => {
       let tries = 0;
-      let lastStatus = null;
-      if (DN.logTerm) DN.logTerm.push('SCOUT', 'Streaming unavailable; polling scouting run ' + runId + '.');
       const timer = setInterval(() => {
         fetch(apiUrl + '/runs/' + runId)
           .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
           .then((run) => {
-            if (run.status !== lastStatus) {
-              lastStatus = run.status;
-              if (DN.logTerm) DN.logTerm.push('SCOUT', 'Run status: ' + run.status + '.');
-            }
             if (run.status === 'succeeded') {
               clearInterval(timer);
               Promise.all([
@@ -527,7 +521,6 @@ DN.databridge = (function () {
                 fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
               ]).then(([kg, manifest, audit]) => {
                 showCompletedScoutingGraph(kg);
-                if (DN.logTerm) DN.logTerm.push('KG', 'Final KG loaded for ' + runId + '.');
                 resolve({ id: runId, run, kg, manifest, audit });
               });
             } else if (run.status === 'failed' || ++tries > 300) {
@@ -547,25 +540,17 @@ DN.databridge = (function () {
     return new Promise((resolve, reject) => {
       const source = new EventSource(apiUrl + '/runs/' + runId + '/stream');
       let latestStatus = null;
-      let lastStatus = null;
-      source.onopen = () => {
-        if (DN.logTerm) DN.logTerm.push('SCOUT', 'Event stream connected for ' + runId + '.');
-      };
       source.addEventListener('status', (e) => {
         try {
           latestStatus = JSON.parse(e.data);
           if (DN.kgview && latestStatus.status === 'running') DN.kgview.status('Scouting run is running...');
-          if (latestStatus.status && latestStatus.status !== lastStatus) {
-            lastStatus = latestStatus.status;
-            if (DN.logTerm) DN.logTerm.push('SCOUT', 'Run status: ' + latestStatus.status + '.');
-          }
+          if (DN.logTerm && latestStatus.status) DN.logTerm.push('SCOUT', 'Run status: ' + latestStatus.status);
         } catch (err) {}
       });
       source.addEventListener('colony_event', (e) => {
         try {
           const event = JSON.parse(e.data);
-          let graphChange = null;
-          if (DN.kgview && /^kg_|^scouting_/.test(event.event_type || '')) graphChange = DN.kgview.ingest(event);
+          const graphChange = DN.kgview && /^kg_|^scouting_/.test(event.event_type || '') ? DN.kgview.ingest(event) : null;
           pushScoutingLog(event, graphChange);
         } catch (err) {}
       });
@@ -581,13 +566,11 @@ DN.databridge = (function () {
           fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ]).then(([kg, manifest, audit]) => {
           showCompletedScoutingGraph(kg);
-          if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting stream complete for ' + runId + '.');
           resolve({ id: runId, run: latestStatus, kg, manifest, audit });
         }, reject);
       });
       source.onerror = () => {
         source.close();
-        if (DN.logTerm) DN.logTerm.push('SCOUT', 'Event stream dropped; switching to polling.');
         pollScoutingRun(runId).then(resolve, reject);
       };
     });

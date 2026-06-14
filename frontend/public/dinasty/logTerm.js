@@ -26,7 +26,9 @@ DN.logTerm = (function () {
     DEATH:     '#8C7E60',
     FOUND:     '#E8A23D',
     MIGRATE:   '#5DB0E8',
-    SYSTEM:    '#A8A09A'
+    SYSTEM:    '#A8A09A',
+    SCOUT:     '#8E79C4',
+    KG:        '#3FA89F'
   };
 
   // simple inline CSS injection — no edits to styles.css

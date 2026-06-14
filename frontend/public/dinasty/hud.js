@@ -6,11 +6,6 @@ DN.hud = (function () {
   const $ = id => document.getElementById(id);
   function hex(n) { return '#' + n.toString(16).padStart(6, '0'); }
   function cap(s) { return s.replace(/^./, c => c.toUpperCase()); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-  }
 
   const ICON = {
     forage: '<svg viewBox="0 0 24 24"><path d="M4 18c4-1 4-6 8-6s4 5 8 4"/><circle cx="4" cy="18" r="1.4"/><circle cx="20" cy="16" r="1.4"/></svg>',
@@ -40,50 +35,58 @@ DN.hud = (function () {
     $('regions').querySelectorAll('.reg').forEach(el => el.addEventListener('click', () => DN.app.setBiome(parseInt(el.dataset.i))));
     initBackendControl();
     H.clearInspector();
+    // MVP polish: strip every persistent HUD chrome element except the
+    // backend pill (Run button), exit-banner, and the bottom log
+    // terminal. The user wants a minimal "3D + terminal" surface.
+    ['hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'keys', 'regions', 'brand', 'stats', 'inspector'].forEach(id => {
+      const el = $(id); if (el) el.style.display = 'none';
+    });
     return H;
   };
 
   function initBackendControl() {
     const root = $('backend');
     if (!root) return;
-    const SCOUT_START_DATE = '2026-06-14';
-    const fallbackScoutMatches = [
-      { match_id: 'match:world_cup_2026:004:germany-curacao', market_key: 'match:world_cup_2026:004:germany-curacao', name: 'Germany vs Curaçao', home_team: 'Germany', away_team: 'Curaçao', date: '2026-06-14', time: '12:00 UTC-5', group: 'Group E', venue: 'Houston' },
-      { match_id: 'match:world_cup_2026:005:netherlands-japan', market_key: 'match:world_cup_2026:005:netherlands-japan', name: 'Netherlands vs Japan', home_team: 'Netherlands', away_team: 'Japan', date: '2026-06-14', time: '15:00 UTC-5', group: 'Group F', venue: 'Dallas (Arlington)' },
-      { match_id: 'match:world_cup_2026:006:ivory-coast-ecuador', market_key: 'match:world_cup_2026:006:ivory-coast-ecuador', name: 'Ivory Coast vs Ecuador', home_team: 'Ivory Coast', away_team: 'Ecuador', date: '2026-06-14', time: '19:00 UTC-4', group: 'Group E', venue: 'Philadelphia' },
-      { match_id: 'match:world_cup_2026:007:sweden-tunisia', market_key: 'match:world_cup_2026:007:sweden-tunisia', name: 'Sweden vs Tunisia', home_team: 'Sweden', away_team: 'Tunisia', date: '2026-06-14', time: '20:00 UTC-6', group: 'Group F', venue: 'Monterrey (Guadalupe)' },
-    ];
-    let scoutTargets = [];
-    let selectedScoutTarget = null;
+    // Collapsed control surface: the primary `Run` button plus the Match
+    // dropdown stay always visible. The 7 debug buttons (Get ants / Get
+    // KG / Run scouting / Deploy / Buy KG / Stake demo / Settle) live
+    // inside a `▾ Advanced` disclosure so the chrome stays clean.
     root.innerHTML =
       '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
       '<div class="backend-actions">' +
-        '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
-        '<button class="backend-btn secondary" id="backend-kg">Get KG</button>' +
-        '<select class="forecast-game-select scout-team-select" id="scout-team" aria-label="Scout team">' +
-          '<option value="0">Germany · vs Curaçao · Jun 14</option>' +
-          '<option value="1">Curaçao · vs Germany · Jun 14</option>' +
-        '</select>' +
-        '<button class="backend-btn secondary" id="backend-scout">Scout</button>' +
-        '<button class="backend-btn" id="backend-run">Run LLM agents</button>' +
         '<select class="forecast-game-select" id="forecast-game" aria-label="Game">' +
           '<option value="match:world_cup_2026:013:2026_06_13_brazil_morocco">Brazil vs Morocco</option>' +
         '</select>' +
-        '<button class="backend-btn secondary" id="forecast-deploy">Deploy</button>' +
-        '<button class="backend-btn secondary" id="x402-buy">Buy KG</button>' +
-        '<button class="backend-btn secondary" id="forecast-setup">Stake demo</button>' +
         '<select class="forecast-select" id="forecast-winner" aria-label="Winner">' +
           '<option value="Brazil">Brazil</option>' +
           '<option value="Draw">Draw</option>' +
           '<option value="Morocco">Morocco</option>' +
         '</select>' +
-        '<button class="backend-btn" id="forecast-settle">Settle</button>' +
+        '<button class="backend-btn" id="backend-run">Run</button>' +
+        '<button class="backend-btn secondary backend-toggle" id="backend-adv-toggle" title="Show advanced controls">▾</button>' +
+      '</div>' +
+      '<div class="backend-advanced" id="backend-advanced" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap">' +
+        '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
+        '<button class="backend-btn secondary" id="backend-kg">Get KG</button>' +
+        '<button class="backend-btn secondary" id="backend-scout">Scout</button>' +
+        '<button class="backend-btn secondary" id="forecast-deploy">Deploy</button>' +
+        '<button class="backend-btn secondary" id="x402-buy">Buy KG</button>' +
+        '<button class="backend-btn secondary" id="forecast-setup">Stake demo</button>' +
+        '<button class="backend-btn secondary" id="forecast-settle">Settle</button>' +
       '</div>';
+    const advToggle = $('backend-adv-toggle');
+    const advTray = $('backend-advanced');
+    if (advToggle && advTray) {
+      advToggle.addEventListener('click', () => {
+        const open = advTray.style.display !== 'none';
+        advTray.style.display = open ? 'none' : 'flex';
+        advToggle.textContent = open ? '▾' : '▴';
+      });
+    }
     const btn = $('backend-run');
     const antsBtn = $('backend-ants');
     const kgBtn = $('backend-kg');
     const scoutBtn = $('backend-scout');
-    const scoutTeam = $('scout-team');
     const forecastDeployBtn = $('forecast-deploy');
     const x402BuyBtn = $('x402-buy');
     const forecastSetupBtn = $('forecast-setup');
@@ -104,53 +107,6 @@ DN.hud = (function () {
       name: (forecastCfg.HOME_TEAM || 'Brazil') + ' vs ' + (forecastCfg.AWAY_TEAM || 'Morocco'),
     };
 
-    function scoutDateLabel(value) {
-      if (!value) return 'upcoming';
-      const parts = String(value).split('-');
-      if (parts.length !== 3) return value;
-      const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(parts[1]) - 1] || parts[1];
-      return month + ' ' + Number(parts[2]);
-    }
-
-    function scoutOptionLabel(target) {
-      const opponent = target.side === 'home' ? target.match.away_team : target.match.home_team;
-      return target.team + ' · vs ' + opponent + ' · ' + scoutDateLabel(target.match.date);
-    }
-
-    function buildScoutTargets(games) {
-      const seen = new Set();
-      const targets = [];
-      (games || []).forEach((game) => {
-        if (!game || !game.group || !game.date || game.date < SCOUT_START_DATE || game.score) return;
-        ['home', 'away'].forEach((side) => {
-          const team = side === 'home' ? game.home_team : game.away_team;
-          if (!team) return;
-          const key = team + '|' + (game.match_id || game.market_key || game.name);
-          if (seen.has(key)) return;
-          seen.add(key);
-          targets.push({ team, side, match: game });
-        });
-      });
-      targets.sort((a, b) => {
-        const am = a.match;
-        const bm = b.match;
-        return String((am.date || '') + (am.time || '') + (am.name || '') + a.team)
-          .localeCompare(String((bm.date || '') + (bm.time || '') + (bm.name || '') + b.team));
-      });
-      return targets;
-    }
-
-    function updateScoutOptions(games) {
-      if (!scoutTeam) return;
-      scoutTargets = buildScoutTargets(games && games.length ? games : fallbackScoutMatches);
-      if (!scoutTargets.length) scoutTargets = buildScoutTargets(fallbackScoutMatches);
-      scoutTeam.innerHTML = scoutTargets.slice(0, 48).map((target, index) =>
-        '<option value="' + index + '">' + esc(scoutOptionLabel(target)) + '</option>'
-      ).join('');
-      selectedScoutTarget = scoutTargets[0] || null;
-      scoutTeam.value = '0';
-    }
-
     function entityId(entity) {
       return entity && (entity.entity_id || entity.id);
     }
@@ -164,7 +120,12 @@ DN.hud = (function () {
     }
 
     function norm(value) {
-      return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
     }
 
     function entityText(entity) {
@@ -217,38 +178,45 @@ DN.hud = (function () {
       ].includes(type);
     }
 
-    function selectedKgGraph(graph, target) {
-      if (!graph || !target || !target.match) return graph;
+    function selectedKgGraph(graph, game) {
+      if (!graph || !game) return graph;
       const entities = graph.entities || [];
       const relationships = graph.relationships || [];
-      const team = target.team;
-      const match = target.match;
-      const opponent = target.side === 'home' ? match.away_team : match.home_team;
-      const teamNeedle = norm(team);
-      const opponentNeedle = norm(opponent);
-      const matchNeedle = norm(match.name || (match.home_team + ' vs ' + match.away_team));
-      const matchId = match.match_id || match.market_key;
+      const home = game.home_team || '';
+      const away = game.away_team || '';
+      const matchName = game.name || [home, away].filter(Boolean).join(' vs ');
+      const homeNeedle = norm(home);
+      const awayNeedle = norm(away);
+      const matchNeedle = norm(matchName);
+      const matchId = game.match_id || game.market_key;
       const byId = new Map();
       const selectedCoreIds = new Set();
+      const keep = new Set();
+
       entities.forEach((entity) => {
         const id = entityId(entity);
         if (id) byId.set(id, entity);
       });
-      const keep = new Set();
+
       entities.forEach((entity) => {
         const id = entityId(entity);
         if (!id) return;
         const attrs = entity.attributes || {};
+        const type = entity.entity_type || entity.type;
         const text = entityText(entity);
-        const isSelectedMatch = id === matchId || norm(entity.name) === matchNeedle ||
-          (norm(attrs.team1) === norm(match.home_team) && norm(attrs.team2) === norm(match.away_team));
-        const isSelectedTeam = entity.entity_type === 'team' && norm(entity.name) === teamNeedle;
-        const isOpponentTeam = entity.entity_type === 'team' && norm(entity.name) === opponentNeedle;
-        const usefulType = isUsefulKgType(entity.entity_type);
-        const mentionsSelectedContext = (teamNeedle && text.includes(teamNeedle)) ||
-          (opponentNeedle && text.includes(opponentNeedle)) ||
+        const attrHome = norm(attrs.team1 || attrs.home_team);
+        const attrAway = norm(attrs.team2 || attrs.away_team);
+        const isSelectedMatch = id === matchId ||
+          norm(entity.name) === matchNeedle ||
+          (attrHome === homeNeedle && attrAway === awayNeedle) ||
+          (attrHome === awayNeedle && attrAway === homeNeedle);
+        const isSelectedTeam = type === 'team' && (norm(entity.name) === homeNeedle || norm(entity.name) === awayNeedle);
+        const usefulType = isUsefulKgType(type);
+        const mentionsSelectedContext =
+          (homeNeedle && text.includes(homeNeedle)) ||
+          (awayNeedle && text.includes(awayNeedle)) ||
           (matchNeedle && text.includes(matchNeedle));
-        if (isSelectedMatch || isSelectedTeam || isOpponentTeam) {
+        if (isSelectedMatch || isSelectedTeam) {
           keep.add(id);
           selectedCoreIds.add(id);
         } else if (usefulType && mentionsSelectedContext) {
@@ -259,14 +227,14 @@ DN.hud = (function () {
       const seeds = new Set(keep);
       relationships.forEach((edge) => {
         const source = edgeSource(edge);
-        const targetId = edgeTarget(edge);
-        if (!source || !targetId) return;
+        const target = edgeTarget(edge);
+        if (!source || !target) return;
         const sourceEntity = byId.get(source);
-        const targetEntity = byId.get(targetId);
-        const sourceAllowed = selectedCoreIds.has(source) || isUsefulKgType(sourceEntity && sourceEntity.entity_type);
-        const targetAllowed = selectedCoreIds.has(targetId) || isUsefulKgType(targetEntity && targetEntity.entity_type);
-        if (seeds.has(source) && targetAllowed) keep.add(targetId);
-        if (seeds.has(targetId) && sourceAllowed) keep.add(source);
+        const targetEntity = byId.get(target);
+        const sourceAllowed = selectedCoreIds.has(source) || isUsefulKgType(sourceEntity && (sourceEntity.entity_type || sourceEntity.type));
+        const targetAllowed = selectedCoreIds.has(target) || isUsefulKgType(targetEntity && (targetEntity.entity_type || targetEntity.type));
+        if (seeds.has(source) && targetAllowed) keep.add(target);
+        if (seeds.has(target) && sourceAllowed) keep.add(source);
       });
 
       const scopedEntities = entities.filter((entity) => keep.has(entityId(entity)));
@@ -277,9 +245,9 @@ DN.hud = (function () {
         entity_count: scopedEntities.length,
         relationship_count: scopedRelationships.length,
         scope: {
-          team,
-          opponent,
-          match: match.name,
+          home_team: home,
+          away_team: away,
+          match: matchName,
           match_id: matchId,
         },
       });
@@ -320,13 +288,16 @@ DN.hud = (function () {
     }
 
     function setScoutingBusy(busy) {
-      [scoutBtn, scoutTeam].forEach((el) => {
+      [scoutBtn, forecastGame].forEach((el) => {
         if (el) el.disabled = busy;
       });
     }
 
+    function isUpcomingGroupStage(game) {
+      return game && game.group && game.date && game.date >= '2026-06-14' && !game.score;
+    }
+
     updateWinnerOptions();
-    updateScoutOptions(fallbackScoutMatches);
     if (DN.databridge && DN.databridge.fetchForecastConfig) {
       DN.databridge.fetchForecastConfig()
         .then((payload) => {
@@ -341,13 +312,14 @@ DN.hud = (function () {
           const games = payload.games || [];
           const preferred = games.find((game) => /Brazil vs Morocco/i.test(game.name || '')) || games[0];
           if (!preferred) return;
-          forecastGame.innerHTML = games.slice(0, 104).map((game) =>
+          const selectableGames = games.filter(isUpcomingGroupStage);
+          const visibleGames = selectableGames.length ? selectableGames : games;
+          forecastGame.innerHTML = visibleGames.slice(0, 104).map((game) =>
             '<option value="' + game.market_key + '">' + [game.date, game.time, game.name].filter(Boolean).join(' - ') + '</option>'
           ).join('');
-          selectedGame = preferred;
-          forecastGame.value = preferred.market_key;
+          selectedGame = visibleGames.find((game) => /Brazil vs Morocco/i.test(game.name || '')) || visibleGames[0] || preferred;
+          forecastGame.value = selectedGame.market_key;
           updateWinnerOptions();
-          updateScoutOptions(games);
         })
         .catch(() => {});
       forecastGame.addEventListener('change', () => {
@@ -365,16 +337,6 @@ DN.hud = (function () {
         forecastStakes = [];
         updateWinnerOptions();
         status.textContent = selectedGame.name;
-      });
-    }
-    if (scoutTeam) {
-      scoutTeam.addEventListener('change', () => {
-        const index = Number(scoutTeam.value);
-        selectedScoutTarget = scoutTargets[index] || scoutTargets[0] || null;
-        if (selectedScoutTarget) {
-          const match = selectedScoutTarget.match;
-          status.textContent = 'Scout ' + selectedScoutTarget.team + ' · ' + (match.group || 'group stage');
-        }
       });
     }
 
@@ -456,14 +418,15 @@ DN.hud = (function () {
       status.textContent = 'Getting KG...';
       DN.databridge.fetchWorldCupKg()
         .then((payload) => {
-          const target = selectedScoutTarget || scoutTargets[0] || null;
-          const graph = target ? selectedKgGraph(payload, target) : payload;
-          const entities = graph.entity_count != null ? graph.entity_count : (graph.entities || []).length;
-          const links = graph.relationship_count != null ? graph.relationship_count : (graph.relationships || []).length;
-          const title = target ? target.team + ' KG' : 'World Cup KG';
-          if (DN.kgview) DN.kgview.showGraph(graph, title);
-          status.textContent = (target ? target.team + ' KG' : 'World Cup KG') + ' · ' + entities + ' entities';
-          H.pushThought('Frontend loaded ' + title + ': ' + entities + ' entities and ' + links + ' links.', 'Backend', '#3FA89F');
+          const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
+          const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
+          const scoped = selectedKgGraph(payload, selectedGame);
+          const scopedEntities = scoped.entity_count != null ? scoped.entity_count : (scoped.entities || []).length;
+          const scopedLinks = scoped.relationship_count != null ? scoped.relationship_count : (scoped.relationships || []).length;
+          const title = (selectedGame && selectedGame.name ? selectedGame.name : 'Selected fixture') + ' KG';
+          if (DN.kgview) DN.kgview.showGraph(scoped, title);
+          status.textContent = scopedEntities + ' selected KG entities · ' + scopedLinks + ' links';
+          H.pushThought('Frontend loaded scoped KG for ' + selectedGame.name + ': ' + scopedEntities + ' of ' + entities + ' entities, ' + scopedLinks + ' of ' + links + ' links.', 'Backend', '#3FA89F');
         })
         .catch((err) => {
           status.textContent = 'KG fetch error';
@@ -473,24 +436,21 @@ DN.hud = (function () {
     });
     scoutBtn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startScoutingRun) return;
-      const target = selectedScoutTarget || scoutTargets[0] || null;
-      const match = target && target.match ? target.match : selectedGame;
-      const team = target && target.team ? target.team : (match.home_team || 'selected team');
       setScoutingBusy(true);
-      status.textContent = 'Scouting ' + team + '...';
-      H.pushThought('Frontend started a public-data KG scouting run for ' + team + '.', 'Backend', '#3FA89F');
-      if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting ' + team + ' in ' + (match.name || 'selected match') + '.');
+      status.textContent = 'Scouting ' + selectedGame.name + '...';
+      H.pushThought('Frontend started a public-data KG scouting run for ' + selectedGame.name + '.', 'Backend', '#3FA89F');
+      if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting run kicked off for ' + selectedGame.name + '.');
       if (DN.kgview && DN.kgview.showScoutingProgress) {
         DN.kgview.showScoutingProgress({
-          match: match.name || ((match.home_team || team) + ' vs ' + (match.away_team || 'opponent')),
-          matchId: match.match_id || match.market_key || null,
-          team,
-          opponent: target && target.side === 'home' ? match.away_team : match.home_team,
+          match: selectedGame.name,
+          matchId: selectedGame.match_id || selectedGame.market_key,
+          team: selectedGame.home_team,
+          opponent: selectedGame.away_team,
         });
       }
       DN.databridge.startScoutingRun({
-        match: match.name || ((match.home_team || team) + ' vs ' + (match.away_team || 'opponent')),
-        match_id: match.match_id || match.market_key || null,
+        match: selectedGame.name,
+        match_id: selectedGame.match_id || selectedGame.market_key,
         data_mode: 'public',
         include_deepseek_scout: true,
         voice_mode: 'llm',
@@ -501,9 +461,9 @@ DN.hud = (function () {
           const entities = manifest.entity_count || kg.entity_count || 0;
           const links = manifest.relationship_count || kg.relationship_count || 0;
           const ready = manifest.validation && manifest.validation.kg_load_ready === false ? 'needs review' : 'ready';
-          status.textContent = team + ' scouting ' + ready + ' · ' + entities + ' entities';
-          H.pushThought(team + ' scouting finished: ' + entities + ' KG entities and ' + links + ' relationships.', 'Backend', '#3FA89F');
-          if (DN.logTerm) DN.logTerm.push('SCOUT', team + ' scouting finished. Re-polling communications.');
+          status.textContent = 'Scouting ' + ready + ' · ' + entities + ' entities';
+          H.pushThought('Scouting finished: ' + entities + ' KG entities and ' + links + ' relationships.', 'Backend', '#3FA89F');
+          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Scouting finished. Re-polling communications.');
           const newId = (DN.databridge && DN.databridge.runId) || null;
           if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(newId);
           if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
@@ -512,40 +472,32 @@ DN.hud = (function () {
         .catch((err) => {
           status.textContent = 'Scouting error';
           H.pushThought('Scouting failed: ' + (err.message || err), 'Backend', '#D96E54');
-          if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting failed: ' + (err.message || err));
         })
-        .finally(() => { setScoutingBusy(false); });
+        .finally(() => {
+          setScoutingBusy(false);
+        });
     });
     btn.addEventListener('click', () => {
-      if (!DN.databridge || !DN.databridge.startDemoRun) return;
-      btn.disabled = true;
-      status.textContent = 'Starting run...';
-      H.pushThought('Frontend requested a new LLM-powered Railway colony run.', 'Backend', '#3FA89F');
-      if (DN.logTerm) DN.logTerm.push('SYSTEM', 'LLM debate run kicked off — debate_claim and social_action events incoming.');
-      DN.databridge.startDemoRun()
-        .then((result) => {
-          const agents = DN.databridge.getAgents ? DN.databridge.getAgents().length : 0;
-          const rooms = DN.databridge.getRooms ? DN.databridge.getRooms().length : 0;
-          status.textContent = 'Loaded ' + agents + ' agents · ' + rooms + ' rooms';
-          H.pushThought('Backend run completed and the colony view loaded its events.', 'Backend', '#3FA89F');
-          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Run complete: ' + agents + ' agents · ' + rooms + ' rooms. Visualising debate.');
-          // Critical: the comms poller caches the run-id for 30s, so
-          // without a reset it will keep returning the OLD run's events
-          // for a while after Run LLM completes. Force the cache to
-          // re-pick the freshest run on the next poll and wipe the
-          // commsViz dedup so every event from the new run dispatches.
-          const newId = (DN.databridge && DN.databridge.runId) || null;
-          if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(newId);
-          if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
-          if (H._pollComms) H._pollComms();
-          if (pollAgents) pollAgents(false);
-        })
-        .catch((err) => {
-          status.textContent = 'Backend error';
-          H.pushThought('Backend run failed: ' + (err.message || err), 'Backend', '#D96E54');
-          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Run failed: ' + (err.message || err));
-        })
-        .finally(() => { btn.disabled = false; });
+      // The primary Run button now drives the full lifecycle controller,
+      // which orchestrates scout → KG crystal → recruit → debate →
+      // settle in turn. The lifecycle itself calls `startDemoRun` during
+      // its converge phase (see lifecycle.js ENTER.converge).
+      if (DN.lifecycle && DN.lifecycle.start) {
+        btn.disabled = true;
+        status.textContent = 'Lifecycle running…';
+        H.pushThought('Lifecycle kicked off — Brazil vs Morocco.', 'Lifecycle', '#3FA89F');
+        DN.lifecycle.start();
+        // Re-enable after ~55s (full scripted lifecycle) so the user can
+        // re-trigger if they want to loop through again.
+        setTimeout(() => { btn.disabled = false; status.textContent = 'Roaming · click Run to loop'; }, 56000);
+      } else if (DN.databridge && DN.databridge.startDemoRun) {
+        // Fallback if lifecycle module didn't load: behave as before.
+        btn.disabled = true;
+        status.textContent = 'Starting run...';
+        DN.databridge.startDemoRun()
+          .then(() => { btn.disabled = false; status.textContent = 'Run complete'; })
+          .catch(err => { btn.disabled = false; status.textContent = 'Run error: ' + (err && err.message || err); });
+      }
     });
 
     forecastDeployBtn.addEventListener('click', () => {
@@ -719,6 +671,47 @@ DN.hud = (function () {
     setW('b-health', col.stats.health); setW('b-food', col.stats.food);
   };
 
+  // Render the Forecast / Outcome / Settled-tx rows for the ant inspector.
+  // Pulled from a.forecast (set by lifecycle.deriveOutcomes), a.outcome,
+  // and DN.lifecycle.settleTxHash. Returns '' when no forecast data exists.
+  function renderForecastOutcome(a) {
+    const fc = a && a.forecast;
+    const outcome = a && a.outcome;
+    if (!fc && !outcome) return '';
+    let html = '';
+    if (fc) {
+      const sideRaw = fc.side || 'draw';
+      const sideLabel = sideRaw === 'home' ? 'Home' : sideRaw === 'away' ? 'Away' : 'Draw';
+      const prob = fc.home_probability != null ? Math.round(fc.home_probability * 100) + '%' : '—';
+      const stake = fc.stake != null ? '$' + Math.round(fc.stake) : '—';
+      html += `<div class="vital-bar" style="margin-top:9px"><div class="vlabel">
+        <span>Forecast</span>
+        <span style="font-family:var(--mono)">${sideLabel} · ${prob} · stake ${stake}</span>
+      </div></div>`;
+    }
+    if (outcome) {
+      const tone = outcome === 'correct' ? '#5FB84A' :
+                   outcome === 'wrong'   ? '#D96E54' :
+                   outcome === 'culled'  ? '#8C7E60' : '#8C7E60';
+      const label = outcome === 'correct' ? '✓ correct' :
+                    outcome === 'wrong'   ? '✗ wrong' :
+                    outcome === 'culled'  ? '☠ culled' : 'pending';
+      html += `<div class="vital-bar" style="margin-top:9px"><div class="vlabel">
+        <span>Outcome</span>
+        <span style="color:${tone};font-weight:600">${label}</span>
+      </div></div>`;
+    }
+    const tx = DN.lifecycle && DN.lifecycle.settleTxHash;
+    if (tx) {
+      const short = tx.slice(0, 6) + '…' + tx.slice(-4);
+      html += `<div class="vital-bar" style="margin-top:9px"><div class="vlabel">
+        <span>Settled tx</span>
+        <span style="font-family:var(--mono);font-size:11px">${short}</span>
+      </div></div>`;
+    }
+    return html;
+  }
+
   H.showAnt = function (a, following) {
     H._open = { type: 'ant', ant: a };
     $('inspector').classList.add('has-content');
@@ -751,6 +744,7 @@ DN.hud = (function () {
       ${identityRows}
       <div class="vital-bar" style="margin-top:9px"><div class="vlabel"><span>Current task</span><span id="a-task">—</span></div></div>
       <div class="vital-bar" style="margin-top:9px"><div class="vlabel"><span>Carrying</span><span id="a-cargo">—</span></div></div>
+      ${renderForecastOutcome(a)}
       <div class="section-label">Recent activity</div>
       <div class="insp-empty" style="font-size:12px">${antBlurb(a)}</div>
       <button class="btn-primary" id="follow-ant" style="background:${following ? 'rgba(255,238,205,0.1)' : ''};color:${following ? 'var(--ink)' : ''};border-color:var(--border-strong)">
@@ -929,21 +923,18 @@ DN.hud = (function () {
   H.setUnderground = function (on) {
     document.body.classList.toggle('underground', on);
     $('exitbtn').classList.toggle('show', on);
-    // Hide the surface HUD while underground — the game UI overlay takes over.
-    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'enterbanner', 'regions', 'inspector', 'backend'].forEach(id => {
-      const el = $(id); if (!el) return;
-      el.style.display = on ? 'none' : '';
+    // Only `backend` (the Run button) is allowed to come back on surface;
+    // everything else stays hidden per the MVP minimal-chrome policy.
+    const back = $('backend'); if (back) back.style.display = on ? 'none' : '';
+    // Belt-and-braces: ensure the rest stays hidden in both modes.
+    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'regions', 'inspector', 'enterbanner', 'keys'].forEach(id => {
+      const el = $(id); if (el) el.style.display = 'none';
     });
+    if (H._ugRoot) H._ugRoot.style.display = 'none';
     if (on) {
       H._open = null;
-      H._ensureUgGameUi();
-      H._ugRoot.style.display = 'block';
-      // recolor the game UI accents to the active colony
-      const col = (DN.underground && DN.underground.col) || null;
-      if (col) H._applyUgAccent(col.accent);
     } else {
       H.clearInspector();
-      if (H._ugRoot) H._ugRoot.style.display = 'none';
     }
   };
 

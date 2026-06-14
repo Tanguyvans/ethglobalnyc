@@ -208,8 +208,8 @@ those env vars or a configured private wallet-store path.
 The frontend can start a public-data KG scouting run with `POST /scouting/run`.
 By default this runs `colony/run_match.py` with public data and the DeepSeek
 structured scouting agents enabled. The browser Scout control fills the request
-from the World Cup KG: it lists upcoming group-stage teams from June 14, 2026
-onward, then sends the selected fixture's `match` and `match_id`.
+from the selected World Cup group-stage fixture from June 14, 2026 onward, then
+sends that fixture's `match` and `match_id`.
 
 ```bash
 curl -X POST https://ethglobalnyc-production.up.railway.app/scouting/run \
@@ -329,15 +329,31 @@ To inspect a stored scout run:
 
 ```bash
 curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/events
 curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/kg
-curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/kg/manifest
-curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/scouting-audit
 ```
 
-This is run-artifact storage, not yet long-term knowledge storage. If we need
-Netherlands vs Japan or any other scout to survive deploys reliably, mount a
-Railway volume at `COLONY_API_RUNS_DIR` or add a promotion step that writes the
-final KG/audit to durable object storage or a database.
+The frontend's `Get KG` button still reads the committed tournament KG from
+`/kg/world-cup`, but it scopes the overlay to the selected fixture and its two
+teams before rendering. That avoids loading unrelated global match/team context
+for pairs such as Norway vs Senegal.
+
+## Reproduce An Ant
+
+The frontend inspector can create a child ant from the selected parent with
+`POST /ants/reproduce`. The backend mutates a deterministic parent personality
+genome, creates or reuses a wallet, records ENS-style child metadata under the
+runs directory, and optionally funds the child wallet.
+
+```bash
+curl -X POST https://ethglobalnyc-production.up.railway.app/ants/reproduce \
+  -H "Content-Type: application/json" \
+  -d '{"parent_agent_id":"ant_0001","wallet_provider":"local","fund_wallet":false}'
+```
+
+The response returns the `parent`, the created `child`, the wallet store used,
+and the `child_ants.json` source path. `GET /ants` includes these children after
+creation so the frontend can attach them to the visible colony.
 
 For `POST /runs/demo`, the first integration streams transport/status
 immediately. Most domain events arrive when `run_demo.py` writes `events.jsonl`
@@ -410,8 +426,6 @@ The interaction code lives in:
 ```text
 frontend/public/dinasty/databridge.js
 frontend/public/dinasty/hud.js
-frontend/public/dinasty/kgview.js
-frontend/public/dinasty/logTerm.js
 ```
 
 Frontend flow:
@@ -419,13 +433,10 @@ Frontend flow:
 1. `databridge.js` loads the latest successful backend run from `GET /runs`.
 2. The `Get ants` button calls `GET /ants` and binds wallet/ENS identity to visible ants.
 3. The `Get KG` button calls `GET /kg/world-cup` and renders the static tournament KG.
-4. The Scout selector lists upcoming group-stage teams from `GET /forecast/games`, filtered to unscored matches dated `2026-06-14` or later.
-5. The `Scout` button calls `POST /scouting/run` for the selected fixture, listens to `GET /runs/{run_id}/stream`, writes live `SCOUT`/`KG` terminal rows, and renders streamed KG entities/relationships.
-6. If the backend delivers the KG as one completed artifact, the KG overlay replays it in timed chunks so nodes and links visibly arrive over time.
-7. The KG overlay briefly pulses newly streamed or replayed nodes green and updated nodes blue.
-8. The `Run LLM agents` button calls `POST /runs/demo`.
-9. When demo events arrive, the frontend seeds colony stats and the thought ticker.
-10. If the backend is unavailable, the frontend falls back to `/data/demo.jsonl`.
+4. The `Run scouting` button calls `POST /scouting/run`, listens to `GET /runs/{run_id}/stream`, and renders streamed KG entities/relationships.
+5. The `Run LLM agents` button calls `POST /runs/demo`.
+6. When demo events arrive, the frontend seeds colony stats and the thought ticker.
+7. If the backend is unavailable, the frontend falls back to `/data/demo.jsonl`.
 
 Minimal browser-side call:
 

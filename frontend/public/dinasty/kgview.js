@@ -312,6 +312,20 @@ DN.kgview = (function () {
     };
   }
 
+  function compactGroup(group) {
+    const centers = {
+      matches: { x: 470, y: 220 },
+      teams: { x: 315, y: 255 },
+      evidence: { x: 470, y: 350 },
+      sources: { x: 625, y: 255 },
+      scouts: { x: 625, y: 350 },
+      context: { x: 315, y: 350 },
+      other: { x: 470, y: 120 },
+    };
+    const center = centers[group.id] || centers.other;
+    return Object.assign({}, group, center);
+  }
+
   function positionedNodes() {
     const values = Array.from(nodes.values());
     const grouped = {};
@@ -320,24 +334,27 @@ DN.kgview = (function () {
       grouped[group.id] = grouped[group.id] || [];
       grouped[group.id].push(node);
     });
+    const compact = values.length > 0 && values.length <= 24;
     const placed = [];
     Object.keys(grouped).forEach((groupId) => {
       const groupNodes = grouped[groupId];
-      const group = groupFor(groupNodes[0]);
+      const baseGroup = groupFor(groupNodes[0]);
+      const group = compact ? compactGroup(baseGroup) : baseGroup;
       const count = Math.max(groupNodes.length, 1);
       groupNodes.forEach((node, index) => {
         const angle = index * 2.399963229728653;
-        const radius = count < 2 ? 0 : 12 + Math.sqrt(index / count) * Math.min(96, 18 + count * 2.1);
+        const radius = count < 2 ? 0 : 12 + Math.sqrt(index / count) * (compact ? Math.min(58, 24 + count * 8) : Math.min(96, 18 + count * 2.1));
         placed.push({
           node,
           group,
           groupIndex: index,
+          compact,
           x: group.x + Math.cos(angle) * radius,
           y: group.y + Math.sin(angle) * radius,
         });
       });
     });
-    return placed;
+    return { nodes: placed, compact };
   }
 
   function renderLegend() {
@@ -371,11 +388,17 @@ DN.kgview = (function () {
     return Array.from(bands.values()).sort((a, b) => b.count - a.count).slice(0, 14);
   }
 
-  function groupBackgrounds() {
-    return groupDefs.map((group) => {
-      const count = Array.from(nodes.values()).filter((node) => groupFor(node).id === group.id).length;
+  function groupBackgrounds(placed, compact) {
+    const byGroup = {};
+    placed.forEach((item) => {
+      byGroup[item.group.id] = byGroup[item.group.id] || { group: item.group, count: 0 };
+      byGroup[item.group.id].count += 1;
+    });
+    return Object.keys(byGroup).map((groupId) => {
+      const group = byGroup[groupId].group;
+      const count = byGroup[groupId].count;
       if (!count) return '';
-      const radius = Math.min(124, 46 + Math.sqrt(count) * 8);
+      const radius = compact ? Math.min(174, 82 + Math.sqrt(count) * 19) : Math.min(124, 46 + Math.sqrt(count) * 8);
       return '<g class="kg-group">' +
         '<circle cx="' + group.x + '" cy="' + group.y + '" r="' + radius + '" style="--kg-color:' + group.color + '"></circle>' +
         '<text x="' + group.x + '" y="' + (group.y - radius - 11) + '">' + escapeHtml(group.label) + ' · ' + count + '</text>' +
@@ -386,7 +409,8 @@ DN.kgview = (function () {
   function render() {
     if (!svg) return;
     renderLegend();
-    const placed = positionedNodes();
+    const layout = positionedNodes();
+    const placed = layout.nodes;
     const byId = new Map(placed.map((item) => [item.node.entity_id || item.node.id, item]));
     const selectedRelatedIds = selectedId ? new Set(relatedFor(selectedId).map((item) => item.id).concat(selectedId)) : null;
     const selectedLines = selectedId ? relatedFor(selectedId).slice(0, 28).map((item) => {
@@ -406,9 +430,12 @@ DN.kgview = (function () {
       const id = node.entity_id || node.id;
       const type = typeFor(node);
       const color = colors[type] || item.group.color || colors.default;
-      const radius = type === 'match' ? 8 : type === 'team' ? 7 : 5;
-      const label = item.groupIndex < 3 && (type === 'match' || type === 'team') ? '<text y="' + (radius + 13) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>' : '';
+      const radius = layout.compact ? (type === 'match' ? 15 : type === 'team' ? 13 : 10) : (type === 'match' ? 8 : type === 'team' ? 7 : 5);
+      const label = (layout.compact || (item.groupIndex < 3 && (type === 'match' || type === 'team')))
+        ? '<text y="' + (radius + (layout.compact ? 20 : 13)) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>'
+        : '';
       const classes = 'kg-node' +
+        (layout.compact ? ' compact' : '') +
         (id === selectedId ? ' selected' : '') +
         (selectedRelatedIds && !selectedRelatedIds.has(id) ? ' dim' : '') +
         activityFor(id);
@@ -417,7 +444,7 @@ DN.kgview = (function () {
         label +
       '</g>';
     }).join('');
-    svg.innerHTML = groupBackgrounds() + bandMarkup + selectedLines + nodeMarkup;
+    svg.innerHTML = groupBackgrounds(placed, layout.compact) + bandMarkup + selectedLines + nodeMarkup;
   }
 
   K.reset = function (title) {
@@ -521,54 +548,35 @@ DN.kgview = (function () {
       }
     }
 
-    replayEntities();
+    if (entities.length) replayEntities();
+    else replayRelationships();
   };
 
   K.showScoutingProgress = function (opts) {
     opts = opts || {};
-    const match = opts.match || 'Selected match';
-    const parts = match.split(/\s+vs\s+/i);
-    const team = opts.team || parts[0] || 'Selected team';
-    const opponent = opts.opponent || parts[1] || 'Opponent';
-    const matchId = opts.matchId || ('scouting:match:' + slug(match));
-    const teamId = 'scouting:team:' + slug(team);
-    const opponentId = 'scouting:team:' + slug(opponent);
+    const match = opts.match || 'Selected fixture';
+    const matchId = opts.matchId || 'scout:' + slug(match);
+    const home = opts.team || (match.includes(' vs ') ? match.split(' vs ')[0] : '');
+    const away = opts.opponent || (match.includes(' vs ') ? match.split(' vs ')[1] : '');
     K.reset('Live scouting KG');
-    [
-      { entity_id: matchId, entity_type: 'match', name: match, attributes: { status: 'scouting', phase: 'waiting for KG entities' } },
-      { entity_id: teamId, entity_type: 'team', name: team, attributes: { role: 'selected scouting target' } },
-      { entity_id: opponentId, entity_type: 'team', name: opponent, attributes: { role: 'match opponent' } },
-      { entity_id: 'scouting:scout:form', entity_type: 'scout', name: 'form scout', attributes: { task: 'recent results and momentum' } },
-      { entity_id: 'scouting:scout:lineup', entity_type: 'scout', name: 'lineup scout', attributes: { task: 'lineups, roles, tactical shape' } },
-      { entity_id: 'scouting:scout:availability', entity_type: 'scout', name: 'availability scout', attributes: { task: 'injury and availability signals' } },
-      { entity_id: 'scouting:source:public', entity_type: 'source', name: 'public web sources', attributes: { status: 'querying' } },
-      { entity_id: 'scouting:finding:pending', entity_type: 'finding', name: 'pending findings', attributes: { status: 'agents are gathering evidence' } },
-    ].forEach((entity) => addNode(entity, true));
-    [
-      { source_id: teamId, relation_type: 'plays_in', target_id: matchId },
-      { source_id: opponentId, relation_type: 'plays_in', target_id: matchId },
-      { source_id: 'scouting:scout:form', relation_type: 'scouts', target_id: teamId },
-      { source_id: 'scouting:scout:lineup', relation_type: 'scouts', target_id: teamId },
-      { source_id: 'scouting:scout:availability', relation_type: 'scouts', target_id: teamId },
-      { source_id: 'scouting:source:public', relation_type: 'feeds', target_id: 'scouting:finding:pending' },
-      { source_id: 'scouting:finding:pending', relation_type: 'updates', target_id: matchId },
-    ].forEach((relationship) => addEdge(relationship, true));
+    addNode({
+      entity_id: matchId,
+      entity_type: 'match',
+      name: match,
+      attributes: { status: 'scouting', team1: home, team2: away },
+    }, true);
+    if (home) {
+      addNode({ entity_id: 'team:' + slug(home), entity_type: 'team', name: home, attributes: { role: 'selected' } }, true);
+      addEdge({ source_id: 'team:' + slug(home), target_id: matchId, relation_type: 'plays_in' }, true);
+    }
+    if (away) {
+      addNode({ entity_id: 'team:' + slug(away), entity_type: 'team', name: away, attributes: { role: 'opponent' } }, true);
+      addEdge({ source_id: 'team:' + slug(away), target_id: matchId, relation_type: 'plays_in' }, true);
+    }
+    addNode({ entity_id: 'scout:coordinator:' + slug(match), entity_type: 'scout', name: 'Scout coordinator', attributes: { match } }, true);
+    addEdge({ source_id: 'scout:coordinator:' + slug(match), target_id: matchId, relation_type: 'scouting' }, true);
     render();
-    detailEl.innerHTML = '<div class="kg-detail-head"><div><b>scouting</b><strong>' + escapeHtml(team) + '</strong></div></div>' +
-      '<p>Agents are querying public sources. Real KG nodes will appear here as soon as the backend emits them.</p>' +
-      '<div class="kg-subhead">Active scouts</div>' +
-      '<div class="kg-links">' +
-        '<a href="#kg/scouting:scout:form" data-kg-jump="scouting%3Ascout%3Aform"><i>scout</i><span>form scout</span><em>running</em></a>' +
-        '<a href="#kg/scouting:scout:lineup" data-kg-jump="scouting%3Ascout%3Alineup"><i>scout</i><span>lineup scout</span><em>running</em></a>' +
-        '<a href="#kg/scouting:scout:availability" data-kg-jump="scouting%3Ascout%3Aavailability"><i>scout</i><span>availability scout</span><em>running</em></a>' +
-      '</div>';
-    detailEl.querySelectorAll('[data-kg-jump]').forEach((link) => {
-      link.addEventListener('click', (event) => {
-        event.preventDefault();
-        selectNode(decodeURIComponent(link.getAttribute('data-kg-jump')));
-      });
-    });
-    K.status('Scouting agents running · waiting for first streamed KG nodes');
+    K.status('Scouting process started · waiting for KG stream');
   };
 
   return K;
