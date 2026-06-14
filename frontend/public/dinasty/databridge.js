@@ -153,7 +153,9 @@ DN.databridge = (function () {
       .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
       .then((run) => {
         B.runId = run.id;
-        return pollScoutingRun(run.id);
+        if (DN.kgview) DN.kgview.reset('Live scouting KG');
+        if (!window.EventSource) return pollScoutingRun(run.id);
+        return streamScoutingRun(run.id);
       });
   };
 
@@ -270,9 +272,13 @@ DN.databridge = (function () {
             if (run.status === 'succeeded') {
               clearInterval(timer);
               Promise.all([
+                fetch(apiUrl + '/runs/' + runId + '/kg').then((r) => (r.ok ? r.json() : null)).catch(() => null),
                 fetch(apiUrl + '/runs/' + runId + '/kg/manifest').then((r) => (r.ok ? r.json() : null)).catch(() => null),
                 fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-              ]).then(([manifest, audit]) => resolve({ id: runId, run, manifest, audit }));
+              ]).then(([kg, manifest, audit]) => {
+                if (DN.kgview && kg) DN.kgview.showGraph(kg, 'Completed scouting KG');
+                resolve({ id: runId, run, kg, manifest, audit });
+              });
             } else if (run.status === 'failed' || ++tries > 300) {
               clearInterval(timer);
               reject(new Error(run.status === 'failed' ? 'Scouting run failed.' : 'Scouting run timed out.'));
@@ -283,6 +289,44 @@ DN.databridge = (function () {
             reject(err);
           });
       }, 1000);
+    });
+  }
+
+  function streamScoutingRun(runId) {
+    return new Promise((resolve, reject) => {
+      const source = new EventSource(apiUrl + '/runs/' + runId + '/stream');
+      let latestStatus = null;
+      source.addEventListener('status', (e) => {
+        try {
+          latestStatus = JSON.parse(e.data);
+          if (DN.kgview && latestStatus.status === 'running') DN.kgview.status('Scouting run is running...');
+        } catch (err) {}
+      });
+      source.addEventListener('colony_event', (e) => {
+        try {
+          const event = JSON.parse(e.data);
+          if (DN.kgview && /^kg_|^scouting_/.test(event.event_type || '')) DN.kgview.ingest(event);
+        } catch (err) {}
+      });
+      source.addEventListener('done', () => {
+        source.close();
+        if (latestStatus && latestStatus.status === 'failed') {
+          reject(new Error('Scouting run failed.'));
+          return;
+        }
+        Promise.all([
+          fetch(apiUrl + '/runs/' + runId + '/kg').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch(apiUrl + '/runs/' + runId + '/kg/manifest').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        ]).then(([kg, manifest, audit]) => {
+          if (DN.kgview && kg) DN.kgview.showGraph(kg, 'Completed scouting KG');
+          resolve({ id: runId, run: latestStatus, kg, manifest, audit });
+        }, reject);
+      });
+      source.onerror = () => {
+        source.close();
+        pollScoutingRun(runId).then(resolve, reject);
+      };
     });
   }
 

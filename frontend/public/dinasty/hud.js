@@ -96,6 +96,7 @@ DN.hud = (function () {
         .then((payload) => {
           const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
           const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
+          if (DN.kgview) DN.kgview.showGraph(payload, 'World Cup KG');
           status.textContent = entities + ' KG entities · ' + links + ' links';
           H.pushThought('Frontend loaded the World Cup KG from Railway: ' + entities + ' entities, ' + links + ' links.', 'Backend', '#3FA89F');
         })
@@ -113,8 +114,9 @@ DN.hud = (function () {
       DN.databridge.startScoutingRun()
         .then((result) => {
           const manifest = result.manifest || {};
-          const entities = manifest.entity_count || 0;
-          const links = manifest.relationship_count || 0;
+          const kg = result.kg || {};
+          const entities = manifest.entity_count || kg.entity_count || 0;
+          const links = manifest.relationship_count || kg.relationship_count || 0;
           const ready = manifest.validation && manifest.validation.kg_load_ready === false ? 'needs review' : 'ready';
           status.textContent = 'Scouting ' + ready + ' · ' + entities + ' entities';
           H.pushThought('Scouting finished: ' + entities + ' KG entities and ' + links + ' relationships.', 'Backend', '#3FA89F');

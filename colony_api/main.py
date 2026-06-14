@@ -14,6 +14,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -117,6 +118,16 @@ def _write_metadata(run_id: str, payload: dict) -> None:
     path = _metadata_path(run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _append_run_event(run_id: str, event: dict) -> None:
+    path = _run_dir(run_id) / "events.jsonl"
+    payload = {
+        "timestamp": _utc_now(),
+        **event,
+    }
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
 
 
 def _safe_artifact_path(run_id: str, relative_path: str) -> Path:
@@ -299,11 +310,105 @@ def _build_scouting_command(request: ScoutingRunRequest, run_dir: Path) -> list[
     return command
 
 
+def _emit_kg_stream_events(run_id: str, compact_dir: Path) -> None:
+    graph_path = compact_dir / "world_graph.json"
+    manifest_path = compact_dir / "kg_manifest.json"
+    audit_path = compact_dir / "scouting_audit.json"
+    if not graph_path.exists():
+        return
+
+    graph = json.loads(graph_path.read_text(encoding="utf-8"))
+    entities = graph.get("entities") or []
+    relationships = graph.get("relationships") or []
+    _append_run_event(
+        run_id,
+        {
+            "event_type": "kg_stage",
+            "stage": "world_graph_built",
+            "graph_id": graph.get("graph_id"),
+            "entity_count": len(entities),
+            "relationship_count": len(relationships),
+        },
+    )
+    for index, entity in enumerate(entities):
+        _append_run_event(
+            run_id,
+            {
+                "event_type": "kg_entity",
+                "sequence": index,
+                "entity": entity,
+            },
+        )
+        time.sleep(0.003)
+    _append_run_event(
+        run_id,
+        {
+            "event_type": "kg_stage",
+            "stage": "relationships_building",
+            "graph_id": graph.get("graph_id"),
+            "entity_count": len(entities),
+            "relationship_count": len(relationships),
+        },
+    )
+    for index, relationship in enumerate(relationships):
+        _append_run_event(
+            run_id,
+            {
+                "event_type": "kg_relationship",
+                "sequence": index,
+                "relationship": relationship,
+            },
+        )
+        time.sleep(0.002)
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        _append_run_event(
+            run_id,
+            {
+                "event_type": "kg_manifest",
+                "manifest": manifest,
+            },
+        )
+    if audit_path.exists():
+        audit = json.loads(audit_path.read_text(encoding="utf-8"))
+        readiness = audit.get("kg_readiness") or audit.get("readiness") or {}
+        _append_run_event(
+            run_id,
+            {
+                "event_type": "scouting_audit",
+                "kg_load_ready": readiness.get("kg_load_ready"),
+                "scouting_complete": readiness.get("scouting_complete"),
+                "backlog_count": readiness.get("scouting_backlog_count"),
+                "audit": audit,
+            },
+        )
+    _append_run_event(
+        run_id,
+        {
+            "event_type": "kg_stage",
+            "stage": "kg_stream_complete",
+            "graph_id": graph.get("graph_id"),
+            "entity_count": len(entities),
+            "relationship_count": len(relationships),
+        },
+    )
+
+
 def _execute_run(run_id: str, command: list[str]) -> None:
     metadata = _read_metadata(run_id)
     metadata["status"] = "running"
     metadata["started_at"] = _utc_now()
     _write_metadata(run_id, metadata)
+    if metadata.get("kind") == "scouting":
+        _append_run_event(
+            run_id,
+            {
+                "event_type": "kg_stage",
+                "stage": "scouting_process_started",
+                "match": metadata.get("match"),
+                "data_mode": metadata.get("data_mode"),
+            },
+        )
 
     run_dir = _run_dir(run_id)
     stdout_path = run_dir / "stdout.log"
@@ -333,6 +438,8 @@ def _execute_run(run_id: str, command: list[str]) -> None:
         root_events = run_dir / "events.jsonl"
         if compact_events.exists() and not root_events.exists():
             root_events.write_text(compact_events.read_text(encoding="utf-8"), encoding="utf-8")
+        if metadata.get("kind") == "scouting" and completed.returncode == 0:
+            _emit_kg_stream_events(run_id, latest)
     _write_metadata(run_id, metadata)
 
 
@@ -468,6 +575,16 @@ def start_scouting_run(request: ScoutingRunRequest, background_tasks: Background
         "data_mode": request.data_mode,
     }
     _write_metadata(run_id, metadata)
+    _append_run_event(
+        run_id,
+        {
+            "event_type": "kg_stage",
+            "stage": "scouting_queued",
+            "match": request.match,
+            "data_mode": request.data_mode,
+            "include_deepseek_scout": request.include_deepseek_scout,
+        },
+    )
     background_tasks.add_task(_execute_run, run_id, command)
     return metadata
 

@@ -211,9 +211,38 @@ source.addEventListener('done', () => {
 })
 ```
 
-The current first integration streams transport/status immediately. Most domain
-events arrive when `run_demo.py` writes `events.jsonl` at the end of the harness
-run. A later harness refactor can emit room/forecast events during `run_round()`.
+For `POST /scouting/run`, the stream also emits real KG events from the
+generated `world_graph.json` once the scouting subprocess has produced the run
+artifacts:
+
+```js
+source.addEventListener('colony_event', (event) => {
+  const kgEvent = JSON.parse(event.data)
+  if (kgEvent.event_type === 'kg_entity') {
+    renderNode(kgEvent.entity)
+  }
+  if (kgEvent.event_type === 'kg_relationship') {
+    renderEdge(kgEvent.relationship)
+  }
+})
+```
+
+Scouting stream event types:
+
+- `kg_stage`: queued, running, graph-built, relationship-building, complete.
+- `kg_entity`: one actual entity from the run graph.
+- `kg_relationship`: one actual relationship from the run graph.
+- `kg_manifest`: the generated `kg_manifest.json` payload.
+- `scouting_audit`: the generated `scouting_audit.json` payload plus readiness flags.
+
+The KG stream is real run output, not a fake progress animation. It currently
+streams after the scout process writes `world_graph.json`; instrumenting the
+individual scout modules would let the graph grow during source collection too.
+
+For `POST /runs/demo`, the first integration streams transport/status
+immediately. Most domain events arrive when `run_demo.py` writes `events.jsonl`
+at the end of the harness run. A later harness refactor can emit room/forecast
+events during `run_round()`.
 
 ## Agents And Rooms
 
@@ -286,10 +315,12 @@ frontend/public/dinasty/hud.js
 Frontend flow:
 
 1. `databridge.js` loads the latest successful backend run from `GET /runs`.
-2. The `Run LLM agents` button calls `POST /runs/demo`.
-3. The browser listens to `GET /runs/{run_id}/stream`.
-4. When events arrive, the frontend seeds colony stats and the thought ticker.
-5. If the backend is unavailable, the frontend falls back to `/data/demo.jsonl`.
+2. The `Get ants` button calls `GET /ants` and binds wallet/ENS identity to visible ants.
+3. The `Get KG` button calls `GET /kg/world-cup` and renders the static tournament KG.
+4. The `Run scouting` button calls `POST /scouting/run`, listens to `GET /runs/{run_id}/stream`, and renders streamed KG entities/relationships.
+5. The `Run LLM agents` button calls `POST /runs/demo`.
+6. When demo events arrive, the frontend seeds colony stats and the thought ticker.
+7. If the backend is unavailable, the frontend falls back to `/data/demo.jsonl`.
 
 Minimal browser-side call:
 
