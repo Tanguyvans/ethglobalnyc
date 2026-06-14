@@ -1,0 +1,18 @@
+# Railway config for the clickhouse_api service.
+# Set the service's Root Directory = clickhouse_api in the Railway dashboard; Railway
+# then reads this file from the service root. Build/deploy settings are pinned here so
+# they don't depend on dashboard clicks.
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+# Required env vars (set as service Variables, NOT in this file):
+#   CLICKHOUSE_HOST, CLICKHOUSE_USER, CLICKHOUSE_PASSWORD, CLICKHOUSE_PORT=8443
+# Optional: CH_API_CORS_ORIGINS, CH_API_PAY_TO, CH_API_BASE_PRICE_USDC, etc.
+# PORT is injected by Railway automatically.

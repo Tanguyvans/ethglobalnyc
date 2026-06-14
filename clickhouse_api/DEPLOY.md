@@ -19,12 +19,13 @@ Railway builds it from `clickhouse_api/Dockerfile`.
 
 ## 1. Create the service on Railway
 1. Railway project → **New → GitHub Repo** → pick this repo (`Vainglorious/ethglobalnyc`).
-2. In the service **Settings → Build**:
-   - **Builder:** Dockerfile
-   - **Dockerfile Path:** `clickhouse_api/Dockerfile`
-   - **Root Directory:** repo root (leave blank / `/`). The Dockerfile's `COPY`
-     paths (`clickhouse_api/…`, `clickhouse/…`) assume the **repo root is the build
-     context** — do not set root dir to `clickhouse_api`.
+2. In the service **Settings**:
+   - **Root Directory:** `clickhouse_api`  (the service is self-contained in this folder)
+   - **Builder:** Dockerfile (auto-detects `clickhouse_api/Dockerfile`).
+   - `clickhouse_api/railway.toml` pins builder + `dockerfilePath = "Dockerfile"` +
+     the healthcheck, so these are set for you once Root Directory points here.
+   - The Dockerfile uses **local** COPY paths (build context = the `clickhouse_api/`
+     folder); creds come from env vars (below), not a baked-in `.env`.
 3. **Settings → Networking:** enable a public domain (Generate Domain).
 4. **Settings → Deploy → Healthcheck Path:** `/health`.
 
@@ -76,9 +77,10 @@ curl -X POST "<URL>/query" -H 'Content-Type: application/json' -H 'X-PAYMENT: 0x
 `/health` returning `clickhouse: "reachable"` means the env vars are correct.
 
 ## Gotchas
-- **Build context = repo root** (the Dockerfile copies both `clickhouse_api/` and
-  `clickhouse/`). If Railway scopes the context to `clickhouse_api/`, the `COPY clickhouse`
-  step fails — set Dockerfile Path, not Root Directory.
+- **Root Directory = `clickhouse_api`** (self-contained; build context is this folder).
+  If you instead leave Root Directory blank/repo-root with this Dockerfile, the build
+  fails with `"/clickhouse": not found` (the old repo-root layout). The current
+  Dockerfile + railway.toml expect Root Directory = clickhouse_api.
 - **`/health` shows `reachable: <error>`** → `CLICKHOUSE_*` vars wrong/missing. The app
   starts fine even if ClickHouse is unreachable; `/health` is how you check.
 - **Secrets:** since `.dockerignore` excludes `**/.env`, the in-repo `clickhouse/.env`

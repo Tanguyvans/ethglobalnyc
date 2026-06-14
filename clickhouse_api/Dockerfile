@@ -5,14 +5,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY clickhouse_api/requirements.txt .
+# Build context is the clickhouse_api/ folder (Railway Root Directory = clickhouse_api),
+# so all COPY paths are relative to this folder — self-contained service.
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# app code + the repo clickhouse/.env fallback path are copied by the build context
-COPY clickhouse_api ./clickhouse_api
-COPY clickhouse ./clickhouse
+COPY . .
 
 EXPOSE 8009
 
-# CLICKHOUSE_* should be provided as env vars in prod (don't bake the .env into the image)
-CMD ["sh", "-c", "uvicorn main:app --app-dir clickhouse_api --host 0.0.0.0 --port ${PORT:-8009}"]
+# CLICKHOUSE_* and CH_API_* come from Railway env vars (no .env baked into the image).
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8009}"]
