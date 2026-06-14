@@ -80,6 +80,82 @@ def mock_match_context_from_tournament_match(match_entity: dict) -> MatchContext
     )
 
 
+def openfootball_match_context_from_tournament_match(match_entity: dict) -> MatchContext:
+    """Create a fast one-scout context from only the OpenFootball fixture row."""
+    attrs = match_entity["attributes"]
+    home_team = str(attrs["team1"])
+    away_team = str(attrs["team2"])
+    round_id = str(match_entity["entity_id"]).replace("match:", "round:")
+    market = stats = odds = news = 0.5
+    source_url = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json"
+    schedule = " ".join(
+        str(attrs.get(key) or "")
+        for key in ("date", "time", "round", "group", "ground")
+        if attrs.get(key)
+    )
+    return MatchContext(
+        round_id=round_id,
+        home_team=home_team,
+        away_team=away_team,
+        market_home_probability=market,
+        stats_home_signal=stats,
+        odds_home_signal=odds,
+        news_home_signal=news,
+        match_date=str(attrs.get("date") or ""),
+        match_time=str(attrs.get("time") or ""),
+        group_name=str(attrs.get("group") or ""),
+        stage_name=str(attrs.get("round") or attrs.get("stage") or ""),
+        venue_name=str(attrs.get("ground") or attrs.get("venue") or ""),
+        score=str(attrs.get("score") or ""),
+        findings=[
+            _finding(
+                round_id=round_id,
+                key="openfootball_fixture",
+                scout_name="openfootball_fixture_scout",
+                access_level="public",
+                source_type="retrieval",
+                finding_name="openfootball_fixture_row",
+                home_probability=market,
+                market=market,
+                confidence=0.96,
+                summary=(
+                    "Fetched one OpenFootball fixture row for "
+                    f"{home_team} vs {away_team}: {schedule or 'schedule pending'}."
+                ),
+                citations=[source_url],
+                evidence_claims=[
+                    _mock_claim(
+                        claim_type="match_schedule",
+                        subject=f"{home_team} vs {away_team}",
+                        team=home_team,
+                        claim=(
+                            f"OpenFootball lists {home_team} vs {away_team}"
+                            + (f" at {attrs.get('ground')}." if attrs.get("ground") else ".")
+                        ),
+                        impact="context_home",
+                        confidence=0.96,
+                        source_title="openfootball/worldcup.json 2026 fixture",
+                        source_url=source_url,
+                    ),
+                    _mock_claim(
+                        claim_type="match_schedule",
+                        subject=f"{away_team} vs {home_team}",
+                        team=away_team,
+                        claim=(
+                            f"OpenFootball lists {away_team} as the away side against {home_team}"
+                            + (f" in {attrs.get('group')}." if attrs.get("group") else ".")
+                        ),
+                        impact="context_away",
+                        confidence=0.96,
+                        source_title="openfootball/worldcup.json 2026 fixture",
+                        source_url=source_url,
+                    ),
+                ],
+            )
+        ],
+    )
+
+
 def synthetic_probabilities(home_team: str, away_team: str) -> tuple[float, float, float, float]:
     """Derive deterministic mock probabilities with enough disagreement for debate.
 

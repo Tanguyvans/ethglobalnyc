@@ -27,6 +27,7 @@ DN.lifecycle = (function () {
     ingressDone: false,
     debateDone: false,
     skipScouting: false,
+    scoutMode: 'openfootball',
   };
 
   // Minimum visual dwell per phase. These values never advance a backend
@@ -74,7 +75,7 @@ DN.lifecycle = (function () {
     DN.logTerm.push('PHASE', '── ' + LABEL[phase] + ' ──');
   }
 
-  function scoutCountPerColony() { return 6; }
+  function scoutCountPerColony() { return L.scoutMode === 'openfootball' ? 1 : 6; }
 
   function pickScoutAnts(col, n) {
     const out = [];
@@ -282,18 +283,22 @@ DN.lifecycle = (function () {
     const meta = selectedGameMeta();
     const runCfg = configuredRun();
     const matchName = meta.name || [meta.home_team, meta.away_team].filter(Boolean).join(' vs ');
+    const fastScout = L.scoutMode === 'openfootball';
     if (DN.logTerm) {
-      DN.logTerm.push('SYSTEM', 'Public fixture run kicked off for ' + matchName + ' (this can take a minute).');
+      DN.logTerm.push(
+        'SYSTEM',
+        (fastScout ? 'OpenFootball fixture run kicked off for ' : 'Public fixture run kicked off for ') + matchName + '.'
+      );
     }
     L.runPromise = DN.databridge.startScoutingRun({
       match: matchName,
       match_id: meta.match_id || meta.market_key,
-      data_mode: 'public',
-      include_deepseek_scout: true,
-      agents: Math.min(Number(runCfg.agents || 200), 200),
-      rooms: Math.min(Number(runCfg.rooms || 12), 50),
+      data_mode: fastScout ? 'openfootball' : 'public',
+      include_deepseek_scout: fastScout ? false : Boolean(runCfg.include_deepseek_scout),
+      agents: fastScout ? Math.min(Number(runCfg.agents || 60), 200) : Math.min(Number(runCfg.agents || 200), 200),
+      rooms: fastScout ? Math.min(Number(runCfg.rooms || 4), 12) : Math.min(Number(runCfg.rooms || 12), 50),
       seed: Number.isFinite(Number(runCfg.seed)) ? Number(runCfg.seed) : Math.floor(Math.random() * 10000),
-      voice_mode: runCfg.voice_mode || 'llm',
+      voice_mode: fastScout ? 'template' : (runCfg.voice_mode || 'llm'),
       show_completed_graph: false,
     })
       .then((res) => {
@@ -803,6 +808,7 @@ DN.lifecycle = (function () {
     L.ingressDone = false;
     L.debateDone = false;
     L.skipScouting = opts.scout === false || opts.skipScouting === true;
+    L.scoutMode = opts.scoutMode || 'openfootball';
     if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(null);
     if (ENTER.idle) ENTER.idle();
     enter('kickoff');

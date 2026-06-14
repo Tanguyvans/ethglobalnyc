@@ -402,12 +402,12 @@ DN.databridge = (function () {
     const body = Object.assign(
       {
         match: 'Brazil vs Morocco',
-        data_mode: 'public',
-        include_deepseek_scout: true,
+        data_mode: 'openfootball',
+        include_deepseek_scout: false,
         agents: 20,
-        rooms: 5,
+        rooms: 4,
         seed: 12,
-        voice_mode: 'llm',
+        voice_mode: 'template',
       },
       opts || {},
     );

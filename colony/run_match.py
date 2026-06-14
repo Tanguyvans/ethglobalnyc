@@ -15,13 +15,18 @@ from colony_harness.env import load_env_file
 from colony_harness.identity import assign_ens_names, write_identity_records
 from colony_harness.live_scouts import public_match_context_from_tournament_match
 from colony_harness.population import load_population_state, normalize_agent_lineages, save_population_state
-from colony_harness.scouts import mock_match_context_from_tournament_match
+from colony_harness.scouts import (
+    mock_match_context_from_tournament_match,
+    openfootball_match_context_from_tournament_match,
+)
+from colony_harness.tournament_graph import build_tournament_graph, load_openfootball_schedule
 from colony_harness.voice import TemplateVoiceModel, llm_voice_model_from_env
 from colony_harness.world import DEFAULT_WORLD_VERIFICATION_STORE, apply_world_verifications
 
 
 DEFAULT_KG = Path(__file__).parent / "data" / "world_cup_kg.json"
 DEFAULT_LIVE_CACHE = Path(__file__).parent / "data" / "live_scouts"
+DEFAULT_OPENFOOTBALL_CACHE = Path(__file__).parent / "data" / "openfootball" / "worldcup_2026.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,9 +36,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--match", default="Brazil vs Morocco", help='Match name, e.g. "Brazil vs Morocco".')
     parser.add_argument(
         "--data-mode",
-        choices=["synthetic", "public"],
+        choices=["synthetic", "public", "openfootball"],
         default="synthetic",
-        help="Use deterministic synthetic fixtures or fetch public non-social data.",
+        help="Use deterministic synthetic fixtures, public non-social data, or one fast OpenFootball fixture scout.",
     )
     parser.add_argument(
         "--refresh-data",
@@ -44,6 +49,11 @@ def parse_args() -> argparse.Namespace:
         "--live-cache-dir",
         default=str(DEFAULT_LIVE_CACHE),
         help="Cache directory for public-data scout fetches.",
+    )
+    parser.add_argument(
+        "--openfootball-cache",
+        default=str(DEFAULT_OPENFOOTBALL_CACHE),
+        help="Cache path for the raw openfootball/worldcup.json schedule.",
     )
     parser.add_argument(
         "--include-camel",
@@ -196,7 +206,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     load_env_file(args.env)
-    graph = _load_graph(Path(args.kg))
+    graph = _load_openfootball_graph(args) if args.data_mode == "openfootball" else _load_graph(Path(args.kg))
     match_entity = _select_match(graph, match_id=args.match_id, match_name=args.match)
     if args.data_mode == "public":
         rescout_targets = _rescout_targets_from_args(args)
@@ -211,6 +221,9 @@ def main() -> None:
             include_deepseek_scout=args.include_deepseek_scout,
             rescout_targets=rescout_targets,
         )
+    elif args.data_mode == "openfootball":
+        rescout_targets = []
+        match = openfootball_match_context_from_tournament_match(match_entity)
     else:
         rescout_targets = []
         match = mock_match_context_from_tournament_match(match_entity)
@@ -247,14 +260,17 @@ def main() -> None:
     print(f"Match: {match.home_team} vs {match.away_team}")
     print(f"Schedule: {attrs.get('date')} {attrs.get('time')} | {attrs.get('group')} | {attrs.get('ground')}")
     print(f"Data mode: {args.data_mode}")
-    print(
-        "Optional scouts: "
-        f"x={'enabled' if args.include_x else 'disabled'} "
-        f"camel={'enabled' if args.include_camel else 'disabled'} "
-        f"telegram={'enabled' if args.include_telegram else 'disabled'} "
-        f"polygun={'enabled' if args.include_polygun else 'disabled'} "
-        f"deepseek={'enabled' if args.include_deepseek_scout else 'disabled'}"
-    )
+    if args.data_mode == "openfootball":
+        print(f"OpenFootball scout: cache={args.openfootball_cache} refresh={'yes' if args.refresh_data else 'no'}")
+    else:
+        print(
+            "Optional scouts: "
+            f"x={'enabled' if args.include_x else 'disabled'} "
+            f"camel={'enabled' if args.include_camel else 'disabled'} "
+            f"telegram={'enabled' if args.include_telegram else 'disabled'} "
+            f"polygun={'enabled' if args.include_polygun else 'disabled'} "
+            f"deepseek={'enabled' if args.include_deepseek_scout else 'disabled'}"
+        )
     if rescout_targets:
         print(
             "Focused re-scout targets: "
@@ -465,6 +481,14 @@ def _load_graph(path: Path) -> dict:
     if not path.exists():
         raise SystemExit(f"KG not found at {path}. Run: python3 colony/build_kg.py --force-refresh")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_openfootball_graph(args: argparse.Namespace) -> dict:
+    schedule = load_openfootball_schedule(
+        cache_path=Path(args.openfootball_cache),
+        force_refresh=args.refresh_data,
+    )
+    return build_tournament_graph(schedule).to_dict()
 
 
 def _select_match(graph: dict, *, match_id: str | None, match_name: str) -> dict:

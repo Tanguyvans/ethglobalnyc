@@ -88,9 +88,9 @@ class DemoRunRequest(BaseModel):
 class ScoutingRunRequest(BaseModel):
     match: str = "Brazil vs Morocco"
     match_id: str | None = None
-    data_mode: Literal["synthetic", "public"] = "public"
+    data_mode: Literal["synthetic", "public", "openfootball"] = "openfootball"
     refresh_data: bool = False
-    include_deepseek_scout: bool = True
+    include_deepseek_scout: bool = False
     include_camel: bool = False
     include_x: bool = False
     include_telegram: bool = False
@@ -2150,7 +2150,7 @@ def get_world_cup_kg_summary() -> PlainTextResponse:
 def start_scouting_run(request: ScoutingRunRequest, background_tasks: BackgroundTasks) -> dict:
     if not RUN_MATCH.exists():
         raise HTTPException(status_code=500, detail="colony/run_match.py is missing")
-    if not WORLD_CUP_KG.exists():
+    if request.data_mode != "openfootball" and not WORLD_CUP_KG.exists():
         raise HTTPException(status_code=500, detail="World Cup KG is missing")
 
     RUNS_ROOT.mkdir(parents=True, exist_ok=True)

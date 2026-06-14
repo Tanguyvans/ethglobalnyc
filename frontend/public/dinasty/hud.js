@@ -74,14 +74,14 @@ DN.hud = (function () {
           '<option value="Draw">Draw</option>' +
           '<option value="Morocco">Morocco</option>' +
         '</select>' +
-        '<button class="backend-btn" id="backend-run">Run + Scout</button>' +
-        '<button class="backend-btn secondary" id="backend-run-fast">Run Fast</button>' +
+        '<button class="backend-btn secondary" id="backend-scout">Run Scout</button>' +
+        '<button class="backend-btn" id="backend-run">Run Full Pipe</button>' +
+        '<button class="backend-btn secondary" id="backend-run-fast">Run Agent</button>' +
         '<button class="backend-btn secondary backend-toggle" id="backend-adv-toggle" title="Show advanced controls">▾</button>' +
       '</div>' +
       '<div class="backend-advanced" id="backend-advanced" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap">' +
         '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
         '<button class="backend-btn secondary" id="backend-kg">Get KG</button>' +
-        '<button class="backend-btn secondary" id="backend-scout">Scout</button>' +
         '<button class="backend-btn secondary" id="forecast-deploy">Deploy</button>' +
         '<button class="backend-btn secondary" id="x402-buy">Buy KG</button>' +
         '<button class="backend-btn secondary" id="forecast-setup">Stake demo</button>' +
@@ -352,7 +352,7 @@ DN.hud = (function () {
     }
 
     function setScoutingBusy(busy) {
-      [scoutBtn, forecastGame].forEach((el) => {
+      [scoutBtn, btn, fastBtn, forecastGame].forEach((el) => {
         if (el) el.disabled = busy;
       });
     }
@@ -523,9 +523,9 @@ DN.hud = (function () {
     scoutBtn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startScoutingRun) return;
       setScoutingBusy(true);
-      status.textContent = 'Scouting ' + selectedGame.name + '...';
-      H.pushThought('Frontend started a public-data KG scouting run for ' + selectedGame.name + '.', 'Backend', '#3FA89F');
-      if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting run kicked off for ' + selectedGame.name + '.');
+      status.textContent = 'OpenFootball scout...';
+      H.pushThought('OpenFootball fixture scout started for ' + selectedGame.name + '.', 'Backend', '#3FA89F');
+      if (DN.logTerm) DN.logTerm.push('SCOUT', 'OpenFootball fixture scout kicked off for ' + selectedGame.name + '.');
       if (DN.kgview && DN.kgview.showScoutingProgress) {
         DN.kgview.showScoutingProgress({
           match: selectedGame.name,
@@ -537,9 +537,11 @@ DN.hud = (function () {
       DN.databridge.startScoutingRun({
         match: selectedGame.name,
         match_id: selectedGame.match_id || selectedGame.market_key,
-        data_mode: 'public',
-        include_deepseek_scout: true,
-        voice_mode: 'llm',
+        data_mode: 'openfootball',
+        include_deepseek_scout: false,
+        agents: 1,
+        rooms: 1,
+        voice_mode: 'template',
       })
         .then((result) => {
           const manifest = result.manifest || {};
@@ -566,6 +568,8 @@ DN.hud = (function () {
     function setRunButtonsDisabled(disabled) {
       if (btn) btn.disabled = disabled;
       if (fastBtn) fastBtn.disabled = disabled;
+      if (scoutBtn) scoutBtn.disabled = disabled;
+      if (forecastGame) forecastGame.disabled = disabled;
     }
 
     function runLifecycle(opts) {
@@ -573,14 +577,15 @@ DN.hud = (function () {
       // scout -> KG crystal -> recruit -> debate -> stake/settle.
       if (DN.lifecycle && DN.lifecycle.start) {
         const withScout = !(opts && opts.scout === false);
+        const scoutMode = (opts && opts.scoutMode) || 'openfootball';
         setRunButtonsDisabled(true);
-        status.textContent = withScout ? 'Lifecycle + scouting…' : 'Fast lifecycle…';
+        status.textContent = withScout ? 'Full pipe · OpenFootball scout…' : 'Agent run · no scout…';
         H.pushThought(
-          (withScout ? 'Lifecycle with scouting kicked off — ' : 'Fast lifecycle kicked off — ') + selectedGame.name + '.',
+          (withScout ? 'Full pipe with OpenFootball scout kicked off — ' : 'Agent run without scouting kicked off — ') + selectedGame.name + '.',
           'Lifecycle',
           '#3FA89F'
         );
-        DN.lifecycle.start({ scout: withScout });
+        DN.lifecycle.start({ scout: withScout, scoutMode });
         const timer = setInterval(() => {
           const phase = DN.lifecycle && DN.lifecycle.getPhase ? DN.lifecycle.getPhase() : '';
           if (phase === 'egress_roam' || phase === 'idle') {
@@ -599,7 +604,7 @@ DN.hud = (function () {
       }
     }
 
-    btn.addEventListener('click', () => runLifecycle({ scout: true }));
+    btn.addEventListener('click', () => runLifecycle({ scout: true, scoutMode: 'openfootball' }));
     if (fastBtn) fastBtn.addEventListener('click', () => runLifecycle({ scout: false }));
 
     forecastDeployBtn.addEventListener('click', () => {
