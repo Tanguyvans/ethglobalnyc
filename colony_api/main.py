@@ -46,6 +46,7 @@ DEFAULT_FORECAST_CONTRACT = "0xc40a8f2e29fe061cd4c0fe92cc73b9b43f9ada87"
 CHILD_ANTS_PATH = RUNS_ROOT / "child_ants.json"
 ANT_STATE_PATH = RUNS_ROOT / "ant_state.json"
 FUND_AGENTS_CLI = REPO_ROOT / "arc" / "fund-agents.mjs"
+REGISTER_ENS_IDENTITIES = REPO_ROOT / "colony" / "register_ens_identities.py"
 DEFAULT_PUBLIC_API_BASE_URL = "https://ethglobalnyc-production.up.railway.app"
 
 COLONY_SRC = REPO_ROOT / "colony"
@@ -179,6 +180,8 @@ class AntReproduceRequest(BaseModel):
     fund_amount: str = "0.05"
     fund_wallet: bool = True
     broadcast_funding: bool | None = None
+    publish_ens: bool = True
+    broadcast_ens: bool | None = None
 
 
 class AntKillRequest(BaseModel):
@@ -644,6 +647,64 @@ def _fund_child_wallet(agent_id: str, wallet_store: str, request: AntReproduceRe
         "stdout": result.stdout[-1200:],
         "stderr": result.stderr[-1200:],
         "receipt": receipt,
+    }
+
+
+def _child_ens_record(child: dict) -> dict:
+    ens_name = str(child.get("ens_name") or "")
+    parent = _ens_parent()
+    suffix = f".{parent}"
+    label = ens_name.removesuffix(suffix) if ens_name.endswith(suffix) else ens_name.split(".", 1)[0]
+    return {
+        "agent_id": child.get("agent_id"),
+        "ens_name": ens_name,
+        "label": label,
+        "addr": child.get("wallet_address") or "",
+        "text": child.get("ens_text_records") or {},
+    }
+
+
+def _publish_child_ens(child: dict, request: AntReproduceRequest) -> dict:
+    if not request.publish_ens:
+        return {"status": "skipped", "reason": "publish_ens=false"}
+    if not REGISTER_ENS_IDENTITIES.exists():
+        return {"status": "skipped", "reason": "colony/register_ens_identities.py is missing"}
+    broadcast = request.broadcast_ens
+    if broadcast is None:
+        broadcast = _env_bool("COLONY_API_REPRODUCTION_BROADCAST_ENS", False)
+    identity_path = RUNS_ROOT / "ens" / f"{child['agent_id']}.identity.json"
+    identity_path.parent.mkdir(parents=True, exist_ok=True)
+    identity_payload = {
+        "schema_version": 1,
+        "ens_parent": _ens_parent(),
+        "records": [_child_ens_record(child)],
+    }
+    identity_path.write_text(json.dumps(identity_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    command = [
+        sys.executable,
+        str(REGISTER_ENS_IDENTITIES),
+        str(identity_path),
+        "--env",
+        "colony/.env",
+        "--ens-parent",
+        _ens_parent(),
+        "--agent-id",
+        str(child["agent_id"]),
+    ]
+    if broadcast:
+        command.append("--broadcast")
+    try:
+        result = subprocess.run(command, cwd=REPO_ROOT, env=_x402_env(), check=False, capture_output=True, text=True, timeout=420)
+    except Exception as exc:
+        return {"status": "failed", "broadcast": broadcast, "identity_path": str(identity_path), "error": str(exc)}
+    status = "published" if broadcast and result.returncode == 0 else "planned" if result.returncode == 0 else "failed"
+    return {
+        "status": status,
+        "broadcast": broadcast,
+        "identity_path": str(identity_path),
+        "returncode": result.returncode,
+        "stdout": result.stdout[-2400:],
+        "stderr": result.stderr[-2400:],
     }
 
 
@@ -1974,6 +2035,7 @@ def reproduce_ant(request: AntReproduceRequest) -> dict:
     child.update(_avatar_record_fields(child))
     child["ens_text_records"] = _child_identity_text(child)
     child["funding"] = _fund_child_wallet(child_agent_id, wallet_store, request)
+    child["ens_publication"] = _publish_child_ens(child, request)
     children.append(child)
     _write_child_ants(children)
     return {

@@ -219,6 +219,9 @@ DN.databridge = (function () {
         mutation_rate: 0.08,
         fund_wallet: true,
         fund_amount: '0.05',
+        broadcast_funding: true,
+        publish_ens: true,
+        broadcast_ens: true,
       },
       opts || {},
     );

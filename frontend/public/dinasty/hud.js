@@ -891,19 +891,23 @@ DN.hud = (function () {
             const child = payload.child || {};
             const childName = child.ens_name || child.agent_id || 'child ant';
             const funding = child.funding || {};
+            const ensPublication = child.ens_publication || {};
             const fundStatus = funding.status ? ' · funding ' + funding.status : '';
+            const ensStatus = ensPublication.status ? ' · ENS ' + ensPublication.status : '';
             const walletLine = child.wallet_address ? ' destination_wallet=' + child.wallet_address : '';
             const profileLine = child.profile_url || (child.agent_id && DN.databridge && DN.databridge.apiUrl ? DN.databridge.apiUrl + '/ants/' + child.agent_id + '.json' : '');
             if (DN.logTerm) {
-              DN.logTerm.push('LINEAGE', 'Created ' + childName + ' agent_id=' + (child.agent_id || '?') + walletLine + fundStatus + '.');
+              DN.logTerm.push('LINEAGE', 'Created new ant ' + childName + ' agent_id=' + (child.agent_id || '?') + walletLine + fundStatus + ensStatus + '.');
               DN.logTerm.push('LINEAGE', 'Funding source: ARC treasury/project ENS wallet; child wallet is the destination.');
+              if (funding.explorer_url) DN.logTerm.push('LINEAGE', 'Funding tx ' + funding.explorer_url);
+              if (ensPublication.returncode && ensPublication.status === 'failed') DN.logTerm.push('LINEAGE', 'ENS publish failed: ' + (ensPublication.stderr || ensPublication.stdout || 'unknown error'));
               if (profileLine) DN.logTerm.push('LINEAGE', 'Profile JSON ' + profileLine);
               if (payload.source) DN.logTerm.push('LINEAGE', 'Persisted child record at ' + payload.source);
             }
             if (DN.ants && DN.ants.bindAgentRecords && DN.databridge.getAgents) DN.ants.bindAgentRecords(DN.databridge.getAgents());
             const target = DN.ants && DN.ants.attachChildRecord ? DN.ants.attachChildRecord(a, child) : null;
             if (target && DN.app && DN.app.selectAnt) DN.app.selectAnt(target);
-            H.pushThought(childName + ' created from parent ' + (child.parent_ens_name || ens || parentId) + fundStatus + '.', 'Lineage', '#5FB84A');
+            H.pushThought(childName + ' created from parent ' + (child.parent_ens_name || ens || parentId) + fundStatus + ensStatus + '.', 'Lineage', '#5FB84A');
             if (DN.databridge && DN.databridge.fetchAgents) {
               DN.databridge.fetchAgents().then((fresh) => {
                 const agents = (fresh && fresh.agents) || [];
