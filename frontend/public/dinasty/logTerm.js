@@ -170,6 +170,17 @@ DN.logTerm = (function () {
     document.body.appendChild(root);
     scroller = document.getElementById('ant-log-scroll');
     scroller.addEventListener('click', onAntRefClick);
+    // Autoscroll = true by default. User pauses it by scrolling up
+    // (wheel/touch/keyboard); resumes it by scrolling back to the
+    // bottom. Programmatic scrollTop writes from flush() are excluded
+    // via the _ignoreScroll flag.
+    T._autoscroll = true;
+    T._ignoreScroll = false;
+    scroller.addEventListener('scroll', () => {
+      if (T._ignoreScroll) return;
+      const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4;
+      T._autoscroll = atBottom;
+    }, { passive: true });
     document.getElementById('ant-log-clear').addEventListener('click', () => T.clear());
 
     toggleBtn = document.createElement('button');
@@ -205,7 +216,6 @@ DN.logTerm = (function () {
   function flush() {
     _flushScheduled = false;
     if (!_queue.length || !scroller) return;
-    const stuckBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 16;
     const frag = document.createDocumentFragment();
     for (let i = 0; i < _queue.length; i++) {
       const item = _queue[i];
@@ -219,10 +229,14 @@ DN.logTerm = (function () {
     }
     _queue.length = 0;
     scroller.appendChild(frag);
-    // trim to ring buffer length in one pass
     let overflow = scroller.children.length - MAX_ROWS;
     while (overflow-- > 0) scroller.removeChild(scroller.firstChild);
-    if (stuckBottom) scroller.scrollTop = scroller.scrollHeight;
+    if (T._autoscroll) {
+      T._ignoreScroll = true;
+      scroller.scrollTop = scroller.scrollHeight;
+      // clear flag on next tick — the scroll event fires async
+      setTimeout(() => { T._ignoreScroll = false; }, 0);
+    }
   }
 
   // Append a row. opts can include { color, ts, antIds }.
