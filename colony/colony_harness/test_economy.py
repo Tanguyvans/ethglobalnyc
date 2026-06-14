@@ -5,17 +5,19 @@ from __future__ import annotations
 import unittest
 
 from .agent import AntAgent
+from .decision import build_collective_decision
 from .economy import EconomyLedger, build_paid_knowledge_views, market_spec_for_match, settle_internal_pool
 from .genes import Genome, SourceWeights
 from .models import Finding, InternalStake, MarketSpec, MatchContext
+from .scouts import synthetic_probabilities
 
 
-def _genome(query_budget: float = 1.0) -> Genome:
+def _genome(query_budget: float = 1.0, edge_threshold: float = 0.02) -> Genome:
     return Genome(
         estimator="poisson",
         model="parametric",
         risk_appetite=0.1,
-        edge_threshold=0.02,
+        edge_threshold=edge_threshold,
         source_weights=SourceWeights(stats=0.25, odds=0.25, news=0.25, debate=0.25),
         herd_bias=0.0,
         query_budget=query_budget,
@@ -23,12 +25,18 @@ def _genome(query_budget: float = 1.0) -> Genome:
     )
 
 
-def _agent(agent_id: str, *, bankroll: float = 10.0, world_verified: bool = False) -> AntAgent:
+def _agent(
+    agent_id: str,
+    *,
+    bankroll: float = 10.0,
+    world_verified: bool = False,
+    genome: Genome | None = None,
+) -> AntAgent:
     return AntAgent(
         agent_id=agent_id,
         name=agent_id.replace("_", "-"),
         generation=0,
-        genome=_genome(),
+        genome=genome or _genome(),
         bankroll=bankroll,
         accuracy=0.5,
         world_verified=world_verified,
@@ -75,6 +83,34 @@ class EconomyTests(unittest.TestCase):
         self.assertEqual(spec.outcomes, ["home_qualifies", "away_qualifies"])
         self.assertEqual(spec.result_side, "home")
 
+    def test_unresolved_market_result_is_pending_not_betting_side(self) -> None:
+        match = MatchContext(
+            round_id="round_pending",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.55,
+            stats_home_signal=0.55,
+            odds_home_signal=0.55,
+            news_home_signal=0.55,
+        )
+        spec = market_spec_for_match(match)
+        ledger = EconomyLedger(match.round_id)
+
+        summary = settle_internal_pool(market_spec=spec, agents=[], ledger=ledger)
+
+        self.assertEqual(spec.result_side, "pending")
+        self.assertEqual(spec.settlement_status, "pending")
+        self.assertEqual(summary["result_side"], "pending")
+        self.assertEqual(summary["status"], "pending")
+
+    def test_synthetic_kg_probabilities_keep_france_senegal_contested(self) -> None:
+        market, stats, odds, news = synthetic_probabilities("France", "Senegal")
+
+        self.assertLess(market, 0.5)
+        self.assertGreater(stats, 0.5)
+        self.assertLess(odds, 0.5)
+        self.assertGreater(news, 0.5)
+
     def test_world_verified_agents_pay_discounted_data_price(self) -> None:
         finding = Finding(
             finding_id="finding:shared",
@@ -110,6 +146,65 @@ class EconomyTests(unittest.TestCase):
         self.assertEqual(amounts[premium.agent_id], 0.025)
         self.assertEqual(standard.bankroll, 0.95)
         self.assertEqual(premium.bankroll, 0.975)
+
+    def test_forecast_still_bets_when_forced_pick_is_below_edge_threshold(self) -> None:
+        match = MatchContext(
+            round_id="round_low_conviction",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.55,
+            stats_home_signal=0.54,
+            odds_home_signal=0.54,
+            news_home_signal=0.54,
+        )
+        agent = _agent("ant_0000", bankroll=100.0, genome=_genome(edge_threshold=0.02))
+
+        forecast = agent.forecast(match, debate_home_probability=None)
+
+        self.assertEqual(forecast.side, "home")
+        self.assertGreater(forecast.stake, 0.0)
+        self.assertLess(forecast.edge, forecast.edge_threshold)
+        self.assertIn("low-conviction bet", forecast.decision_reason)
+
+    def test_forecast_bets_when_edge_clears_threshold(self) -> None:
+        match = MatchContext(
+            round_id="round_bet",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.56,
+            odds_home_signal=0.56,
+            news_home_signal=0.56,
+        )
+        agent = _agent("ant_0000", bankroll=100.0, genome=_genome(edge_threshold=0.02))
+
+        forecast = agent.forecast(match, debate_home_probability=None)
+
+        self.assertEqual(forecast.side, "home")
+        self.assertGreater(forecast.stake, 0.0)
+        self.assertGreaterEqual(forecast.edge, forecast.edge_threshold)
+        self.assertIn("bet", forecast.decision_reason)
+
+    def test_collective_decision_still_recommends_side_when_no_forecast_clears_edge(self) -> None:
+        match = MatchContext(
+            round_id="round_collective_low_conviction",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.55,
+            stats_home_signal=0.54,
+            odds_home_signal=0.54,
+            news_home_signal=0.54,
+        )
+        agents = [_agent(f"ant_{index:04d}", genome=_genome(edge_threshold=0.02)) for index in range(3)]
+        forecasts = [agent.forecast(match, debate_home_probability=None) for agent in agents]
+
+        decision = build_collective_decision(match=match, agents=agents, forecasts=forecasts)
+
+        self.assertEqual({forecast.side for forecast in forecasts}, {"home"})
+        self.assertEqual(decision.recommendation["side"], "home")
+        self.assertTrue(decision.recommendation["should_place_single_bet"])
+        self.assertEqual(decision.match_call["lean"], "home")
+        self.assertEqual(decision.prediction["winner"], "France")
 
     def test_settlement_distributes_losing_pool_80_10_10(self) -> None:
         winner = _agent("ant_0000", bankroll=0.0)

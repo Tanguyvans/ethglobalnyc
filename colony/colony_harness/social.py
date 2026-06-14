@@ -440,7 +440,7 @@ def _recommended_target(
     recency_index: int = 1,
 ) -> tuple[SocialAction, float]:
     candidates = list(local_actions)
-    if forecast is not None and forecast.side != "pass":
+    if forecast is not None:
         aligned = [
             action
             for action in candidates
@@ -470,9 +470,7 @@ def _crowd_action_type(index: int, forecast: Forecast | None, target: SocialActi
         return "follow"
     if forecast.risk_profile == "risky" and index % 4 == 0:
         return "share"
-    if forecast.side != "pass":
-        return "like" if index % 3 else "comment_support"
-    return "view"
+    return "like" if index % 3 else "comment_support"
 
 
 def _crowd_text(
@@ -487,15 +485,15 @@ def _crowd_text(
     if action_type in {"endorse", "like"}:
         return f"{actor_id.replace('_', '-')} backs {target.actor_name} on {subject}. Short version: that point is live."
     if action_type in {"quote_reply", "share"}:
-        side = _side_name(forecast.side if forecast else "pass", match)
+        side = _side_name(forecast.side, match) if forecast else "the match"
         if forecast is not None and (_is_opposing_stance(forecast, target) or forecast.side == "draw"):
             return f"{actor_id.replace('_', '-')} quote-replies: {subject} is the risk, but the pick stays {side}."
         return f"{actor_id.replace('_', '-')} quote-replies: {side} is the pick if {subject} holds up."
     if action_type == "comment_challenge":
-        side = _side_name(forecast.side if forecast else "pass", match)
+        side = _side_name(forecast.side, match) if forecast else "the match"
         return f"{actor_id.replace('_', '-')} pushes back on {subject}; their room pick is still {side}."
     if action_type == "comment_support":
-        side = _side_name(forecast.side if forecast else "pass", match)
+        side = _side_name(forecast.side, match) if forecast else "the match"
         return f"{actor_id.replace('_', '-')} comments in support: {subject} keeps the {side} case alive."
     if action_type == "follow":
         return f"{actor_id.replace('_', '-')} follows {target.actor_name}'s thread for the next room."
@@ -505,8 +503,6 @@ def _crowd_text(
 def _prediction_card_text(forecast: Forecast, match: MatchContext) -> str:
     side = _side_name(forecast.side, match)
     value = _value_label(forecast.edge)
-    if forecast.side == "pass":
-        return f"{forecast.agent_id.replace('_', '-')} prediction card: no clean bet; keep watching the evidence board."
     total_goals = _total_goals_call(forecast.home_probability)
     risk_phrase = {
         "secure": "plays it safe",
@@ -545,7 +541,7 @@ def _side_name(side: str, match: MatchContext) -> str:
         return match.away_team
     if side == "draw":
         return "draw"
-    return "no-bet"
+    return "draw"
 
 
 def _primary_subject(action: SocialAction) -> str:

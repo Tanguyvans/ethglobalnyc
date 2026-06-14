@@ -186,9 +186,7 @@ def _side_label(side: Side, match: MatchContext) -> str:
         return match.home_team
     if side == "away":
         return match.away_team
-    if side == "draw":
-        return "draw"
-    return "pass"
+    return "draw"
 
 
 def _qualitative_shift(value: float) -> str:
@@ -213,9 +211,7 @@ def _social_stance(side: Side) -> str:
         return "supportive_home"
     if side == "away":
         return "opposing_home"
-    if side == "draw":
-        return "neutral_draw"
-    return "observer"
+    return "neutral_draw"
 
 
 def _activity_level(genome: Genome) -> str:
@@ -646,20 +642,30 @@ class AntAgent:
         away_edge = (1.0 - probability) - (1.0 - match.market_home_probability)
         debate_shift = probability - baseline_probability
 
-        side = _forced_three_way_side(probability, self.genome) if allow_draw else ("home" if probability > 0.5 else "away")
-        if side == "home":
+        pick_side = _forced_three_way_side(probability, self.genome) if allow_draw else ("home" if probability > 0.5 else "away")
+        if pick_side == "home":
             edge = home_edge
-        elif side == "away":
+        elif pick_side == "away":
             edge = away_edge
         else:
             edge = max(0.0025, _draw_band(self.genome) - abs(probability - 0.5))
+        side = pick_side
         risk_profile = _risk_profile(self.genome)
         market_label = "group-stage" if allow_draw else "knockout qualification"
-        decision_reason = (
-            f"{risk_profile} {market_label} pick: {_side_label(side, match)}; "
-            f"debate moved the read {_qualitative_shift(debate_shift)}; "
-            f"top inputs {_top_weight_labels(self.genome)}"
-        )
+        if edge < self.genome.edge_threshold:
+            decision_reason = (
+                f"{risk_profile} {market_label} low-conviction bet: {_side_label(side, match)} edge "
+                f"{edge:.4f} below threshold {self.genome.edge_threshold:.4f}; "
+                f"debate moved the read {_qualitative_shift(debate_shift)}; "
+                f"top inputs {_top_weight_labels(self.genome)}"
+            )
+        else:
+            decision_reason = (
+                f"{risk_profile} {market_label} bet: {_side_label(side, match)} edge "
+                f"{edge:.4f} clears threshold {self.genome.edge_threshold:.4f}; "
+                f"debate moved the read {_qualitative_shift(debate_shift)}; "
+                f"top inputs {_top_weight_labels(self.genome)}"
+            )
 
         stake = round(max(0.0001, self.bankroll * _stake_fraction(self.genome)), 4)
         return Forecast(

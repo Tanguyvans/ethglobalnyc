@@ -22,6 +22,7 @@ from .models import (
     MarketSpec,
     MatchContext,
     PaymentReceipt,
+    ResultSide,
     Side,
 )
 
@@ -128,17 +129,17 @@ def market_spec_for_match(match: MatchContext) -> MarketSpec:
         market_type=market_type,
         outcomes=outcomes,
         result_side=result_side,
-        settlement_status="settled" if result_side != "pass" else "pending",
+        settlement_status="settled" if result_side != "pending" else "pending",
     )
 
 
-def result_side_for_match(match: MatchContext, *, market_type: str) -> Side:
+def result_side_for_match(match: MatchContext, *, market_type: str) -> ResultSide:
     score = str(match.score or "").strip()
     if not score:
-        return "pass"
+        return "pending"
     numbers = [int(value) for value in re.findall(r"\d+", score)]
     if len(numbers) < 2:
-        return "pass"
+        return "pending"
     home_goals, away_goals = numbers[0], numbers[1]
     if home_goals > away_goals:
         return "home"
@@ -146,7 +147,7 @@ def result_side_for_match(match: MatchContext, *, market_type: str) -> Side:
         return "away"
     if market_type == "three_way":
         return "draw"
-    return "pass"
+    return "pending"
 
 
 def build_paid_knowledge_views(
@@ -275,12 +276,12 @@ def debit_internal_stakes(
     updated: list[Forecast] = []
     for forecast in forecasts:
         agent = agents_by_id.get(forecast.agent_id)
-        if agent is None or forecast.side == "pass":
+        if agent is None:
             updated.append(forecast)
             continue
         amount = round(min(max(forecast.stake, 0.0), max(agent.bankroll, 0.0)), 4)
         if amount <= 0.0:
-            updated.append(replace(forecast, stake=0.0, side="pass", decision_reason="Insufficient balance to stake."))
+            updated.append(replace(forecast, stake=0.0, decision_reason="Insufficient balance to stake."))
             continue
         receipt_id = f"stake:{ledger.round_id}:{forecast.agent_id}"
         agent.bankroll = round(agent.bankroll - amount, 4)
@@ -313,12 +314,12 @@ def settle_internal_pool(
     agents: list[AntAgent],
     ledger: EconomyLedger,
 ) -> dict:
-    if market_spec.result_side == "pass":
+    if market_spec.result_side == "pending":
         return {
             "round_id": market_spec.round_id,
             "status": "pending",
             "market_type": market_spec.market_type,
-            "result_side": "pass",
+            "result_side": "pending",
             "staked_total": round(sum(stake.amount for stake in ledger.internal_stakes), 4),
             "treasury_balance": ledger.treasury_balance,
             "payouts": [],

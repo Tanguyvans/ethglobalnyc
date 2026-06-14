@@ -50,7 +50,14 @@ def build_collective_decision(
     agent_predictions = [_agent_prediction_payload(vote, match) for vote in votes]
     prediction_counts = _prediction_counts(agent_predictions)
     weighted_side_support = _weighted_side_support(votes)
-    recommendation_side = max(weighted_side_support, key=weighted_side_support.get)
+    prediction_side = _probability_side(weighted_home_probability)
+    prediction_outcome = _winner_label(prediction_side, match)
+    recommendation_side = _collective_recommendation_side(
+        weighted_side_support=weighted_side_support,
+        raw_counts=raw_counts,
+        weighted_edge=weighted_edge,
+        collective_edge_threshold=collective_edge_threshold,
+    )
     recommendation_outcome = _winner_label(recommendation_side, match)
     support_margin = _support_margin(weighted_side_support)
     confidence = _decision_confidence(
@@ -62,13 +69,13 @@ def build_collective_decision(
         home_probability=weighted_home_probability,
         home_team=match.home_team,
         away_team=match.away_team,
-        recommendation_side=recommendation_side,
+        recommendation_side=prediction_side,
     )
     agent_votes = [_agent_vote_payload(vote, match) for vote in sorted(votes, key=lambda item: item.weight, reverse=True)]
     final_prediction = _final_prediction_payload(
         match=match,
-        recommendation_side=recommendation_side,
-        recommendation_outcome=recommendation_outcome,
+        recommendation_side=prediction_side,
+        recommendation_outcome=prediction_outcome,
         score_projection=score_projection,
         confidence=confidence,
         weighted_edge=weighted_edge,
@@ -97,9 +104,9 @@ def build_collective_decision(
             "weight_cap": 4.0,
         },
         match_call={
-            "predicted_winner": _winner_label(_probability_side(weighted_home_probability), match),
-            "lean": _probability_side(weighted_home_probability),
-            "is_pickem": _probability_side(weighted_home_probability) == "draw",
+            "predicted_winner": prediction_outcome,
+            "lean": prediction_side,
+            "is_pickem": prediction_side == "draw",
         },
         prediction=final_prediction,
         recommendation={
@@ -172,11 +179,26 @@ def _recommendation_side(weighted_edge: float, threshold: float) -> str:
         return "home"
     if weighted_edge <= -threshold:
         return "away"
-    return "pass"
+    return "home" if weighted_edge >= 0 else "away"
+
+
+def _collective_recommendation_side(
+    *,
+    weighted_side_support: dict[str, float],
+    raw_counts: dict[str, int],
+    weighted_edge: float,
+    collective_edge_threshold: float,
+) -> str:
+    strongest_side = max(weighted_side_support, key=weighted_side_support.get)
+    if strongest_side == "draw" and raw_counts.get("draw", 0) > 0:
+        return "draw"
+    if raw_counts.get(strongest_side, 0) > 0:
+        return strongest_side
+    return _recommendation_side(weighted_edge, collective_edge_threshold)
 
 
 def _raw_counts(forecasts: list[Forecast]) -> dict[str, int]:
-    counts = {"home": 0, "draw": 0, "away": 0, "pass": 0}
+    counts = {"home": 0, "draw": 0, "away": 0}
     for forecast in forecasts:
         counts[forecast.side] = counts.get(forecast.side, 0) + 1
     return counts
@@ -260,7 +282,7 @@ def _winner_label(side: str, match: MatchContext) -> str:
         return "draw"
     if side == "pickem":
         return "too_close_to_call"
-    return "no_bet"
+    return "draw"
 
 
 def _probability_side(home_probability: float) -> str:
@@ -324,7 +346,7 @@ def _agent_prediction_payload(vote: WeightedVote, match: MatchContext) -> dict:
         "bet_intent": {
             "side": forecast.side,
             "outcome": _winner_label(forecast.side, match),
-            "value": edge_label if forecast.side != "pass" else "none",
+            "value": edge_label,
             "risk_profile": forecast.risk_profile,
         },
         "weight": vote.weight,

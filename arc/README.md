@@ -193,6 +193,17 @@ Smoke test completed:
 - Gateway transfer: `a423015a-65c4-460e-ab2f-061b0697f825`
 - Status at creation: `received`
 
+France/Senegal smoke test completed on 2026-06-14:
+
+- Buyer: `ant_0001` (`0x2D84caA2692bD01d4dB2bCC3be8877428E18f9f2`)
+- Seller: `ant_0002` (`0x57e5eBF497e0F880Cb13713076fc4F0937e1b6e3`)
+- Service: `summary`
+- Amount: `0.0003` USDC
+- Gateway transfer: `d1b46270-ad24-4114-8942-92f6fb05e3b4`
+- Status: `received`
+- Buyer receipt: `arc/receipts/x402-france-senegal-pay.json`
+- Seller/service receipt: `arc/receipts/x402-france-senegal-smoke.jsonl`
+
 Current limitation: Circle `GatewayClient` requires an EOA private key. The 200 Dynamic public
 wallets are V3 MPC wallets and do not expose raw private keys. They can receive as seller wallets,
 but buyer-side x402 from those wallets needs a Dynamic-backed `BatchEvmSigner` path rather than
@@ -288,6 +299,28 @@ node arc/forecast-market.mjs claim \
   --agent ant_0001 \
   --market-key "$MARKET_KEY"
 ```
+
+France/Senegal contract smoke test completed on 2026-06-14:
+
+```text
+Contract: 0xc40a8f2e29fe061cd4c0fe92cc73b9b43f9ada87
+Market key: worldcup:2026:france-senegal:x402-contract-smoke-20260614-0021
+Market id: 0x82c915b0eb69500d3be26d08ef9a3426eb5e3c40a4b5379d2b6585de726977cf
+Create tx: 0xb2abe15e355089d3d4fc0fa5c61c67936d8f9290c6c31eddab162742a679283b
+
+ant_0001 -> home  0.0005 USDC
+ant_0002 -> draw  0.0005 USDC
+ant_0003 -> away  0.0005 USDC
+
+Contract totals:
+home: 0.0005
+draw: 0.0005
+away: 0.0005
+total: 0.0015 USDC
+```
+
+The market was intentionally left unsettled because France vs Senegal is upcoming. Settlement
+should remain pending until a real result is available.
 
 This gives the project two real money surfaces:
 
