@@ -338,6 +338,23 @@ The frontend's `Get KG` button still reads the committed tournament KG from
 teams before rendering. That avoids loading unrelated global match/team context
 for pairs such as Norway vs Senegal.
 
+## Reproduce An Ant
+
+The frontend inspector can create a child ant from the selected parent with
+`POST /ants/reproduce`. The backend mutates a deterministic parent personality
+genome, creates or reuses a wallet, records ENS-style child metadata under the
+runs directory, and optionally funds the child wallet.
+
+```bash
+curl -X POST https://ethglobalnyc-production.up.railway.app/ants/reproduce \
+  -H "Content-Type: application/json" \
+  -d '{"parent_agent_id":"ant_0001","wallet_provider":"local","fund_wallet":false}'
+```
+
+The response returns the `parent`, the created `child`, the wallet store used,
+and the `child_ants.json` source path. `GET /ants` includes these children after
+creation so the frontend can attach them to the visible colony.
+
 For `POST /runs/demo`, the first integration streams transport/status
 immediately. Most domain events arrive when `run_demo.py` writes `events.jsonl`
 at the end of the harness run. A later harness refactor can emit room/forecast

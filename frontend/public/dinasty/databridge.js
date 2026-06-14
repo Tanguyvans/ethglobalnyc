@@ -35,7 +35,7 @@ DN.databridge = (function () {
         'Round resolved — market home probability ' +
           Math.round(summary.market_home_probability * 100) +
           '%, $' + r1(summary.total_staked) + ' staked across ' + summary.population +
-          ' agents (' + summary.home_bets + ' home · ' + summary.away_bets + ' away · ' + summary.passes + ' pass).',
+          ' agents (' + summary.home_bets + ' home · ' + (summary.draw_bets || 0) + ' draw · ' + summary.away_bets + ' away).',
         'Forecast', COL.economy,
       ]);
     }
@@ -45,7 +45,7 @@ DN.databridge = (function () {
     });
     // strongest real bets
     forecasts
-      .filter((f) => f.side && f.side !== 'pass' && f.stake > 0)
+      .filter((f) => f.side && f.stake > 0)
       .sort((a, b) => b.stake - a.stake)
       .slice(0, 8)
       .forEach((f) => {
@@ -212,6 +212,30 @@ DN.databridge = (function () {
         return payload;
       });
   };
+
+  B.reproduceAnt = function (opts) {
+    const body = Object.assign(
+      {
+        mutation_rate: 0.08,
+        fund_wallet: true,
+        fund_amount: '0.05',
+      },
+      opts || {},
+    );
+    return apiJson('/ants/reproduce', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((payload) => {
+      const child = payload.child || null;
+      if (child) {
+        records = records.filter((r) => r.agent_id !== child.agent_id).concat([child]);
+        B.agents = records;
+      }
+      return payload;
+    });
+  };
+
   B.fetchWorldCupKg = function () {
     if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
     return fetch(apiUrl + '/kg/world-cup')
