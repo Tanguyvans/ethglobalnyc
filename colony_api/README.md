@@ -206,13 +206,15 @@ those env vars or a configured private wallet-store path.
 ## Run Scouting
 
 The frontend can start a public-data KG scouting run with `POST /scouting/run`.
-By default this runs `colony/run_match.py` for Brazil vs Morocco with public
-data and the DeepSeek structured scouting agents enabled.
+By default this runs `colony/run_match.py` with public data and the DeepSeek
+structured scouting agents enabled. The browser Scout control fills the request
+from the selected World Cup group-stage fixture from June 14, 2026 onward, then
+sends that fixture's `match` and `match_id`.
 
 ```bash
 curl -X POST https://ethglobalnyc-production.up.railway.app/scouting/run \
   -H "Content-Type: application/json" \
-  -d '{"match":"Brazil vs Morocco","data_mode":"public","include_deepseek_scout":true,"agents":20,"rooms":5,"seed":12,"voice_mode":"template"}'
+  -d '{"match":"Germany vs Curaçao","match_id":"match:world_cup_2026:004:germany-curacao","data_mode":"public","include_deepseek_scout":true,"agents":20,"rooms":5,"seed":12,"voice_mode":"template"}'
 ```
 
 When the run succeeds, fetch the generated KG artifacts:
@@ -271,7 +273,10 @@ source.addEventListener('done', () => {
 
 For `POST /scouting/run`, the stream also emits real KG events from the
 generated `world_graph.json` once the scouting subprocess has produced the run
-artifacts:
+artifacts. The frontend passes these into the KG overlay and the bottom log
+terminal: `kg_entity` events appear as `KG` rows for new or updated nodes,
+`kg_relationship` events appear as linked-node rows, and `kg_stage`,
+`kg_manifest`, and `scouting_audit` events appear as `SCOUT` progress rows.
 
 ```js
 source.addEventListener('colony_event', (event) => {
@@ -296,6 +301,42 @@ Scouting stream event types:
 The KG stream is real run output, not a fake progress animation. It currently
 streams after the scout process writes `world_graph.json`; instrumenting the
 individual scout modules would let the graph grow during source collection too.
+To keep the demo readable before that deeper backend refactor, the frontend
+progressively replays the completed scouting KG artifact in small chunks when
+the final graph arrives, so nodes and links appear over time instead of all in
+one frame.
+
+Run artifacts are stored under `COLONY_API_RUNS_DIR` when that env var is set,
+otherwise under `colony/runs/api` in the running container. A scout such as
+Netherlands vs Japan therefore remains available through `/runs/{run_id}/kg`,
+`/kg/manifest`, and `/scouting-audit` while that run directory persists. It is
+not yet copied into a database or durable object store, so Railway restarts or
+deploys can remove it unless a persistent volume is mounted at that runs path.
+
+## Scouting Artifact Storage
+
+Each Scout click creates one run directory keyed by the returned `run_id`, for
+example `scout_20260614_023208_27d8138`. The directory holds:
+
+- `metadata.json`: request metadata, status, command, match name, and artifact paths.
+- `events.jsonl`: streaming/status events when the run emits them.
+- `stdout.log` / `stderr.log`: subprocess logs.
+- `compact/.../world_graph.json`: the generated scouting KG.
+- `compact/.../kg_manifest.json`: KG validation/readiness metadata.
+- `compact/.../scouting_audit.json`: coverage and evidence-quality audit.
+
+To inspect a stored scout run:
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/events
+curl https://ethglobalnyc-production.up.railway.app/runs/{run_id}/kg
+```
+
+The frontend's `Get KG` button still reads the committed tournament KG from
+`/kg/world-cup`, but it scopes the overlay to the selected fixture and its two
+teams before rendering. That avoids loading unrelated global match/team context
+for pairs such as Norway vs Senegal.
 
 For `POST /runs/demo`, the first integration streams transport/status
 immediately. Most domain events arrive when `run_demo.py` writes `events.jsonl`

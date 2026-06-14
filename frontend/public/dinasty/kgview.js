@@ -12,6 +12,8 @@ DN.kgview = (function () {
   let edges = [];
   let selectedId = null;
   let renderQueued = false;
+  let replayTimers = [];
+  const nodeActivity = new Map();
   const colors = {
     match: '#3FA89F',
     team: '#E8A23D',
@@ -101,6 +103,13 @@ DN.kgview = (function () {
     if (Array.isArray(value)) return value.join(' - ');
     if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
+  }
+
+  function slug(value) {
+    return String(value || 'node')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'node';
   }
 
   function nodeUrl(id) {
@@ -239,18 +248,68 @@ DN.kgview = (function () {
     });
   }
 
+  function clearReplay() {
+    replayTimers.forEach((timer) => clearTimeout(timer));
+    replayTimers = [];
+  }
+
+  function flashNode(id, action) {
+    if (!id || action === 'loaded') return;
+    nodeActivity.set(id, { action, expires: Date.now() + 3600 });
+    setTimeout(() => {
+      const active = nodeActivity.get(id);
+      if (active && active.expires <= Date.now()) {
+        nodeActivity.delete(id);
+        requestRender();
+      }
+    }, 3700);
+  }
+
+  function activityFor(id) {
+    const active = nodeActivity.get(id);
+    if (!active) return '';
+    if (active.expires <= Date.now()) {
+      nodeActivity.delete(id);
+      return '';
+    }
+    return active.action === 'updated' ? ' updated' : ' new';
+  }
+
   function addNode(entity, silent) {
     if (!entity) return;
     const id = entity.entity_id || entity.id;
     if (!id) return;
+    const existed = nodes.has(id);
     nodes.set(id, entity);
+    const action = existed ? 'updated' : 'new';
+    if (!silent) flashNode(id, action);
     if (!silent) requestRender();
+    return {
+      action,
+      id,
+      label: labelFor(entity),
+      type: typeFor(entity),
+    };
   }
 
   function addEdge(relationship, silent) {
     if (!relationship) return;
+    const sourceId = relationship.source_id || relationship.source;
+    const targetId = relationship.target_id || relationship.target;
+    const relation = relationship.relation_type || relationship.relation || 'related_to';
+    const existed = edges.some((edge) =>
+      (edge.source_id || edge.source) === sourceId &&
+      (edge.target_id || edge.target) === targetId &&
+      (edge.relation_type || edge.relation || 'related_to') === relation
+    );
     edges.push(relationship);
     if (!silent) requestRender();
+    return {
+      action: existed ? 'updated_link' : 'new_link',
+      source: sourceId,
+      target: targetId,
+      relation,
+    };
   }
 
   function positionedNodes() {
@@ -351,7 +410,8 @@ DN.kgview = (function () {
       const label = item.groupIndex < 3 && (type === 'match' || type === 'team') ? '<text y="' + (radius + 13) + '">' + escapeHtml(shortLabel(labelFor(node))) + '</text>' : '';
       const classes = 'kg-node' +
         (id === selectedId ? ' selected' : '') +
-        (selectedRelatedIds && !selectedRelatedIds.has(id) ? ' dim' : '');
+        (selectedRelatedIds && !selectedRelatedIds.has(id) ? ' dim' : '') +
+        activityFor(id);
       return '<g class="' + classes + '" data-node="' + encodeURIComponent(id) + '" tabindex="0" role="button" transform="translate(' + item.x + ' ' + item.y + ')">' +
         '<circle r="' + radius + '" fill="' + color + '"></circle>' +
         label +
@@ -362,9 +422,11 @@ DN.kgview = (function () {
 
   K.reset = function (title) {
     ensure();
+    clearReplay();
     nodes = new Map();
     edges = [];
     selectedId = null;
+    nodeActivity.clear();
     root.querySelector('#kg-title').textContent = title || 'KG stream';
     statusEl.textContent = 'Waiting for graph events...';
     legendEl.innerHTML = '';
@@ -387,11 +449,13 @@ DN.kgview = (function () {
       const links = event.relationship_count != null ? ' · ' + event.relationship_count + ' links' : '';
       K.status(String(event.stage || 'kg_stage').replace(/_/g, ' ') + entities + links);
     } else if (event.event_type === 'kg_entity') {
-      addNode(event.entity);
+      const change = addNode(event.entity);
       K.status(nodes.size + ' entities streamed · ' + edges.length + ' links');
+      return change;
     } else if (event.event_type === 'kg_relationship') {
-      addEdge(event.relationship);
+      const change = addEdge(event.relationship);
       K.status(nodes.size + ' entities streamed · ' + edges.length + ' links');
+      return change;
     } else if (event.event_type === 'kg_manifest') {
       const manifest = event.manifest || {};
       K.status('Manifest ready · ' + (manifest.entity_count || nodes.size) + ' entities · ' + (manifest.relationship_count || edges.length) + ' links');
@@ -406,6 +470,86 @@ DN.kgview = (function () {
     (graph.relationships || []).forEach((relationship) => addEdge(relationship, true));
     render();
     K.status((graph.entity_count || nodes.size) + ' KG entities · ' + (graph.relationship_count || edges.length) + ' links');
+  };
+
+  K.replayGraph = function (graph, title, opts) {
+    opts = opts || {};
+    const entities = graph.entities || [];
+    const relationships = graph.relationships || [];
+    const entityChunk = opts.entityChunk || 10;
+    const relationshipChunk = opts.relationshipChunk || 80;
+    const delayMs = opts.delayMs || 220;
+    let entityIndex = 0;
+    let relationshipIndex = 0;
+
+    K.reset(title || 'Completed scouting KG');
+    K.status('Replaying completed scout KG · 0 / ' + entities.length + ' entities');
+    if (DN.logTerm) DN.logTerm.push('KG', 'Replaying completed scout KG: ' + entities.length + ' entities, ' + relationships.length + ' links.');
+
+    function schedule(fn, ms) {
+      const timer = setTimeout(fn, ms);
+      replayTimers.push(timer);
+    }
+
+    function replayEntities() {
+      const end = Math.min(entityIndex + entityChunk, entities.length);
+      for (; entityIndex < end; entityIndex++) addNode(entities[entityIndex]);
+      K.status('Replaying entities · ' + entityIndex + ' / ' + entities.length + ' · ' + edges.length + ' links');
+      if (DN.logTerm && entityIndex && (entityIndex === entities.length || entityIndex % (entityChunk * 5) === 0)) {
+        DN.logTerm.push('KG', 'Replayed ' + entityIndex + ' / ' + entities.length + ' KG entities.');
+      }
+      if (entityIndex < entities.length) {
+        schedule(replayEntities, delayMs);
+      } else {
+        schedule(replayRelationships, delayMs);
+      }
+    }
+
+    function replayRelationships() {
+      const end = Math.min(relationshipIndex + relationshipChunk, relationships.length);
+      for (; relationshipIndex < end; relationshipIndex++) addEdge(relationships[relationshipIndex]);
+      K.status('Replaying links · ' + nodes.size + ' entities · ' + relationshipIndex + ' / ' + relationships.length + ' links');
+      if (DN.logTerm && relationshipIndex && (relationshipIndex === relationships.length || relationshipIndex % (relationshipChunk * 5) === 0)) {
+        DN.logTerm.push('KG', 'Replayed ' + relationshipIndex + ' / ' + relationships.length + ' KG links.');
+      }
+      if (relationshipIndex < relationships.length) {
+        schedule(replayRelationships, delayMs);
+      } else {
+        render();
+        K.status((graph.entity_count || nodes.size) + ' KG entities · ' + (graph.relationship_count || edges.length) + ' links');
+        if (DN.logTerm) DN.logTerm.push('KG', 'Completed KG replay.');
+      }
+    }
+
+    if (entities.length) replayEntities();
+    else replayRelationships();
+  };
+
+  K.showScoutingProgress = function (opts) {
+    opts = opts || {};
+    const match = opts.match || 'Selected fixture';
+    const matchId = opts.matchId || 'scout:' + slug(match);
+    const home = opts.team || (match.includes(' vs ') ? match.split(' vs ')[0] : '');
+    const away = opts.opponent || (match.includes(' vs ') ? match.split(' vs ')[1] : '');
+    K.reset('Live scouting KG');
+    addNode({
+      entity_id: matchId,
+      entity_type: 'match',
+      name: match,
+      attributes: { status: 'scouting', team1: home, team2: away },
+    }, true);
+    if (home) {
+      addNode({ entity_id: 'team:' + slug(home), entity_type: 'team', name: home, attributes: { role: 'selected' } }, true);
+      addEdge({ source_id: 'team:' + slug(home), target_id: matchId, relation_type: 'plays_in' }, true);
+    }
+    if (away) {
+      addNode({ entity_id: 'team:' + slug(away), entity_type: 'team', name: away, attributes: { role: 'opponent' } }, true);
+      addEdge({ source_id: 'team:' + slug(away), target_id: matchId, relation_type: 'plays_in' }, true);
+    }
+    addNode({ entity_id: 'scout:coordinator:' + slug(match), entity_type: 'scout', name: 'Scout coordinator', attributes: { match } }, true);
+    addEdge({ source_id: 'scout:coordinator:' + slug(match), target_id: matchId, relation_type: 'scouting' }, true);
+    render();
+    K.status('Scouting process started · waiting for KG stream');
   };
 
   return K;

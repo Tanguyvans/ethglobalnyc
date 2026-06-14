@@ -68,7 +68,7 @@ DN.hud = (function () {
       '<div class="backend-advanced" id="backend-advanced" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap">' +
         '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
         '<button class="backend-btn secondary" id="backend-kg">Get KG</button>' +
-        '<button class="backend-btn secondary" id="backend-scout">Run scouting</button>' +
+        '<button class="backend-btn secondary" id="backend-scout">Scout</button>' +
         '<button class="backend-btn secondary" id="forecast-deploy">Deploy</button>' +
         '<button class="backend-btn secondary" id="x402-buy">Buy KG</button>' +
         '<button class="backend-btn secondary" id="forecast-setup">Stake demo</button>' +
@@ -107,6 +107,152 @@ DN.hud = (function () {
       name: (forecastCfg.HOME_TEAM || 'Brazil') + ' vs ' + (forecastCfg.AWAY_TEAM || 'Morocco'),
     };
 
+    function entityId(entity) {
+      return entity && (entity.entity_id || entity.id);
+    }
+
+    function edgeSource(edge) {
+      return edge && (edge.source_id || edge.source);
+    }
+
+    function edgeTarget(edge) {
+      return edge && (edge.target_id || edge.target);
+    }
+
+    function norm(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+    }
+
+    function entityText(entity) {
+      const attrs = (entity && entity.attributes) || {};
+      return norm([
+        entityId(entity),
+        entity && entity.name,
+        entity && entity.entity_type,
+        attrs.team1,
+        attrs.team2,
+        attrs.team,
+        attrs.player,
+        attrs.group,
+        attrs.round,
+        attrs.ground,
+      ].filter(Boolean).join(' '));
+    }
+
+    function isUsefulKgType(type) {
+      return [
+        'scout',
+        'finding',
+        'evidence_claim',
+        'debate_claim',
+        'prediction',
+        'predictor',
+        'source',
+        'source_domain',
+        'source_domain_profile',
+        'source_kind',
+        'source_quality',
+        'source_recency',
+        'metric',
+        'player',
+        'player_stat_line',
+        'player_match_profile',
+        'team_match_profile',
+        'availability_event',
+        'availability_status',
+        'body_part',
+        'formation',
+        'position',
+        'club',
+        'scouting_topic',
+        'team_scouting_topic',
+        'scouting_gap',
+        'claim_type',
+        'claim_impact',
+        'claim_quality',
+      ].includes(type);
+    }
+
+    function selectedKgGraph(graph, game) {
+      if (!graph || !game) return graph;
+      const entities = graph.entities || [];
+      const relationships = graph.relationships || [];
+      const home = game.home_team || '';
+      const away = game.away_team || '';
+      const matchName = game.name || [home, away].filter(Boolean).join(' vs ');
+      const homeNeedle = norm(home);
+      const awayNeedle = norm(away);
+      const matchNeedle = norm(matchName);
+      const matchId = game.match_id || game.market_key;
+      const byId = new Map();
+      const selectedCoreIds = new Set();
+      const keep = new Set();
+
+      entities.forEach((entity) => {
+        const id = entityId(entity);
+        if (id) byId.set(id, entity);
+      });
+
+      entities.forEach((entity) => {
+        const id = entityId(entity);
+        if (!id) return;
+        const attrs = entity.attributes || {};
+        const type = entity.entity_type || entity.type;
+        const text = entityText(entity);
+        const attrHome = norm(attrs.team1 || attrs.home_team);
+        const attrAway = norm(attrs.team2 || attrs.away_team);
+        const isSelectedMatch = id === matchId ||
+          norm(entity.name) === matchNeedle ||
+          (attrHome === homeNeedle && attrAway === awayNeedle) ||
+          (attrHome === awayNeedle && attrAway === homeNeedle);
+        const isSelectedTeam = type === 'team' && (norm(entity.name) === homeNeedle || norm(entity.name) === awayNeedle);
+        const usefulType = isUsefulKgType(type);
+        const mentionsSelectedContext =
+          (homeNeedle && text.includes(homeNeedle)) ||
+          (awayNeedle && text.includes(awayNeedle)) ||
+          (matchNeedle && text.includes(matchNeedle));
+        if (isSelectedMatch || isSelectedTeam) {
+          keep.add(id);
+          selectedCoreIds.add(id);
+        } else if (usefulType && mentionsSelectedContext) {
+          keep.add(id);
+        }
+      });
+
+      const seeds = new Set(keep);
+      relationships.forEach((edge) => {
+        const source = edgeSource(edge);
+        const target = edgeTarget(edge);
+        if (!source || !target) return;
+        const sourceEntity = byId.get(source);
+        const targetEntity = byId.get(target);
+        const sourceAllowed = selectedCoreIds.has(source) || isUsefulKgType(sourceEntity && (sourceEntity.entity_type || sourceEntity.type));
+        const targetAllowed = selectedCoreIds.has(target) || isUsefulKgType(targetEntity && (targetEntity.entity_type || targetEntity.type));
+        if (seeds.has(source) && targetAllowed) keep.add(target);
+        if (seeds.has(target) && sourceAllowed) keep.add(source);
+      });
+
+      const scopedEntities = entities.filter((entity) => keep.has(entityId(entity)));
+      const scopedRelationships = relationships.filter((edge) => keep.has(edgeSource(edge)) && keep.has(edgeTarget(edge)));
+      return Object.assign({}, graph, {
+        entities: scopedEntities,
+        relationships: scopedRelationships,
+        entity_count: scopedEntities.length,
+        relationship_count: scopedRelationships.length,
+        scope: {
+          home_team: home,
+          away_team: away,
+          match: matchName,
+          match_id: matchId,
+        },
+      });
+    }
+
     function updateWinnerOptions() {
       if (!forecastWinner) return;
       const drawOption = selectedGame.market_type === 'binary' ? '' : '<option value="Draw">Draw</option>';
@@ -141,6 +287,16 @@ DN.hud = (function () {
       });
     }
 
+    function setScoutingBusy(busy) {
+      [scoutBtn, forecastGame].forEach((el) => {
+        if (el) el.disabled = busy;
+      });
+    }
+
+    function isUpcomingGroupStage(game) {
+      return game && game.group && game.date && game.date >= '2026-06-14' && !game.score;
+    }
+
     updateWinnerOptions();
     if (DN.databridge && DN.databridge.fetchForecastConfig) {
       DN.databridge.fetchForecastConfig()
@@ -156,11 +312,13 @@ DN.hud = (function () {
           const games = payload.games || [];
           const preferred = games.find((game) => /Brazil vs Morocco/i.test(game.name || '')) || games[0];
           if (!preferred) return;
-          forecastGame.innerHTML = games.slice(0, 104).map((game) =>
+          const selectableGames = games.filter(isUpcomingGroupStage);
+          const visibleGames = selectableGames.length ? selectableGames : games;
+          forecastGame.innerHTML = visibleGames.slice(0, 104).map((game) =>
             '<option value="' + game.market_key + '">' + [game.date, game.time, game.name].filter(Boolean).join(' - ') + '</option>'
           ).join('');
-          selectedGame = preferred;
-          forecastGame.value = preferred.market_key;
+          selectedGame = visibleGames.find((game) => /Brazil vs Morocco/i.test(game.name || '')) || visibleGames[0] || preferred;
+          forecastGame.value = selectedGame.market_key;
           updateWinnerOptions();
         })
         .catch(() => {});
@@ -262,9 +420,13 @@ DN.hud = (function () {
         .then((payload) => {
           const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
           const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
-          if (DN.kgview) DN.kgview.showGraph(payload, 'World Cup KG');
-          status.textContent = entities + ' KG entities · ' + links + ' links';
-          H.pushThought('Frontend loaded the World Cup KG from Railway: ' + entities + ' entities, ' + links + ' links.', 'Backend', '#3FA89F');
+          const scoped = selectedKgGraph(payload, selectedGame);
+          const scopedEntities = scoped.entity_count != null ? scoped.entity_count : (scoped.entities || []).length;
+          const scopedLinks = scoped.relationship_count != null ? scoped.relationship_count : (scoped.relationships || []).length;
+          const title = (selectedGame && selectedGame.name ? selectedGame.name : 'Selected fixture') + ' KG';
+          if (DN.kgview) DN.kgview.showGraph(scoped, title);
+          status.textContent = scopedEntities + ' selected KG entities · ' + scopedLinks + ' links';
+          H.pushThought('Frontend loaded scoped KG for ' + selectedGame.name + ': ' + scopedEntities + ' of ' + entities + ' entities, ' + scopedLinks + ' of ' + links + ' links.', 'Backend', '#3FA89F');
         })
         .catch((err) => {
           status.textContent = 'KG fetch error';
@@ -274,11 +436,18 @@ DN.hud = (function () {
     });
     scoutBtn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startScoutingRun) return;
-      scoutBtn.disabled = true;
-      if (forecastGame) forecastGame.disabled = true;
+      setScoutingBusy(true);
       status.textContent = 'Scouting ' + selectedGame.name + '...';
       H.pushThought('Frontend started a public-data KG scouting run for ' + selectedGame.name + '.', 'Backend', '#3FA89F');
-      if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Scouting run kicked off for ' + selectedGame.name + '.');
+      if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting run kicked off for ' + selectedGame.name + '.');
+      if (DN.kgview && DN.kgview.showScoutingProgress) {
+        DN.kgview.showScoutingProgress({
+          match: selectedGame.name,
+          matchId: selectedGame.match_id || selectedGame.market_key,
+          team: selectedGame.home_team,
+          opponent: selectedGame.away_team,
+        });
+      }
       DN.databridge.startScoutingRun({
         match: selectedGame.name,
         match_id: selectedGame.match_id || selectedGame.market_key,
@@ -305,8 +474,7 @@ DN.hud = (function () {
           H.pushThought('Scouting failed: ' + (err.message || err), 'Backend', '#D96E54');
         })
         .finally(() => {
-          scoutBtn.disabled = false;
-          if (forecastGame) forecastGame.disabled = false;
+          setScoutingBusy(false);
         });
     });
     btn.addEventListener('click', () => {
