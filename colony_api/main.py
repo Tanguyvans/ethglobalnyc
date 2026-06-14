@@ -1447,6 +1447,7 @@ def _wait_for_run_stakes(
 ) -> tuple[list[ForecastStakeInstruction], str]:
     deadline = time.time() + max(timeout_seconds, 0)
     last_status = "unknown"
+    best_stakes: list[ForecastStakeInstruction] = []
     while True:
         stakes = _stake_instructions_from_run(
             run_id=run_id,
@@ -1455,7 +1456,9 @@ def _wait_for_run_stakes(
             max_stakers=max_stakers,
             stake_scale=stake_scale,
         )
-        if stakes:
+        if len(stakes) > len(best_stakes):
+            best_stakes = stakes
+        if len(stakes) >= max_stakers:
             return stakes, f"run:{run_id}"
         try:
             metadata = _read_metadata(run_id)
@@ -1465,6 +1468,8 @@ def _wait_for_run_stakes(
         except Exception:
             last_status = "unknown"
         if last_status in {"succeeded", "failed"} or time.time() >= deadline:
+            if best_stakes:
+                return best_stakes, f"run:{run_id}:{last_status}"
             return [], f"fallback:no-forecasts:{last_status}"
         time.sleep(2.0)
 
