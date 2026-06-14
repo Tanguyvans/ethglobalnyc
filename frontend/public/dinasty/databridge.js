@@ -408,6 +408,7 @@ DN.databridge = (function () {
       .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
       .then((run) => {
         B.runId = run.id;
+        if (B.resetCommsRun) B.resetCommsRun(run.id);
         if (DN.kgview && DN.kgview.showScoutingProgress) {
           DN.kgview.showScoutingProgress({
             match: body.match,
@@ -429,6 +430,7 @@ DN.databridge = (function () {
   // 2) downloads the run's events.jsonl, 3) filters client-side.
   let _commsRunId = null;
   let _commsRunId_at = 0;
+  let _commsRunPinned = false;
   function pickLatestRunId() {
     return fetch(apiUrl + '/runs')
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
@@ -448,7 +450,7 @@ DN.databridge = (function () {
   B.fetchCommunications = function () {
     if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
     const now = Date.now();
-    const needRunId = !_commsRunId || (now - _commsRunId_at) > 30000;
+    const needRunId = !_commsRunId || (!_commsRunPinned && (now - _commsRunId_at) > 30000);
     const runIdP = needRunId
       ? pickLatestRunId().then(id => { _commsRunId = id; _commsRunId_at = now; B.runId = id; return id; })
       : Promise.resolve(_commsRunId);
@@ -475,10 +477,12 @@ DN.databridge = (function () {
     if (newId) {
       _commsRunId = newId;
       _commsRunId_at = Date.now();
+      _commsRunPinned = true;
       B.runId = newId;
     } else {
       _commsRunId = null;
       _commsRunId_at = 0;
+      _commsRunPinned = false;
     }
     B._commsEvents = [];
   };

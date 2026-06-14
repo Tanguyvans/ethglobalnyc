@@ -138,10 +138,13 @@ class ForecastDemoSetupRequest(ForecastCreateMarketRequest):
     wallet_store: str = DEFAULT_LOCAL_WALLET_STORE
     stakes: list[ForecastStakeInstruction] | None = None
     run_id: str | None = None
+    expected_match_id: str | None = None
     max_stakers: int = Field(default=3, ge=1, le=25)
     stake_scale: float = Field(default=0.0001, gt=0.0, le=1.0)
     fund_stakers: bool | None = None
     fund_amount: str = "0.01"
+    wait_for_run_forecasts: bool | None = None
+    run_forecast_timeout_seconds: int = Field(default=180, ge=0, le=600)
 
 
 class ForecastSettleRequest(BaseModel):
@@ -1276,6 +1279,57 @@ def _stake_instructions_from_run(
     return stakes
 
 
+def _validate_forecast_run_match(run_id: str, expected_match_id: str | None) -> dict:
+    metadata = _read_metadata(run_id)
+    if not expected_match_id:
+        return metadata
+    actual = str(metadata.get("match_id") or "").strip()
+    expected = str(expected_match_id).strip()
+    if actual != expected:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Forecast run mismatch: "
+                f"run {run_id} is for match_id {actual or 'unknown'}, "
+                f"but the selected market expects {expected}."
+            ),
+        )
+    return metadata
+
+
+def _wait_for_run_stakes(
+    *,
+    run_id: str,
+    wallet_store: str,
+    market_type: str,
+    max_stakers: int,
+    stake_scale: float,
+    timeout_seconds: int,
+) -> tuple[list[ForecastStakeInstruction], str]:
+    deadline = time.time() + max(timeout_seconds, 0)
+    last_status = "unknown"
+    while True:
+        stakes = _stake_instructions_from_run(
+            run_id=run_id,
+            wallet_store=wallet_store,
+            market_type=market_type,
+            max_stakers=max_stakers,
+            stake_scale=stake_scale,
+        )
+        if stakes:
+            return stakes, f"run:{run_id}"
+        try:
+            metadata = _read_metadata(run_id)
+            last_status = str(metadata.get("status") or "unknown")
+        except HTTPException:
+            raise
+        except Exception:
+            last_status = "unknown"
+        if last_status in {"succeeded", "failed"} or time.time() >= deadline:
+            return [], f"fallback:no-forecasts:{last_status}"
+        time.sleep(2.0)
+
+
 def _x402_services() -> list[dict]:
     return [
         {
@@ -1514,15 +1568,30 @@ def setup_forecast_demo(request: ForecastDemoSetupRequest) -> dict:
     wallet_store = _forecast_wallet_store_argument(request.wallet_store)
     stakes = request.stakes
     stake_source = "request"
+    run_metadata: dict | None = None
     if stakes is None and request.run_id:
-        stakes = _stake_instructions_from_run(
-            run_id=request.run_id,
-            wallet_store=wallet_store,
-            market_type=request.market_type,
-            max_stakers=request.max_stakers,
-            stake_scale=request.stake_scale,
-        )
-        stake_source = f"run:{request.run_id}" if stakes else "fallback"
+        run_metadata = _validate_forecast_run_match(request.run_id, request.expected_match_id)
+        should_wait = request.wait_for_run_forecasts
+        if should_wait is None:
+            should_wait = _env_bool("COLONY_API_FORECAST_WAIT_FOR_RUN", True)
+        if should_wait:
+            stakes, stake_source = _wait_for_run_stakes(
+                run_id=request.run_id,
+                wallet_store=wallet_store,
+                market_type=request.market_type,
+                max_stakers=request.max_stakers,
+                stake_scale=request.stake_scale,
+                timeout_seconds=request.run_forecast_timeout_seconds,
+            )
+        else:
+            stakes = _stake_instructions_from_run(
+                run_id=request.run_id,
+                wallet_store=wallet_store,
+                market_type=request.market_type,
+                max_stakers=request.max_stakers,
+                stake_scale=request.stake_scale,
+            )
+            stake_source = f"run:{request.run_id}" if stakes else "fallback"
     if stakes is None or not stakes:
         stakes = _default_demo_stakes(request.market_type)
         stake_source = "fallback"
@@ -1581,6 +1650,12 @@ def setup_forecast_demo(request: ForecastDemoSetupRequest) -> dict:
         "market_key": request.market_key,
         "market_type": request.market_type,
         "stake_source": stake_source,
+        "source_run": {
+            "run_id": request.run_id,
+            "match": (run_metadata or {}).get("match"),
+            "match_id": (run_metadata or {}).get("match_id"),
+            "status": (run_metadata or {}).get("status"),
+        } if request.run_id else None,
         "stakes": [_model_dump(stake) for stake in stakes],
         "steps": steps,
         "totals": totals.get("data"),

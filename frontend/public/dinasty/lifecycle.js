@@ -614,8 +614,11 @@ DN.lifecycle = (function () {
         market_type: meta.market_type || 'three_way',
         metadata_uri: meta.market_key || marketKey,
         run_id: runId || undefined,
+        expected_match_id: meta.match_id || meta.market_key || undefined,
         wallet_store: walletStore || undefined,
         max_stakers: 12,
+        wait_for_run_forecasts: true,
+        run_forecast_timeout_seconds: 240,
         fee_bps: 1000
       });
       L.marketKey = (setup && setup.market_key) || marketKey;
@@ -724,6 +727,7 @@ DN.lifecycle = (function () {
     L.runPromise = null;
     L.runError = null;
     L.phaseHold = false;
+    if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(null);
     if (ENTER.idle) ENTER.idle();
     enter('kickoff');
   };
