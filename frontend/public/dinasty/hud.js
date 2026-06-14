@@ -151,6 +151,92 @@ DN.hud = (function () {
       scoutTeam.value = '0';
     }
 
+    function entityId(entity) {
+      return entity && (entity.entity_id || entity.id);
+    }
+
+    function edgeSource(edge) {
+      return edge && (edge.source_id || edge.source);
+    }
+
+    function edgeTarget(edge) {
+      return edge && (edge.target_id || edge.target);
+    }
+
+    function norm(value) {
+      return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+
+    function entityText(entity) {
+      const attrs = (entity && entity.attributes) || {};
+      return norm([
+        entityId(entity),
+        entity && entity.name,
+        entity && entity.entity_type,
+        attrs.team1,
+        attrs.team2,
+        attrs.team,
+        attrs.player,
+        attrs.group,
+        attrs.round,
+        attrs.ground,
+      ].filter(Boolean).join(' '));
+    }
+
+    function selectedKgGraph(graph, target) {
+      if (!graph || !target || !target.match) return graph;
+      const entities = graph.entities || [];
+      const relationships = graph.relationships || [];
+      const team = target.team;
+      const match = target.match;
+      const opponent = target.side === 'home' ? match.away_team : match.home_team;
+      const teamNeedle = norm(team);
+      const opponentNeedle = norm(opponent);
+      const matchNeedle = norm(match.name || (match.home_team + ' vs ' + match.away_team));
+      const matchId = match.match_id || match.market_key;
+      const byId = new Map();
+      entities.forEach((entity) => {
+        const id = entityId(entity);
+        if (id) byId.set(id, entity);
+      });
+      const keep = new Set();
+      entities.forEach((entity) => {
+        const id = entityId(entity);
+        if (!id) return;
+        const attrs = entity.attributes || {};
+        const text = entityText(entity);
+        const isSelectedMatch = id === matchId || norm(entity.name) === matchNeedle ||
+          (norm(attrs.team1) === norm(match.home_team) && norm(attrs.team2) === norm(match.away_team));
+        const mentionsTeam = teamNeedle && text.includes(teamNeedle);
+        const mentionsOpponent = opponentNeedle && text.includes(opponentNeedle);
+        if (isSelectedMatch || mentionsTeam || (entity.entity_type === 'team' && mentionsOpponent)) keep.add(id);
+      });
+
+      const seeds = new Set(keep);
+      relationships.forEach((edge) => {
+        const source = edgeSource(edge);
+        const targetId = edgeTarget(edge);
+        if (!source || !targetId) return;
+        if (seeds.has(source)) keep.add(targetId);
+        if (seeds.has(targetId)) keep.add(source);
+      });
+
+      const scopedEntities = entities.filter((entity) => keep.has(entityId(entity)));
+      const scopedRelationships = relationships.filter((edge) => keep.has(edgeSource(edge)) && keep.has(edgeTarget(edge)));
+      return Object.assign({}, graph, {
+        entities: scopedEntities,
+        relationships: scopedRelationships,
+        entity_count: scopedEntities.length,
+        relationship_count: scopedRelationships.length,
+        scope: {
+          team,
+          opponent,
+          match: match.name,
+          match_id: matchId,
+        },
+      });
+    }
+
     function updateWinnerOptions() {
       if (!forecastWinner) return;
       const drawOption = selectedGame.market_type === 'binary' ? '' : '<option value="Draw">Draw</option>';
@@ -322,11 +408,14 @@ DN.hud = (function () {
       status.textContent = 'Getting KG...';
       DN.databridge.fetchWorldCupKg()
         .then((payload) => {
-          const entities = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
-          const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
-          if (DN.kgview) DN.kgview.showGraph(payload, 'World Cup KG');
-          status.textContent = entities + ' KG entities · ' + links + ' links';
-          H.pushThought('Frontend loaded the World Cup KG from Railway: ' + entities + ' entities, ' + links + ' links.', 'Backend', '#3FA89F');
+          const target = selectedScoutTarget || scoutTargets[0] || null;
+          const graph = target ? selectedKgGraph(payload, target) : payload;
+          const entities = graph.entity_count != null ? graph.entity_count : (graph.entities || []).length;
+          const links = graph.relationship_count != null ? graph.relationship_count : (graph.relationships || []).length;
+          const title = target ? target.team + ' KG' : 'World Cup KG';
+          if (DN.kgview) DN.kgview.showGraph(graph, title);
+          status.textContent = (target ? target.team + ' KG' : 'World Cup KG') + ' · ' + entities + ' entities';
+          H.pushThought('Frontend loaded ' + title + ': ' + entities + ' entities and ' + links + ' links.', 'Backend', '#3FA89F');
         })
         .catch((err) => {
           status.textContent = 'KG fetch error';
