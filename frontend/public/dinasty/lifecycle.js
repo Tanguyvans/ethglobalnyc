@@ -413,9 +413,13 @@ DN.lifecycle = (function () {
           // it's being woven from scout findings instead of dumped.
           if (DN.kgview && DN.kgview.replayGraph) {
             DN.kgview.replayGraph(payload, 'Knowledge Crystal · World Cup KG', {
-              entityChunk: 6,
-              relationshipChunk: 24,
-              delayMs: 260
+              // Bigger chunks at longer intervals so the SVG is rebuilt
+              // ~4× / sec instead of ~4× during each 260ms tick. That
+              // halves the number of full SVG re-renders the box does
+              // while it's populating.
+              entityChunk: 12,
+              relationshipChunk: 40,
+              delayMs: 400
             });
           } else if (DN.kgview && DN.kgview.showGraph) {
             DN.kgview.showGraph(payload, 'Knowledge Crystal · World Cup KG');

@@ -245,19 +245,18 @@ DN.kgview = (function () {
     requestRender();
   }
 
-  // Throttle SVG rebuilds to ~5 fps. During scouting the SSE stream
-  // fires many entity/relationship events per second; each one used to
-  // schedule a render on the next animation frame, which meant the
-  // ~150-node SVG was being rebuilt at 60 Hz and chewing main-thread
-  // time. 200 ms is plenty for a KG that grows gradually and keeps the
-  // 3D scene smooth.
+  // Throttle SVG rebuilds to ~3 fps. The whole svg.innerHTML is
+  // replaced per render — at 150+ nodes that's expensive enough that
+  // running it at requestAnimationFrame rate caused visible lag when
+  // the box first appeared. 350 ms is well below the eye's threshold
+  // for "graph is growing" and leaves the 3D scene plenty of frame budget.
   function requestRender() {
     if (renderQueued) return;
     renderQueued = true;
     setTimeout(() => {
       renderQueued = false;
       render();
-    }, 200);
+    }, 350);
   }
 
   function clearReplay() {
