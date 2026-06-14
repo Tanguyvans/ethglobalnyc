@@ -33,9 +33,36 @@ DN.hud = (function () {
     $('regions').innerHTML = '<div class="reg-title">Region</div>' + DN.biomes.map((b, i) =>
       `<div class="reg${i === 0 ? ' active' : ''}" data-i="${i}"><span class="reg-dot" style="background:${hex(b.ground.grass)};color:${hex(b.ground.grass)}"></span><div class="reg-tx"><div class="reg-name">${b.name}</div><div class="reg-tag">${b.tag}</div></div></div>`).join('');
     $('regions').querySelectorAll('.reg').forEach(el => el.addEventListener('click', () => DN.app.setBiome(parseInt(el.dataset.i))));
+    initBackendControl();
     H.clearInspector();
     return H;
   };
+
+  function initBackendControl() {
+    const root = $('backend');
+    if (!root) return;
+    root.innerHTML =
+      '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
+      '<button class="backend-btn" id="backend-run">Run LLM agents</button>';
+    const btn = $('backend-run');
+    const status = $('backend-status');
+    btn.addEventListener('click', () => {
+      if (!DN.databridge || !DN.databridge.startDemoRun) return;
+      btn.disabled = true;
+      status.textContent = 'Starting run...';
+      H.pushThought('Frontend requested a new LLM-powered Railway colony run.', 'Backend', '#3FA89F');
+      DN.databridge.startDemoRun({ agents: 20, rooms: 4, voice_mode: 'llm' })
+        .then((result) => {
+          status.textContent = 'Loaded ' + (result.events || 'new') + ' events';
+          H.pushThought('Backend run completed and the colony view loaded its events.', 'Backend', '#3FA89F');
+        })
+        .catch((err) => {
+          status.textContent = 'Backend error';
+          H.pushThought('Backend run failed: ' + (err.message || err), 'Backend', '#D96E54');
+        })
+        .finally(() => { btn.disabled = false; });
+    });
+  }
 
   H.setActiveBiome = function (i) {
     $('regions').querySelectorAll('.reg').forEach(el => el.classList.toggle('active', parseInt(el.dataset.i) === i));
@@ -256,7 +283,7 @@ DN.hud = (function () {
     document.body.classList.toggle('underground', on);
     $('exitbtn').classList.toggle('show', on);
     // Hide the surface HUD while underground — the game UI overlay takes over.
-    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'enterbanner', 'regions', 'inspector'].forEach(id => {
+    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'enterbanner', 'regions', 'inspector', 'backend'].forEach(id => {
       const el = $(id); if (!el) return;
       el.style.display = on ? 'none' : '';
     });

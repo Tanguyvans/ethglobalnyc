@@ -1,15 +1,18 @@
 // Di-nasty — data bridge: seeds the colonies' stats and the thoughts ticker
-// from the REAL harness output (public/data/demo.jsonl). Non-invasive: main.js
+// from the REAL harness output. Non-invasive: main.js
 // prefers DN.databridge.nextThought() when ready, and we seed DN.colony.list
 // stats once the colonies exist. Everything degrades gracefully if the file
 // is missing (the app falls back to its synthetic content).
 window.DN = window.DN || {};
 
 DN.databridge = (function () {
-  const B = { ready: false, source: '/data/demo.jsonl' };
+  const cfg = window.DN_CONFIG || {};
+  const apiUrl = (cfg.API_URL || '').replace(/\/$/, '');
+  const B = { ready: false, source: '/data/demo.jsonl', apiUrl, runId: null };
   let thoughts = [];
   let ti = 0;
   let records = [], forecasts = [], summary = null;
+  let runEvents = [];
   const COL = { debate: '#8E79C4', forecast: '#3FA89F', economy: '#E8A23D', lineage: '#D96E54' };
 
   const r1 = (n) => Math.round((n || 0) * 10) / 10;
@@ -92,23 +95,121 @@ DN.databridge = (function () {
     return t;
   };
 
-  function load() {
-    fetch(B.source)
+  function parseJsonl(txt) {
+    return txt
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => { try { return JSON.parse(l); } catch (e) { return null; } })
+      .filter(Boolean);
+  }
+
+  function seedStats() {
+    let tries = 0;
+    const seed = setInterval(() => {
+      if (applyStats() || ++tries > 60) clearInterval(seed);
+    }, 250);
+  }
+
+  function loadEvents(source) {
+    return fetch(source)
       .then((r) => (r.ok ? r.text() : Promise.reject(r.status)))
       .then((txt) => {
-        const events = txt
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .map((l) => { try { return JSON.parse(l); } catch (e) { return null; } })
-          .filter(Boolean);
+        const events = parseJsonl(txt);
         build(events);
-        // colonies may not exist yet — retry seeding until they do
-        let tries = 0;
-        const seed = setInterval(() => {
-          if (applyStats() || ++tries > 60) clearInterval(seed);
-        }, 250);
-      })
+        seedStats();
+      });
+  }
+
+  function loadLatestRailwayRun() {
+    if (!apiUrl) return Promise.reject(new Error('no api url configured'));
+    return fetch(apiUrl + '/runs')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((payload) => {
+        const runs = (payload.runs || []).filter((run) => run.status === 'succeeded');
+        if (!runs.length) throw new Error('no successful runs yet');
+        const latest = runs[0];
+        B.runId = latest.id;
+        B.source = apiUrl + '/runs/' + latest.id + '/events';
+        return loadEvents(B.source);
+      });
+  }
+
+  B.loadRun = function (runId) {
+    if (!apiUrl || !runId) return Promise.reject(new Error('api url and run id required'));
+    B.runId = runId;
+    B.source = apiUrl + '/runs/' + runId + '/events';
+    return loadEvents(B.source);
+  };
+
+  B.startDemoRun = function (opts) {
+    if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
+    const body = Object.assign({ agents: 20, rooms: 4, seed: Math.floor(Math.random() * 10000), voice_mode: 'llm' }, opts || {});
+    runEvents = [];
+    B.ready = false;
+    return fetch(apiUrl + '/runs/demo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
+      .then((run) => {
+        B.runId = run.id;
+        B.source = apiUrl + '/runs/' + run.id + '/events';
+        if (!window.EventSource) return pollRun(run.id);
+        return streamRun(run.id);
+      });
+  };
+
+  function pollRun(runId) {
+    return new Promise((resolve, reject) => {
+      let tries = 0;
+      const timer = setInterval(() => {
+        fetch(apiUrl + '/runs/' + runId)
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .then((run) => {
+            if (run.status === 'succeeded') {
+              clearInterval(timer);
+              B.loadRun(runId).then(resolve, reject);
+            } else if (run.status === 'failed' || ++tries > 120) {
+              clearInterval(timer);
+              reject(new Error(run.status === 'failed' ? 'Backend run failed.' : 'Backend run timed out.'));
+            }
+          })
+          .catch((err) => {
+            clearInterval(timer);
+            reject(err);
+          });
+      }, 1000);
+    });
+  }
+
+  function streamRun(runId) {
+    return new Promise((resolve, reject) => {
+      const source = new EventSource(apiUrl + '/runs/' + runId + '/stream');
+      source.addEventListener('colony_event', (e) => {
+        try { runEvents.push(JSON.parse(e.data)); } catch (err) {}
+      });
+      source.addEventListener('done', () => {
+        source.close();
+        if (runEvents.length) {
+          build(runEvents);
+          seedStats();
+          resolve({ id: runId, events: runEvents.length });
+        } else {
+          B.loadRun(runId).then(resolve, reject);
+        }
+      });
+      source.onerror = () => {
+        source.close();
+        pollRun(runId).then(resolve, reject);
+      };
+    });
+  }
+
+  function load() {
+    loadLatestRailwayRun()
+      .catch(() => loadEvents('/data/demo.jsonl'))
       .catch(() => { /* no data file — app keeps its synthetic content */ });
   }
 
