@@ -125,10 +125,8 @@ DN.colony = (function () {
       C._buildOne(def.angle, def.dist, idx, accent, name);
     });
 
-    // Periodically have a new colony spontaneously found itself. Random
-    // interval keeps the world surprising. Will be swapped for real
-    // backend "colony founded" events later.
-    scheduleNextFounding();
+    // Auto-founding disabled for now — re-enable by uncommenting below.
+    // scheduleNextFounding();
 
     return C;
   };

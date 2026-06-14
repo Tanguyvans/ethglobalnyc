@@ -44,28 +44,27 @@ DN.hud = (function () {
     root.innerHTML =
       '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
       '<div class="backend-actions">' +
-        '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
         '<button class="backend-btn" id="backend-run">Run LLM agents</button>' +
       '</div>';
     const btn = $('backend-run');
-    const antsBtn = $('backend-ants');
     const status = $('backend-status');
-    antsBtn.addEventListener('click', () => {
+
+    // Auto-fetch ants from the Railway API every 15s, then bind each
+    // record (wallet/ENS/etc.) to a scene ant so clicking a worker shows
+    // its on-chain identity. Errors are kept quiet so the status bar
+    // doesn't flicker between transient network issues.
+    function pollAgents() {
       if (!DN.databridge || !DN.databridge.fetchAgents) return;
-      antsBtn.disabled = true;
-      status.textContent = 'Getting ants...';
       DN.databridge.fetchAgents()
         .then((payload) => {
-          const count = payload.count != null ? payload.count : (payload.agents || []).length;
-          status.textContent = count + ' ants loaded';
-          H.pushThought('Frontend fetched ' + count + ' ants from the Railway API.', 'Backend', '#3FA89F');
+          const records = payload.agents || [];
+          status.textContent = records.length + ' ants · live';
+          if (DN.ants && DN.ants.bindAgentRecords) DN.ants.bindAgentRecords(records);
         })
-        .catch((err) => {
-          status.textContent = 'Ant fetch error';
-          H.pushThought('Could not fetch ants: ' + (err.message || err), 'Backend', '#D96E54');
-        })
-        .finally(() => { antsBtn.disabled = false; });
-    });
+        .catch(() => { /* keep last good status */ });
+    }
+    pollAgents();
+    setInterval(pollAgents, 15000);
     btn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startDemoRun) return;
       btn.disabled = true;
@@ -158,18 +157,27 @@ DN.hud = (function () {
     H._open = { type: 'ant', ant: a };
     $('inspector').classList.add('has-content');
     const c = hex(a.col.accent);
-    const name = a.name || ('Worker ' + a.id.split('-').slice(-1));
+    const rec = a.agentRecord || null;
+    const displayName = (rec && (rec.ens_name || rec.name)) || a.name || ('Worker ' + a.id.split('-').slice(-1));
+    const wallet = rec && rec.wallet_address;
+    const walletShort = wallet ? wallet.slice(0, 6) + '…' + wallet.slice(-4) : null;
+    const ens = rec && rec.ens_name;
+    const identityRows = (ens || wallet) ? `
+      ${ens ? `<div class="vital-bar" style="margin-top:9px"><div class="vlabel"><span>ENS</span><span style="color:${c};font-family:var(--mono)">${ens}</span></div></div>` : ''}
+      ${wallet ? `<div class="vital-bar" style="margin-top:9px"><div class="vlabel"><span>Wallet</span><span style="font-family:var(--mono);cursor:pointer" title="${wallet}" data-copy="${wallet}">${walletShort}</span></div></div>` : ''}
+    ` : '';
     $('inspector').innerHTML =
       `<div class="insp-head"><div class="insp-icon" style="background:${c}22;box-shadow:inset 0 0 0 1px ${c}66">
         <div style="width:13px;height:13px;border-radius:3px;background:${c};box-shadow:0 0 10px ${c}"></div></div>
-        <div><div class="insp-kicker">${a.role}${a.hero ? ' · Gen ' + a.gen : ''}</div><div class="insp-name">${name}</div></div></div>
+        <div><div class="insp-kicker">${a.role}${a.hero ? ' · Gen ' + a.gen : ''}</div><div class="insp-name">${displayName}</div></div></div>
       <div class="metrics">
-        <div class="metric"><div class="mk">Forecast Acc</div><div class="mv">${a.accuracy || (52 + (a.inst % 30))}<small>%</small></div></div>
-        <div class="metric"><div class="mk">Reputation</div><div class="mv">${a.reputation || (30 + (a.inst % 50))}</div></div>
-        <div class="metric"><div class="mk">USDC Staked</div><div class="mv"><small>$</small>${a.staked || (10 + a.inst % 60) + '.0'}</div></div>
-        <div class="metric"><div class="mk">Age</div><div class="mv">${a.age || (1 + a.inst % 12)}<small> sol</small></div></div>
+        <div class="metric"><div class="mk">Forecast Acc</div><div class="mv">${(rec && rec.forecast_accuracy != null) ? Math.round(rec.forecast_accuracy * 100) : (a.accuracy || (52 + (a.inst % 30)))}<small>%</small></div></div>
+        <div class="metric"><div class="mk">Bankroll</div><div class="mv"><small>$</small>${rec && rec.bankroll != null ? Math.round(rec.bankroll) : (a.reputation || (30 + (a.inst % 50)))}</div></div>
+        <div class="metric"><div class="mk">USDC Staked</div><div class="mv"><small>$</small>${rec && rec.staked != null ? Math.round(rec.staked) : (a.staked || (10 + a.inst % 60) + '.0')}</div></div>
+        <div class="metric"><div class="mk">Generation</div><div class="mv">${rec && rec.generation != null ? rec.generation : (a.gen || (1 + a.inst % 8))}</div></div>
       </div>
       <div class="vital-bar"><div class="vlabel"><span>Home colony</span><span style="color:${c}">${a.col.name}</span></div></div>
+      ${identityRows}
       <div class="vital-bar" style="margin-top:9px"><div class="vlabel"><span>Current task</span><span id="a-task">—</span></div></div>
       <div class="vital-bar" style="margin-top:9px"><div class="vlabel"><span>Carrying</span><span id="a-cargo">—</span></div></div>
       <div class="section-label">Recent activity</div>
@@ -178,6 +186,19 @@ DN.hud = (function () {
         <svg viewBox="0 0 24 24" style="fill:${following ? 'var(--ink)' : '#2a1d08'}"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="${following ? 'var(--ink)' : '#2a1d08'}" stroke-width="2" fill="none"/></svg>
         ${following ? 'Stop following' : 'Follow agent'}</button>`;
     $('follow-ant').addEventListener('click', () => DN.app.toggleFollow(a));
+    // copy-on-click for the truncated wallet
+    $('inspector').querySelectorAll('[data-copy]').forEach(el => {
+      el.addEventListener('click', () => {
+        const v = el.getAttribute('data-copy');
+        if (v && navigator.clipboard) {
+          navigator.clipboard.writeText(v).then(() => {
+            const orig = el.textContent;
+            el.textContent = 'copied';
+            setTimeout(() => { el.textContent = orig; }, 900);
+          }).catch(() => {});
+        }
+      });
+    });
     H._updateAnt(a);
   };
 

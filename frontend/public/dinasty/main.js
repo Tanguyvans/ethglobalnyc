@@ -83,8 +83,13 @@ DN.app = (function () {
       lastHud = el;
       let staked = 0, acc = 0;
       DN.colony.list.forEach(c => { staked += c.stats.staked; acc += c.stats.accuracy; });
+      // Prefer backend agent count when records are available so the top
+      // stats row reads the real on-chain population, not the scene's
+      // visual ant count (which is just 100 × colony count).
+      const liveAgents = DN.databridge && DN.databridge.getAgents ? DN.databridge.getAgents() : [];
+      const antsLive = liveAgents && liveAgents.length ? liveAgents.length : DN.ants.list.length;
       DN.hud.setStats({
-        colonies: DN.colony.list.length, ants: DN.ants.list.length, resources: DN.resources.list.filter(r => !r.depleted).length,
+        colonies: DN.colony.list.length, ants: antsLive, resources: DN.resources.list.filter(r => !r.depleted).length,
         staked, accuracy: Math.round(acc / DN.colony.list.length), round: S.gen
       });
       DN.hud.setTransport({ playing: S.playing, speed: S.speed, gen: S.gen, clock: 'Sol ' + (Math.floor(S.simTime / S.DAY) + 1) + ' · ' + fmtClock(), progress: (S.simTime % S.GEN) / S.GEN });
@@ -112,13 +117,23 @@ DN.app = (function () {
     DN.colony.list.forEach(c => c.selected = false);
     DN.ants.heroes.forEach(x => x.selected = (x === a));
     App.selection = a;
-    DN.hud.showAnt(a, App.following === a);
-    if (a.hero) DN.camera.flyTo(DN.ants.heroPos(a), 12, 6);
-    else { const p = new THREE.Vector3(a.x, DN.world.heightAt(a.x, a.z), a.z); DN.camera.flyTo(p, 10, 5); }
+    // Glow ring follows the clicked ant — works for both heroes and
+    // ordinary instanced workers.
+    if (DN.ants.setSelected) DN.ants.setSelected(a);
+    // Clicking always starts following — camera chases the ant. Click
+    // another ant (or call selectAnt(null)) to release.
+    App.following = a;
+    DN.camera.follow(() => DN.ants.heroPos(a));
+    DN.hud.showAnt(a, true);
   };
   App.toggleFollow = function (a) {
     App.following = (App.following === a) ? null : a;
-    if (!App.following) DN.camera.stopFollow();
+    if (!App.following) {
+      DN.camera.stopFollow();
+      if (DN.ants.setSelected) DN.ants.setSelected(null);
+    } else if (DN.ants.setSelected) {
+      DN.ants.setSelected(a);
+    }
     DN.hud.showAnt(a, App.following === a);
   };
   App.setDirective = function (col, d) {

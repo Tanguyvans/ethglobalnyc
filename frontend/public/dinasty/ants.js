@@ -296,7 +296,29 @@ DN.ants = (function () {
     scene.add(cargoMesh);
     A.cargoMesh = cargoMesh;
 
+    // ---- selection marker: a single glow sprite that follows whichever
+    // ant the user has clicked. Tinted to the colony accent on selection.
+    A.selectionGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: DN.util.softSprite(), color: 0xFFFFFF,
+      transparent: true, opacity: 0,
+      depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    A.selectionGlow.scale.set(5, 5, 1);
+    A.selectionGlow.frustumCulled = false;
+    scene.add(A.selectionGlow);
+    A.selectedAnt = null;
+
     return A;
+  };
+
+  // Mark an ant as the currently inspected one — surface (and underground
+  // later) updates the glow sprite to follow it. Pass null to deselect.
+  A.setSelected = function (a) {
+    A.selectedAnt = a || null;
+    if (A.selectionGlow) {
+      if (a) A.selectionGlow.material.color.setHex(a.col.accent);
+      else A.selectionGlow.material.opacity = 0;
+    }
   };
 
   // Returns the i-th nearest live resource to the colony, so each forager
@@ -536,9 +558,44 @@ DN.ants = (function () {
     for (const id in meshDirty) meshDirty[id].instanceMatrix.needsUpdate = true;
     A.cargoMesh.count = cargoN;
     A.cargoMesh.instanceMatrix.needsUpdate = true;
+
+    // selection glow follows the currently inspected ant
+    if (A.selectedAnt && A.selectionGlow) {
+      const a = A.selectedAnt;
+      const gy = ground(a.x, a.z);
+      A.selectionGlow.position.set(a.x, gy + 1.4, a.z);
+      // pulse opacity for visibility
+      A.selectionGlow.material.opacity = 0.65 + Math.sin(elapsed * 5) * 0.2;
+      // breathing scale so the ring reads against the busy ant column
+      const s = 4.2 + Math.sin(elapsed * 3) * 0.4;
+      A.selectionGlow.scale.set(s, s, 1);
+    }
   };
 
   // resolve an instanced raycast hit into an ant object
+  // Distribute backend agent records across the surface ants. If there are
+  // fewer records than ants we cycle (so every ant has a wallet); if there
+  // are more we just use the first A.list.length of them. Heroes prefer
+  // top-ranked records so their named UI matches the real leader.
+  A.bindAgentRecords = function (records) {
+    if (!records || !records.length || !A.list.length) return;
+    const sorted = records.slice().sort((x, y) => (y.bankroll || 0) - (x.bankroll || 0));
+    // Heroes first: give them the top records so their names/wallets align
+    const heroes = A.list.filter(a => a.hero);
+    for (let h = 0; h < heroes.length; h++) {
+      const rec = sorted[h % sorted.length];
+      heroes[h].agentRecord = rec;
+      if (rec.ens_name) heroes[h].name = rec.ens_name;
+    }
+    // Then everyone else round-robins across the rest
+    let ri = 0;
+    for (const a of A.list) {
+      if (a.hero) continue;
+      a.agentRecord = sorted[ri % sorted.length];
+      ri++;
+    }
+  };
+
   A.antFromHit = function (mesh, instanceId) {
     const ci = A.byMesh[mesh.uuid];
     if (ci === undefined) return null;
