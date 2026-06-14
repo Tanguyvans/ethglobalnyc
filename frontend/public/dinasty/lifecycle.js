@@ -12,15 +12,20 @@ DN.lifecycle = (function () {
   const L = { phase: 'idle', phaseT: 0, winner: null, settleTxHash: null, runId: null };
 
   // duration per phase in seconds; 'idle' and 'egress_roam' are open-ended
+  // Slower pacing — the previous values cut off the visible round trip
+  // (ants reached the crystal but couldn't walk back before ingress
+  // fired). Everything is roughly 1.5–3× longer, with the biggest bump
+  // going to converge so the entire crystal → home loop completes
+  // on-screen before we dive underground.
   const DURATIONS = {
     idle:        Infinity,
-    kickoff:      1.5,
-    scouting:     8.0,
-    kg_forming:  10.0,
-    recruitment:  4.0,
-    converge:     6.0,
-    ingress:      4.0,
-    debate:      10.0,   // user-tuned: 10s of fast multi-agent debate
+    kickoff:      2.5,
+    scouting:    12.0,
+    kg_forming:  14.0,
+    recruitment:  6.0,
+    converge:    18.0,   // ← big bump so ants complete the round trip
+    ingress:      6.0,
+    debate:      10.0,
     resolution:   3.0,
     egress_roam: Infinity
   };
@@ -104,22 +109,25 @@ DN.lifecycle = (function () {
     const crystal = DN.crystal ? DN.crystal.position() : new THREE.Vector3(0, 0, 0);
     DN.ants.scriptWalk(
       a, a.x, a.z, crystal.x, crystal.z,
-      { speed: 0.22, curl: 0.1, onArrive: scoutArrivedAtCrystal }
+      { speed: 0.14, curl: 0.1, onArrive: scoutArrivedAtCrystal }
     );
   }
   function scoutArrivedAtCrystal(a) {
     if (DN.crystal && DN.crystal.depositOne) DN.crystal.depositOne();
-    // walk back to colony entrance, then disappear (idle)
     DN.ants.scriptWalk(
       a, a.x, a.z, a.col.entrance.x, a.col.entrance.z,
-      { speed: 0.24, curl: 0.08, onArrive: hideAnt }
+      { speed: 0.14, curl: 0.08, onArrive: hideAnt }
     );
   }
   function convergerArrivedAtCrystal(a) {
     a.hasShard = true;
+    a._homing = true;
+    // Crystal shrinks as ants pick up data — by the time the last
+    // converger arrives the crystal is almost depleted.
+    if (DN.crystal && DN.crystal.takeOne) DN.crystal.takeOne(0.12);
     DN.ants.scriptWalk(
       a, a.x, a.z, a.col.entrance.x, a.col.entrance.z,
-      { speed: 0.20, curl: 0.06, onArrive: hideAnt }
+      { speed: 0.12, curl: 0.06, onArrive: hideAnt }
     );
   }
   function hideAnt(a) {
@@ -127,6 +135,7 @@ DN.lifecycle = (function () {
     a._idleWritten = false;
     a.scout = false;
     a.hasShard = false;
+    a._homing = false;
   }
   // After egress, ants hop between random nearby roam points so the
   // surface looks alive while the user inspects them.
@@ -149,16 +158,35 @@ DN.lifecycle = (function () {
       if (DN.crystal) DN.crystal.hide();
     },
     kickoff: () => {
-      const col = DN.colony && DN.colony.list && DN.colony.list[0];
-      if (col && DN.camera && DN.camera.flyTo) {
-        DN.camera.flyTo(col.pos, 38, 26, 1.4);
+      // ONE flyTo for the entire surface lifecycle. Subsequent phases
+      // (scouting → ingress) deliberately do NOT touch the camera, so
+      // every action plays out in one continuous shot — no bouncing
+      // between phases, no recompute-direction-from-current-position.
+      if (DN.camera && DN.camera.flyTo) {
+        // 14% closer than the previous (220, 140) pass — tighter shot.
+        DN.camera.flyTo(new THREE.Vector3(0, 0, 0), 190, 120, 3.0);
       }
       if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Match: ' + selectedMatch());
     },
     scouting: () => {
+      // Kick off the REAL backend scouting run that builds the World
+      // Cup knowledge graph. Fire-and-forget — the request takes longer
+      // than this phase but the KG fetch in the next phase will see
+      // whatever is ready (or the cached deployment build if not).
+      if (DN.databridge && DN.databridge.startScoutingRun) {
+        if (DN.logTerm) DN.logTerm.push('SCOUT', 'Backend scouting run kicked off — Railway is mining sources for the KG.');
+        if (DN.kgview && DN.kgview.reset) DN.kgview.reset('Live scouting KG');
+        DN.databridge.startScoutingRun().then((result) => {
+          const manifest = (result && result.manifest) || {};
+          const ents = manifest.entity_count || 0;
+          const links = manifest.relationship_count || 0;
+          if (DN.logTerm) DN.logTerm.push('SCOUT', 'Scouting run complete · ' + ents + ' entities · ' + links + ' relationships.');
+        }).catch((err) => {
+          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Scouting run error (using cached KG): ' + (err && err.message || err));
+        });
+      }
       // Wake a small scout party per colony, send each on a dedicated
-      // Bezier walk to a forest target. On arrival they linger briefly,
-      // then return to the crystal in the next phase.
+      // Bezier walk to a forest target.
       let total = 0;
       (DN.colony.list || []).forEach(col => {
         const n = scoutCountPerColony();
@@ -175,41 +203,61 @@ DN.lifecycle = (function () {
           a.scoutTarget = { x: tx, z: tz };
           DN.ants.scriptWalk(
             a, col.entrance.x, col.entrance.z, tx, tz,
-            { speed: 0.20, curl: 0.12, onArrive: scoutArrivedAtForest }
+            {
+              speed: 0.12, curl: 0.12,
+              // Stagger scout emergence so they leave one-by-one over
+              // the first ~2.5 seconds of the scouting phase instead of
+              // all spawning at the mouth simultaneously.
+              tStart: -(idx / Math.max(1, arr.length - 1)) * 0.3,
+              onArrive: scoutArrivedAtForest
+            }
           );
         });
         total += arr.length;
       });
       if (DN.logTerm) DN.logTerm.push('SCOUT', total + ' scouts dispatched from ' + DN.colony.list.length + ' colonies.');
-      if (DN.camera && DN.camera.follow) {
-        DN.camera.follow(() => {
-          let cx = 0, cz = 0, n = 0;
-          for (const a of DN.ants.list) if (a.scout && a.state !== 'idle') { cx += a.x; cz += a.z; n++; }
-          if (!n) return DN.colony.list[0].pos.clone();
-          return new THREE.Vector3(cx / n, (DN.world && DN.world.heightAt) ? DN.world.heightAt(cx / n, cz / n) + 1 : 0, cz / n);
-        });
-      }
+      // No follow() call — the static kickoff framing already shows
+      // every colony + the surrounding forest, so scouts walk out
+      // within frame without any camera motion at all.
     },
     kg_forming: () => {
       if (DN.crystal) DN.crystal.show();
-      if (DN.camera && DN.camera.flyTo && DN.crystal) {
-        DN.camera.flyTo(DN.crystal.position(), 30, 20, 1.4);
+      // Pull the actual built KG from Railway and show it as a live
+      // graph overlay. The 3D crystal in the world is the visual
+      // metaphor; this overlay is the real data the ants are about
+      // to absorb.
+      if (DN.databridge && DN.databridge.fetchWorldCupKg) {
+        DN.databridge.fetchWorldCupKg().then((payload) => {
+          const ents = payload.entity_count != null ? payload.entity_count : (payload.entities || []).length;
+          const links = payload.relationship_count != null ? payload.relationship_count : (payload.relationships || []).length;
+          if (DN.logTerm) DN.logTerm.push('KG', 'KG loaded · ' + ents + ' entities · ' + links + ' relationships. Streaming into the crystal…');
+          // replayGraph animates entities into the panel in chunks
+          // (default 10 per 220ms) with the existing `.kg-node.new`
+          // pulse animation. This is what makes the crystal feel like
+          // it's being woven from scout findings instead of dumped.
+          if (DN.kgview && DN.kgview.replayGraph) {
+            DN.kgview.replayGraph(payload, 'Knowledge Crystal · World Cup KG', {
+              entityChunk: 6,
+              relationshipChunk: 24,
+              delayMs: 260
+            });
+          } else if (DN.kgview && DN.kgview.showGraph) {
+            DN.kgview.showGraph(payload, 'Knowledge Crystal · World Cup KG');
+          }
+        }).catch(() => { /* no KG yet — crystal still grows from scout deposits */ });
       }
-      // Scouts now drop real deposits when they reach the crystal via
-      // their scoutArrivedAtCrystal callback — so no synthetic timer.
       L._depositTimer = 0;
     },
     recruitment: () => {
-      // Wake the remaining workers.
-      let total = 0;
-      (DN.colony.list || []).forEach(col => {
-        total += DN.ants.activate({ colony: col });
-      });
-      if (DN.logTerm) DN.logTerm.push('BIRTH', 'Population activated (' + total + ' workers across all colonies).');
-      if (DN.camera && DN.camera.flyTo) DN.camera.flyTo(new THREE.Vector3(0, 0, 0), 80, 60, 1.6);
-      // On-chain stake setup so the SETTLE call in resolution actually
-      // has a market to resolve. Fire-and-forget — we capture the
-      // returned market_key on L for later.
+      // IMPORTANT: don't wake the idle workers here. If we A.activate()
+      // them now they all snap to their entrance position on the next
+      // frame — that's the "mass pop out of nowhere" the user reported.
+      // The converge phase wakes + walks them in one step using a
+      // negative-staggered scriptWalk, so they visibly emerge one by
+      // one from each mound. Recruitment is purely a camera + on-chain
+      // staging beat now.
+      if (DN.logTerm) DN.logTerm.push('BIRTH', 'Population staking on the round — emerging next.');
+      // No camera change — kickoff framing carries through.
       if (DN.databridge && DN.databridge.setupForecastDemo) {
         const meta = selectedGameMeta();
         const contract = configuredContract();
@@ -250,53 +298,98 @@ DN.lifecycle = (function () {
           if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Backend run failed: ' + (err && err.message || err));
         });
       }
-      // Send every visible worker to the crystal, then home to its
-      // colony entrance, where it disappears underground.
+      // Send every visible worker to the crystal. To make them read as a
+      // single-file line per colony (not a chaotic swarm) we:
+      //   • bucket workers by colony
+      //   • use ONE shared curl sign per colony (so all curves bow the
+      //     same way)
+      //   • stagger each ant's tStart evenly across [0..1] so they're
+      //     distributed along the trail at frame 1
+      //   • tighten each ant's laneOffset so the column has minimal
+      //     lateral spread
       const crystal = DN.crystal ? DN.crystal.position() : new THREE.Vector3(0, 0, 0);
       let count = 0;
-      for (const a of DN.ants.list) {
-        if (a.hero) continue;                    // heroes stay
-        if (a.state === 'idle' || a.state === 'dead') continue;
-        DN.ants.scriptWalk(
-          a, a.x, a.z, crystal.x, crystal.z,
-          { speed: 0.22, curl: 0.08, onArrive: convergerArrivedAtCrystal }
-        );
-        count++;
-      }
-      if (DN.logTerm) DN.logTerm.push('SYSTEM', count + ' workers converging on the knowledge crystal.');
-      if (DN.camera && DN.camera.flyTo && DN.crystal) {
-        DN.camera.flyTo(crystal, 32, 22, 1.2);
-      }
+      (DN.colony.list || []).forEach((col, ci) => {
+        // collect this colony's eligible workers — INCLUDING idle ones
+        // (the recruitment phase deliberately left them idle so we wake
+        // them here in the same step that gives them their walk).
+        const ants = [];
+        for (const a of DN.ants.list) {
+          if (a.hero) continue;
+          if (a.col !== col) continue;
+          if (a.state === 'dead') continue;
+          ants.push(a);
+        }
+        if (!ants.length) return;
+        // alternating curl signs around the ring so the 7 lines fan out
+        // rather than overlapping
+        const sign = (ci % 2 === 0) ? 1 : -1;
+        // Negative tStart values mean each ant WAITS at the entrance
+        // (curve start) for a fraction of a full traversal before its
+        // `migT` reaches 0 and walking begins. With speed=0.12 the full
+        // path is ~8.3s; tStart range [-0.55, 0] means the slowest ant
+        // emerges ~4.5s after the first. That gives a continuous
+        // visible stream of ants leaving the mound and walking the
+        // ENTIRE path to the crystal — not pre-distributed along it.
+        ants.forEach((a, i) => {
+          a._homing = false; // reset before new outbound trip
+          DN.ants.scriptWalk(
+            a, col.entrance.x, col.entrance.z, crystal.x, crystal.z,
+            {
+              speed: 0.12,
+              curl: 0.10,
+              curlSign: sign,
+              tStart: -(i / Math.max(1, ants.length - 1)) * 0.55,
+              onArrive: convergerArrivedAtCrystal
+            }
+          );
+          a.laneOffset = (i % 2 === 0 ? -1 : 1) * 0.08;
+          count++;
+        });
+      });
+      if (DN.logTerm) DN.logTerm.push('SYSTEM', count + ' workers converging on the crystal in 7 columns.');
+      // No camera change — kickoff framing already shows every colony
+      // + the crystal at centre.
     },
     ingress: () => {
-      // Workers are mid-walk back from the crystal — point any still
-      // outside straight to their entrance at a brisk pace so the
-      // surface is clean by the time we dive.
+      // Workers who are already on their home leg (a._homing === true)
+      // are left alone — they're walking home in single file already.
+      // Anyone still outbound or stalled gets snapped onto a fast home
+      // walk so the surface clears within the 6s phase.
       let homing = 0;
       for (const a of DN.ants.list) {
         if (a.hero) continue;
         if (a.state === 'idle' || a.state === 'dead') continue;
+        if (a._homing) continue; // already heading home — don't interrupt
         DN.ants.scriptWalk(
           a, a.x, a.z, a.col.entrance.x, a.col.entrance.z,
-          { speed: 0.36, curl: 0.04, onArrive: hideAnt }
+          { speed: 0.24, curl: 0.04, onArrive: hideAnt }
         );
+        a._homing = true;
         homing++;
       }
-      if (homing && DN.logTerm) DN.logTerm.push('SYSTEM', homing + ' workers heading underground.');
-      // Crystal's job is done.
+      if (homing && DN.logTerm) DN.logTerm.push('SYSTEM', homing + ' stragglers heading underground.');
       if (DN.crystal) DN.crystal.hide();
-      // Dive into the closest colony.
+      // Delay the underground dive by a couple of seconds so the user
+      // sees the homing ants actually reach the mounds before the
+      // camera cuts to the chamber view.
       const col = DN.colony && DN.colony.list && DN.colony.list[0];
       if (col && DN.app && DN.app.enterColony) {
-        DN.app.enterColony(col);
+        setTimeout(() => {
+          if (L.phase === 'ingress') DN.app.enterColony(col);
+        }, 2200);
       }
     },
     debate: () => {
-      // Underground ants already mill + debate via commsViz arcs as the
-      // backend events arrive. We also paint a fast burst of in-chamber
-      // glow arcs so the user visibly sees agents arguing for ~10 sec.
       if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Chambers in session — agents exchanging claims.');
       if (DN.underground && DN.underground.startDebate) DN.underground.startDebate();
+      // Stream the buffered backend debate text into the chamber bubbles
+      // so the underground view visibly shows agents speaking — even
+      // though most events were already dispatched and dedup'd during
+      // earlier phases.
+      if (DN.commsViz && DN.commsViz.streamChambersFromBuffer) {
+        DN.commsViz.streamChambersFromBuffer({ count: 22, strideMs: 480 });
+      }
     },
     resolution: async () => {
       // Stop the in-chamber debate animation; chambers fall quiet.
@@ -333,30 +426,56 @@ DN.lifecycle = (function () {
       }
     },
     egress_roam: () => {
-      // Back to surface; derive per-agent outcome from settled winner +
-      // their forecast.side. Sets a.outcome on every bound ant, then
-      // walks ants out of their colonies to roam.
+      // Back to surface; derive per-agent outcome, then have each
+      // colony's workers emerge in a single-file line and walk to a
+      // shared roam target. The shared per-colony target means all
+      // ants from one mound walk one column out together.
       if (DN.app && DN.app.exitColony) DN.app.exitColony();
       deriveOutcomes();
-      // Wake everyone (except culled) and put them on a small roam loop.
       let woke = 0;
-      for (const a of DN.ants.list) {
-        if (a.hero) continue;
-        if (a.outcome === 'culled') continue;
-        if (a.state !== 'idle') continue;
-        // Pick a random roam destination 18-35 units from the colony.
-        const ang = Math.random() * Math.PI * 2;
-        const r = 18 + Math.random() * 18;
-        const tx = a.col.entrance.x + Math.cos(ang) * r;
-        const tz = a.col.entrance.z + Math.sin(ang) * r;
-        DN.ants.scriptWalk(
-          a, a.col.entrance.x, a.col.entrance.z, tx, tz,
-          { speed: 0.10, curl: 0.16, onArrive: roamHop }
-        );
-        woke++;
-      }
-      if (DN.logTerm) DN.logTerm.push('SYSTEM', woke + ' agents emerging with their outcomes.');
-      if (DN.camera && DN.camera.flyTo) DN.camera.flyTo(new THREE.Vector3(0, 0, 0), 80, 60, 1.4);
+      (DN.colony.list || []).forEach((col, ci) => {
+        // One destination per colony — far enough out to be visible.
+        const ang = (ci / Math.max(1, (DN.colony.list || []).length)) * Math.PI * 2;
+        const r = 30;
+        const tx = col.pos.x + Math.cos(ang) * r;
+        const tz = col.pos.z + Math.sin(ang) * r;
+        const ants = [];
+        for (const a of DN.ants.list) {
+          if (a.hero) continue;
+          if (a.col !== col) continue;
+          if (a.outcome === 'culled') continue;
+          if (a.state !== 'idle') continue;
+          ants.push(a);
+        }
+        if (!ants.length) return;
+        const sign = (ci % 2 === 0) ? 1 : -1;
+        ants.forEach((a, i) => {
+          // Negative tStart → ants wait at the entrance and emerge one
+          // by one over ~5 seconds, walking the full path out.
+          DN.ants.scriptWalk(
+            a, col.entrance.x, col.entrance.z, tx, tz,
+            {
+              speed: 0.08,
+              curl: 0.10,
+              curlSign: sign,
+              tStart: -(i / Math.max(1, ants.length - 1)) * 0.45,
+              onArrive: roamHop
+            }
+          );
+          a.laneOffset = (i % 2 === 0 ? -1 : 1) * 0.08;
+          woke++;
+        });
+      });
+      if (DN.logTerm) DN.logTerm.push('SYSTEM', woke + ' agents emerging in colony columns with their outcomes.');
+      // App.exitColony fires its own short close-up flyTo to the colony
+      // it dove into (~600ms later). Wait for that to settle, then ease
+      // back to the same wide kickoff framing so the outcome cloud is
+      // visible across every colony.
+      setTimeout(() => {
+        if (L.phase === 'egress_roam' && DN.camera && DN.camera.flyTo) {
+          DN.camera.flyTo(new THREE.Vector3(0, 0, 0), 190, 120, 2.4);
+        }
+      }, 1200);
     }
   };
 

@@ -91,8 +91,12 @@ DN.camera = (function () {
     tween.t = 0; tween.dur = dur || 1.6; tween.active = true;
   };
 
-  C.follow = function (fn) { C.setMode('cinematic'); C.followFn = fn; controls.autoRotate = false; };
-  C.stopFollow = function () { C.followFn = null; };
+  // fn returns the THREE.Vector3 target; offset (optional) sets the camera
+  // position relative to the target. Default is a close inspection view
+  // (+6 up, +14 back). Wider lifecycle shots should pass something like
+  // (0, 50, 80) to pull the camera out.
+  C.follow = function (fn, offset) { C.setMode('cinematic'); C.followFn = fn; C.followOffset = offset || null; controls.autoRotate = false; };
+  C.stopFollow = function () { C.followFn = null; C.followOffset = null; };
   C.autoRotate = function (on) { if (C.mode === 'cinematic') controls.autoRotate = on; };
 
   C.update = function (dt) {
@@ -133,7 +137,8 @@ DN.camera = (function () {
       const p = C.followFn();
       if (p) {
         controls.target.lerp(p, Math.min(1, dt * 3));
-        const desired = p.clone().add(new THREE.Vector3(0, 6, 14));
+        const off = C.followOffset || new THREE.Vector3(0, 6, 14);
+        const desired = p.clone().add(off);
         cam.position.lerp(desired, Math.min(1, dt * 1.6));
       }
     }

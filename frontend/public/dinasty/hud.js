@@ -38,7 +38,10 @@ DN.hud = (function () {
     // MVP polish: strip every persistent HUD chrome element except the
     // backend pill (Run button), exit-banner, and the bottom log
     // terminal. The user wants a minimal "3D + terminal" surface.
-    ['hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'keys', 'regions', 'brand', 'stats', 'inspector'].forEach(id => {
+    // NOTE: do NOT include `inspector` here — CSS hides it by default
+    // and `.has-content` (added by H.showAnt / H.showColony) shows it.
+    // Forcing inline display:none here would beat that toggle.
+    ['hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'keys', 'regions', 'brand', 'stats'].forEach(id => {
       const el = $(id); if (el) el.style.display = 'none';
     });
     return H;
@@ -889,7 +892,8 @@ DN.hud = (function () {
     // everything else stays hidden per the MVP minimal-chrome policy.
     const back = $('backend'); if (back) back.style.display = on ? 'none' : '';
     // Belt-and-braces: ensure the rest stays hidden in both modes.
-    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'regions', 'inspector', 'enterbanner', 'keys'].forEach(id => {
+    // Inspector is excluded — its visibility is class-driven.
+    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'regions', 'enterbanner', 'keys'].forEach(id => {
       const el = $(id); if (el) el.style.display = 'none';
     });
     if (H._ugRoot) H._ugRoot.style.display = 'none';

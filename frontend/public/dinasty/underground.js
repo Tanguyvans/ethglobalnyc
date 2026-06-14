@@ -572,6 +572,109 @@ DN.underground = (function () {
     scene.add(U._debateCloud);
     U._debatePos = g.attributes.position;
   }
+  // ---- chamber message bubbles -----------------------------------------
+  // 5 HTML overlays that float above each debate chamber and stream the
+  // latest debate_claim/social_action text from that chamber. Routed
+  // from commsViz when a real backend event arrives during DEBATE phase.
+  const ROOM_NAMES = ['Chamber α', 'Chamber β', 'Chamber γ', 'Chamber δ', 'Chamber ε'];
+  function escapeHtmlUg(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+  function ensureBubbleStyle() {
+    if (document.getElementById('chamber-bubble-css')) return;
+    const css = `
+      .chamber-bubble {
+        position: fixed; left: 0; top: 0;
+        max-width: 280px; min-width: 160px;
+        padding: 8px 12px;
+        background: rgba(12, 8, 4, 0.88);
+        border: 1px solid rgba(196, 142, 68, 0.42);
+        border-radius: 8px;
+        color: rgba(241, 216, 168, 0.92);
+        font-family: var(--mono, ui-monospace), monospace;
+        font-size: 11px; line-height: 1.42;
+        pointer-events: none; opacity: 0;
+        transition: opacity .25s ease, transform .25s ease;
+        backdrop-filter: blur(6px) saturate(1.05);
+        -webkit-backdrop-filter: blur(6px) saturate(1.05);
+        z-index: 6;
+        box-shadow: 0 4px 14px -4px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,200,130,0.06);
+        transform: translate(-50%, -110%);
+        white-space: normal; word-break: break-word;
+      }
+      .chamber-bubble.live { opacity: 0.96; transform: translate(-50%, -100%); }
+      .chamber-bubble .ch-head {
+        font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+        color: rgba(241, 216, 168, 0.55); margin-bottom: 3px;
+      }
+      .chamber-bubble .ch-actor { color: #FFD988; font-weight: 700; }
+      .chamber-bubble .ch-arrow { color: rgba(241, 216, 168, 0.5); margin: 0 4px; }
+      .chamber-bubble .ch-target { color: #FF8B6B; font-weight: 700; }
+    `;
+    const el = document.createElement('style');
+    el.id = 'chamber-bubble-css';
+    el.textContent = css;
+    document.head.appendChild(el);
+  }
+  function ensureBubbles() {
+    if (U._bubbles) return;
+    ensureBubbleStyle();
+    U._bubbles = [];
+    for (let i = 0; i < ROOMS.length; i++) {
+      const div = document.createElement('div');
+      div.className = 'chamber-bubble';
+      document.body.appendChild(div);
+      U._bubbles.push({ div, ttl: 0, idx: i });
+    }
+  }
+  // Public: route a debate message to a chamber. The chamber index is
+  // taken modulo 5 so any backend room_id hash lands somewhere.
+  U.showChamberMessage = function (chamberIdx, actor, target, text) {
+    if (!U.active) return; // only paint when underground is open
+    ensureBubbles();
+    const i = Math.abs(chamberIdx | 0) % U._bubbles.length;
+    const b = U._bubbles[i];
+    const snippet = (text || '').replace(/\s+/g, ' ').trim();
+    const trimmed = snippet.length > 140 ? snippet.slice(0, 138) + '…' : snippet;
+    const headParts = [
+      '<span class="ch-actor">' + escapeHtmlUg(actor || 'agent') + '</span>'
+    ];
+    if (target) {
+      headParts.push('<span class="ch-arrow">→</span><span class="ch-target">' + escapeHtmlUg(target) + '</span>');
+    }
+    b.div.innerHTML =
+      '<div class="ch-head">' + escapeHtmlUg(ROOM_NAMES[i] || 'Chamber') + '</div>' +
+      '<div>' + headParts.join('') + ': ' + escapeHtmlUg(trimmed) + '</div>';
+    b.ttl = 6.0; // visible 6 seconds
+    b.div.classList.add('live');
+  };
+  function updateBubbles(dt) {
+    if (!U._bubbles || !camera) return;
+    const tmp = new THREE.Vector3();
+    const w = window.innerWidth, h = window.innerHeight;
+    for (let i = 0; i < U._bubbles.length; i++) {
+      const b = U._bubbles[i];
+      if (b.ttl > 0) {
+        b.ttl -= dt;
+        if (b.ttl <= 0) b.div.classList.remove('live');
+      }
+      // always reposition (even when not live) so when the next message
+      // pops in it's at the right spot already
+      const r = ROOMS[i];
+      tmp.set(r.x, r.y, 0).project(camera);
+      const sx = (tmp.x + 1) / 2 * w;
+      const sy = (1 - (tmp.y + 1) / 2) * h;
+      b.div.style.left = sx + 'px';
+      b.div.style.top = (sy - 14) + 'px';
+    }
+  }
+  U.hideAllChamberMessages = function () {
+    if (!U._bubbles) return;
+    U._bubbles.forEach(b => { b.ttl = 0; b.div.classList.remove('live'); });
+  };
+
   U.startDebate = function () {
     ensureDebateCloud();
     _debateOn = true;
@@ -588,8 +691,12 @@ DN.underground = (function () {
       U._debatePos.needsUpdate = true;
     }
     if (U._debateCloud) U._debateCloud.visible = false;
+    if (U.hideAllChamberMessages) U.hideAllChamberMessages();
   };
   U.tickDebate = function (dt /*, elapsed */) {
+    // Always tick the chamber message bubbles so their world-to-screen
+    // positions stay synced with the camera and any TTL countdown runs.
+    updateBubbles(dt);
     if (!_debateOn || !U._debateCloud || !agents || agents.length < 2) return;
     // ~8 bursts per second so the chambers feel alive
     _debateSpawnT += dt;

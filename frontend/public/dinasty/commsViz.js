@@ -179,6 +179,21 @@ DN.commsViz = (function () {
     if (DN.hud && DN.hud.pushThought && snippet) {
       DN.hud.pushThought(snippet, actorDisplay, '#' + color.toString(16).padStart(6, '0'));
     }
+    // Always buffer the latest chamber-eligible events so they can
+    // replay into the chamber-bubble overlay when the user dives
+    // underground / debate phase starts (events often arrive BEFORE
+    // the user is underground).
+    if (snippet) {
+      V._bufferChamberMsg(ev.room_id || actorId || ev.action_id || '', actorDisplay, isReply ? targetId : null, snippet);
+      // Live route too — `showChamberMessage` internally no-ops if
+      // underground isn't active, so this is safe regardless of phase.
+      if (DN.underground && DN.underground.showChamberMessage) {
+        const keySrc = ev.room_id || actorId || ev.action_id || '';
+        let h = 0;
+        for (let i = 0; i < keySrc.length; i++) h = ((h * 31) + keySrc.charCodeAt(i)) | 0;
+        DN.underground.showChamberMessage(h, actorDisplay, isReply ? targetId : null, snippet);
+      }
+    }
     V._bumpEdge(actorId, targetId, ev.weight || 0.3);
     // best-effort arc
     const speaker = findAntByAgentId(actorId);
@@ -202,6 +217,17 @@ DN.commsViz = (function () {
     if (DN.logTerm) DN.logTerm.push(tag, speaker + ': "' + snippet + '"');
     if (DN.hud && DN.hud.pushThought && snippet) {
       DN.hud.pushThought(snippet, speaker, '#' + color.toString(16).padStart(6, '0'));
+    }
+    // Buffer + live-route the chamber-synthesis line (no phase gate —
+    // showChamberMessage no-ops when not underground).
+    if (snippet) {
+      V._bufferChamberMsg(ev.room_id || ev.round_id || ev.persona || 'synthesis', speaker, null, snippet);
+      if (DN.underground && DN.underground.showChamberMessage) {
+        const keySrc = ev.room_id || ev.round_id || ev.persona || 'synthesis';
+        let h = 0;
+        for (let i = 0; i < keySrc.length; i++) h = ((h * 31) + keySrc.charCodeAt(i)) | 0;
+        DN.underground.showChamberMessage(h, speaker, null, snippet);
+      }
     }
   };
 
@@ -287,6 +313,39 @@ DN.commsViz = (function () {
 
   // expose so hud/influence overlay can read accumulated influence later
   V.getEdges = function () { return Array.from(V._edges.values()); };
+
+  // ---- chamber-message buffer + replay --------------------------------
+  // Real backend social_action / debate_claim events frequently arrive
+  // BEFORE the user dives underground. We stash the last 30 of them in
+  // a rolling buffer so when DEBATE phase fires (or whenever the user
+  // is underground), we can stream them into the chamber bubbles for
+  // visible activity.
+  V._chamberMsgs = [];
+  V._chamberStreamTimers = [];
+  V._bufferChamberMsg = function (keySrc, actor, target, text) {
+    V._chamberMsgs.push({ keySrc: String(keySrc || ''), actor, target, text });
+    if (V._chamberMsgs.length > 30) V._chamberMsgs.shift();
+  };
+
+  V.streamChambersFromBuffer = function (opts) {
+    opts = opts || {};
+    if (!DN.underground || !DN.underground.showChamberMessage) return;
+    // cancel previous streams so re-entering DEBATE doesn't double up
+    V._chamberStreamTimers.forEach((t) => clearTimeout(t));
+    V._chamberStreamTimers = [];
+    const msgs = V._chamberMsgs.slice(-(opts.count || 24));
+    const stride = opts.strideMs || 480; // one message every 480 ms
+    msgs.forEach((m, i) => {
+      const t = setTimeout(() => {
+        let h = 0;
+        const key = m.keySrc + ':' + i;
+        for (let j = 0; j < key.length; j++) h = ((h * 31) + key.charCodeAt(j)) | 0;
+        DN.underground.showChamberMessage(h, m.actor, m.target, m.text);
+      }, i * stride);
+      V._chamberStreamTimers.push(t);
+    });
+  };
+
 
   // Wipe the dedup table so a fresh backend run's events all re-dispatch.
   // Called after Run-LLM / Scouting completes (when the backend switches

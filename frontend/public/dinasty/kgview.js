@@ -25,12 +25,12 @@ DN.kgview = (function () {
     default: '#2C2820',
   };
   const groupDefs = [
-    { id: 'matches', label: 'Matches', types: ['match', 'match_result'], x: 470, y: 220, color: '#3FA89F' },
-    { id: 'teams', label: 'Teams', types: ['team', 'team_match_profile', 'player', 'player_match_profile', 'player_stat_line'], x: 250, y: 255, color: '#E8A23D' },
-    { id: 'scouts', label: 'Scouts', types: ['scout', 'scout_match_profile', 'prediction', 'predictor', 'genome'], x: 690, y: 255, color: '#8E79C4' },
-    { id: 'evidence', label: 'Evidence', types: ['finding', 'evidence_claim', 'debate_claim', 'scouting_topic', 'team_scouting_topic', 'scouting_gap'], x: 470, y: 360, color: '#D96E54' },
-    { id: 'sources', label: 'Sources', types: ['source', 'source_domain', 'source_domain_profile', 'source_kind', 'source_quality', 'source_recency'], x: 790, y: 125, color: '#5E5440' },
-    { id: 'context', label: 'Context', types: ['venue', 'group', 'stage', 'claim_type', 'claim_impact', 'claim_quality', 'metric', 'formation', 'position', 'club', 'availability_event', 'availability_status', 'body_part'], x: 150, y: 125, color: '#4E7E2A' },
+    { id: 'matches', label: 'Matches', types: ['match', 'match_result'], x: 470, y: 220, color: '#66E0FF' },
+    { id: 'teams', label: 'Teams', types: ['team', 'team_match_profile', 'player', 'player_match_profile', 'player_stat_line'], x: 250, y: 255, color: '#FFD988' },
+    { id: 'scouts', label: 'Scouts', types: ['scout', 'scout_match_profile', 'prediction', 'predictor', 'genome'], x: 690, y: 255, color: '#B47EE0' },
+    { id: 'evidence', label: 'Evidence', types: ['finding', 'evidence_claim', 'debate_claim', 'scouting_topic', 'team_scouting_topic', 'scouting_gap'], x: 470, y: 360, color: '#FF8B6B' },
+    { id: 'sources', label: 'Sources', types: ['source', 'source_domain', 'source_domain_profile', 'source_kind', 'source_quality', 'source_recency'], x: 790, y: 125, color: '#E89B3B' },
+    { id: 'context', label: 'Context', types: ['venue', 'group', 'stage', 'claim_type', 'claim_impact', 'claim_quality', 'metric', 'formation', 'position', 'club', 'availability_event', 'availability_status', 'body_part'], x: 150, y: 125, color: '#6DD68A' },
   ];
   const groupByType = {};
   groupDefs.forEach((group) => group.types.forEach((type) => { groupByType[type] = group; }));

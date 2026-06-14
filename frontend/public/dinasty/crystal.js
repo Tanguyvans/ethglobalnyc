@@ -8,8 +8,8 @@ console.log('[dinasty] crystal.js loaded · build 2026-06-14');
 DN.crystal = (function () {
   const C = { _scene: null, _mesh: null, _halo: null, _deposits: 0, _scale: 0 };
   const POSITION = new THREE.Vector3(0, 0, 0); // world origin
-  const PEAK_RADIUS = 4.0;
-  const HALO_PEAK = 18;
+  const PEAK_RADIUS = 8.0;      // ← smaller so converging ants visually dominate
+  const HALO_PEAK = 45;         // ← halo proportional to the smaller crystal
   const GROW_TAU = 14; // deposits to reach ~63% growth (1-exp)
   const ROT_SPEED = 0.35; // rad/sec
 
@@ -75,11 +75,16 @@ DN.crystal = (function () {
 
   C.depositOne = function () {
     C._deposits += 1;
-    // Log every 10th deposit so the terminal doesn't drown in KG rows
-    // when 40+ scouts arrive within a single second.
     if (DN.logTerm && (C._deposits % 10 === 0 || C._deposits <= 3)) {
       DN.logTerm.push('KG', 'Crystal absorbing findings · ' + C._deposits + ' so far');
     }
+  };
+  // Inverse of depositOne — called when a converging ant "picks up" a
+  // shard. Reducing _deposits feeds the logistic growth target, so the
+  // crystal smoothly shrinks instead of popping.
+  C.takeOne = function (amount) {
+    const a = amount || 1;
+    C._deposits = Math.max(0, C._deposits - a);
   };
 
   C.setAccent = function (hex) {
