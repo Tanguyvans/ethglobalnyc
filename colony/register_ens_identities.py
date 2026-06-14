@@ -663,24 +663,41 @@ def _ensure_v2_subregistry(
 
 def _send_contract_tx(w3: Web3, account: Any, call: Any, label: str) -> str:
     last_error: Exception | None = None
-    for attempt in range(1, 4):
+    for attempt in range(1, 6):
         nonce = w3.eth.get_transaction_count(account.address, "pending")
-        tx = call.build_transaction(
-            {
-                "from": account.address,
-                "nonce": nonce,
-                "chainId": 11155111,
-                **_fee_params(w3),
-            }
-        )
-        tx["gas"] = int(w3.eth.estimate_gas(tx) * 1.2)
+        try:
+            gas = int(
+                w3.eth.estimate_gas(
+                    {
+                        "from": account.address,
+                        "to": call.address,
+                        "data": call._encode_transaction_data(),
+                    }
+                )
+                * 1.25
+            )
+            tx = call.build_transaction(
+                {
+                    "from": account.address,
+                    "nonce": nonce,
+                    "chainId": 11155111,
+                    "gas": gas,
+                    **_fee_params(w3),
+                }
+            )
+        except Exception as exc:
+            last_error = exc
+            if attempt == 5:
+                raise
+            time.sleep(attempt * 3)
+            continue
         signed = account.sign_transaction(tx)
         raw_transaction = signed.raw_transaction if hasattr(signed, "raw_transaction") else signed.rawTransaction
         try:
             tx_hash = w3.eth.send_raw_transaction(raw_transaction)
         except ValueError as exc:
             last_error = exc
-            if "nonce too low" not in str(exc).lower() or attempt == 3:
+            if "nonce too low" not in str(exc).lower() or attempt == 5:
                 raise
             time.sleep(attempt * 2)
             continue
