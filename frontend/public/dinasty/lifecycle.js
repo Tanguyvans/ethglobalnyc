@@ -16,6 +16,7 @@ DN.lifecycle = (function () {
     phaseT: 0,
     winner: null,
     settleTxHash: null,
+    forecastContract: null,
     runId: null,
     phaseHold: false,
     scoutingDone: false,
@@ -200,13 +201,17 @@ DN.lifecycle = (function () {
     return explorer + '/tx/' + hash;
   }
 
+  function isTxHash(value) {
+    return /^0x[a-fA-F0-9]{64}$/.test(String(value || ''));
+  }
+
   function receiptTransactions(step) {
     const receipt = (step && step.receipt) || {};
     const chain = receipt.chain || {};
     const explorer = chain.explorer || '';
     const out = [];
     (receipt.transactions || []).forEach((tx) => {
-      if (!tx || !tx.tx_hash) return;
+      if (!tx || !isTxHash(tx.tx_hash)) return;
       out.push({
         action: tx.type || receipt.action || step.action || 'tx',
         hash: tx.tx_hash,
@@ -218,7 +223,7 @@ DN.lifecycle = (function () {
       });
     });
     (receipt.receipts || []).forEach((tx) => {
-      if (!tx || !tx.tx_hash) return;
+      if (!tx || !isTxHash(tx.tx_hash)) return;
       out.push({
         action: receipt.action || step.action || tx.transfer_id || 'fund',
         hash: tx.tx_hash,
@@ -229,7 +234,7 @@ DN.lifecycle = (function () {
         amount_usdc: tx.amount_usdc || '',
       });
     });
-    if (receipt.tx_hash) {
+    if (isTxHash(receipt.tx_hash)) {
       out.push({
         action: receipt.action || step.action || 'tx',
         hash: receipt.tx_hash,
@@ -243,7 +248,20 @@ DN.lifecycle = (function () {
     return out;
   }
 
+  function firstTransactionForAction(result, actionName) {
+    const steps = (result && result.steps) || [];
+    for (const step of steps) {
+      const receipt = (step && step.receipt) || {};
+      if (receipt.action !== actionName && step.action !== actionName) continue;
+      const tx = receiptTransactions(step)[0];
+      if (tx && tx.hash) return tx;
+    }
+    return null;
+  }
+
   function firstReceiptWith(result, key) {
+    const rootReceipt = (result && result.receipt) || {};
+    if (rootReceipt[key]) return rootReceipt;
     const steps = (result && result.steps) || [];
     for (const step of steps) {
       const receipt = (step && step.receipt) || {};
@@ -254,15 +272,19 @@ DN.lifecycle = (function () {
 
   function logForecastChainTrail(kind, result) {
     if (!DN.logTerm || !result) return;
-    const contract = result.contract || '';
+    const rootReceipt = result.receipt || {};
+    const contract = result.contract || rootReceipt.contract_address || rootReceipt.contract || '';
     const marketKey = result.market_key || '';
     const marketReceipt = firstReceiptWith(result, 'market_id');
     const marketId = marketReceipt.market_id || '';
-    if (contract) DN.logTerm.push('CHAIN', kind + ' contract ' + contract);
+    const contractLabel = kind === 'STAKE' ? 'forecast contract' :
+                          kind === 'SETTLE' ? 'settlement contract' :
+                          'contract';
+    if (contract) DN.logTerm.push('CONTRACT', kind + ' ' + contractLabel + ' ' + contract);
     if (marketKey) DN.logTerm.push('CHAIN', kind + ' market_key ' + marketKey);
     if (marketId) DN.logTerm.push('CHAIN', kind + ' market_id ' + marketId);
 
-    const steps = result.steps || [];
+    const steps = (result.steps && result.steps.length) ? result.steps : [{ action: result.action || kind.toLowerCase(), receipt: rootReceipt }];
     let count = 0;
     steps.forEach((step) => {
       receiptTransactions(step).forEach((tx) => {
@@ -273,9 +295,10 @@ DN.lifecycle = (function () {
           tx.outcome || '',
           tx.wallet ? 'wallet ' + shortHash(tx.wallet) : '',
         ].filter(Boolean).join(' · ');
+        const action = tx.action === 'settle' ? 'settlement' : tx.action;
         DN.logTerm.push(
-          'CHAIN',
-          kind + ' ' + tx.action + who +
+          'TX',
+          kind + ' real ' + action + who +
             (detail ? ' · ' + detail : '') +
             ' · tx ' + tx.hash +
             (tx.explorer_url ? ' · ' + tx.explorer_url : '')
@@ -789,6 +812,7 @@ DN.lifecycle = (function () {
     const marketKey = runMarketKey(meta, runId);
     L.winner = selectedWinner();
     if (DN.logTerm) {
+      if (contract) DN.logTerm.push('CONTRACT', 'Using Arc forecast contract ' + contract);
       DN.logTerm.push('STAKE', 'Creating Arc market and staking ant forecasts from ' + runId + ' …');
     }
     try {
@@ -807,13 +831,14 @@ DN.lifecycle = (function () {
         fee_bps: 1000
       });
       L.marketKey = (setup && setup.market_key) || marketKey;
+      L.forecastContract = (setup && setup.contract) || contract || L.forecastContract;
       L.forecastStakes = (setup && setup.stakes) || [];
       const totals = (setup && setup.totals) || {};
       logForecastChainTrail('STAKE', setup);
       if (DN.logTerm) {
         DN.logTerm.push(
           'STAKE',
-          'Stakes committed from ' + ((setup && setup.stake_source) || 'fallback') +
+          'Stakes committed from ' + ((setup && setup.stake_source) || 'backend forecasts') +
             ' · ' + (totals.total_usdc || '?') + ' USDC escrowed.'
         );
       }
@@ -844,16 +869,15 @@ DN.lifecycle = (function () {
         wallet_store: walletStore || undefined,
         winning_agents: winningAgents
       });
+      L.forecastContract = (settled && settled.contract) || L.forecastContract || contract || null;
       logForecastChainTrail('SETTLE', settled);
-      const tx = (settled && settled.receipt && settled.receipt.tx_hash) ||
-                 (settled && settled.steps && settled.steps.length && (settled.steps[settled.steps.length - 1].receipt || {}).tx_hash) ||
-                 null;
-      L.settleTxHash = tx;
+      const settleTx = firstTransactionForAction(settled, 'settle');
+      L.settleTxHash = settleTx ? settleTx.hash : null;
       if (DN.logTerm) {
         DN.logTerm.push(
           'SETTLE',
           winner + ' settled · ' + winningAgents.length + ' winners claimed' +
-            (tx ? ' · tx ' + tx.slice(0, 8) + '…' + tx.slice(-4) : '')
+            (settleTx ? ' · settlement tx ' + settleTx.hash + (settleTx.explorer_url ? ' · ' + settleTx.explorer_url : '') : '')
         );
       }
       await applySettlementEvolution(winnerSide);
@@ -983,18 +1007,62 @@ DN.lifecycle = (function () {
 
   function deriveOutcomes() {
     const winnerSide = winnerSideFor(L.winner, selectedGameMeta());
-    const forecasts = (DN.databridge && DN.databridge.getCommunications)
+    const comms = (DN.databridge && DN.databridge.getCommunications)
       ? DN.databridge.getCommunications().filter(e => e.event_type === 'forecast') : [];
-    let correct = 0, wrong = 0;
-    for (const f of forecasts) {
-      const ant = DN.ants.list.find(a => a.agentRecord && a.agentRecord.agent_id === f.agent_id);
-      if (!ant) continue;
-      ant.forecast = f;
-      if (f.side === 'pass') ant.outcome = 'pending';
-      else if (f.side === winnerSide) { ant.outcome = 'correct'; correct++; }
-      else { ant.outcome = 'wrong'; wrong++; }
+    const stored = (DN.databridge && DN.databridge.getForecasts) ? DN.databridge.getForecasts() : [];
+    const source = []
+      .concat(comms.map((f) => Object.assign({ _source: 'comms' }, f)))
+      .concat(stored.map((f) => Object.assign({ _source: 'stored' }, f)))
+      .concat((L.forecastStakes || []).map((s) => ({
+        _source: 'stake',
+        agent_id: s.agent,
+        side: s.outcome,
+        stake: s.amount,
+      })));
+    const knownAgentIds = new Set();
+    if (DN.databridge && DN.databridge.getAgents) {
+      (DN.databridge.getAgents() || []).forEach((agent) => {
+        if (agent && agent.agent_id) knownAgentIds.add(agent.agent_id);
+      });
     }
-    if (DN.logTerm) DN.logTerm.push('OUTCOME', correct + ' agents correct · ' + wrong + ' wrong (winner = ' + (L.winner || '?') + ')');
+    if (!knownAgentIds.size && DN.ants && DN.ants.list) {
+      DN.ants.list.forEach((ant) => {
+        if (ant.agentRecord && ant.agentRecord.agent_id) knownAgentIds.add(ant.agentRecord.agent_id);
+      });
+    }
+    const maxScoredAgents = knownAgentIds.size || boundedInt(configuredRun().agents, 200, 1, 200);
+    const byAgent = new Map();
+    for (const f of source) {
+      const agentId = agentIdForCandidate(f);
+      if (!agentId || byAgent.has(agentId)) continue;
+      if (knownAgentIds.size && !knownAgentIds.has(agentId)) continue;
+      if (byAgent.size >= maxScoredAgents) continue;
+      byAgent.set(agentId, f);
+    }
+    let correct = 0, wrong = 0, pending = 0;
+    for (const [agentId, f] of byAgent.entries()) {
+      const side = String(f.side || f.outcome || '').trim();
+      const visible = (DN.ants && DN.ants.list)
+        ? DN.ants.list.filter(a => a.agentRecord && a.agentRecord.agent_id === agentId)
+        : [];
+      visible.forEach((ant) => {
+        ant.forecast = f;
+        if (side === 'pass') ant.outcome = 'pending';
+        else if (side === winnerSide) ant.outcome = 'correct';
+        else ant.outcome = 'wrong';
+      });
+      if (side === 'pass') pending++;
+      else if (side === winnerSide) correct++;
+      else wrong++;
+    }
+    if (DN.logTerm) {
+      DN.logTerm.push(
+        'OUTCOME',
+        correct + ' agents correct · ' + wrong + ' wrong' +
+          (pending ? ' · ' + pending + ' pending' : '') +
+          ' · ' + byAgent.size + ' unique agents scored (winner = ' + (L.winner || '?') + ')'
+      );
+    }
     if (DN.ants && DN.ants.showOutcomeGlow) DN.ants.showOutcomeGlow();
   }
 
@@ -1014,6 +1082,7 @@ DN.lifecycle = (function () {
     L.phaseT = 0;
     L.winner = null;
     L.settleTxHash = null;
+    L.forecastContract = configuredContract() || null;
     L.runId = null;
     L.marketKey = null;
     L.forecastStakes = [];
@@ -1081,6 +1150,7 @@ DN.lifecycle = (function () {
     L.phaseHold = false;
     L.winner = null;
     L.settleTxHash = null;
+    L.forecastContract = configuredContract() || null;
     L.runId = null;
     L.marketKey = null;
     L.forecastStakes = [];
@@ -1090,6 +1160,16 @@ DN.lifecycle = (function () {
 
   L.getPhase = function () { return L.phase; };
   L.getRunId = function () { return L.runId || (DN.databridge && DN.databridge.runId) || null; };
+  L.getEconomyState = function () {
+    return {
+      contract: L.forecastContract || configuredContract() || '',
+      market_key: L.marketKey || '',
+      settle_tx_hash: L.settleTxHash || '',
+      winner: L.winner || '',
+      stakes: (L.forecastStakes || []).slice(),
+    };
+  };
+  L.logForecastChainTrail = logForecastChainTrail;
 
   function enter(next) {
     L.phase = next;

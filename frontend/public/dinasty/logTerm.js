@@ -22,6 +22,8 @@ DN.logTerm = (function () {
     SCOUT:     '#8E79C4',
     KG:        '#3FA89F',
     STAKE:     '#6DD68A',
+    CONTRACT:  '#8BE9FD',
+    TX:        '#D6FBFF',
     CHAIN:     '#8BE9FD',
     X402:      '#E8A23D',
     SETTLE:    '#C8F7A1',
@@ -93,6 +95,11 @@ DN.logTerm = (function () {
       text-decoration: underline dotted rgba(255, 217, 136, 0.45);
     }
     #ant-log .log-msg .ant-ref:hover { color: #FFE9A0; }
+    #ant-log .log-msg .chain-ref {
+      color: #8BE9FD;
+      text-decoration: underline dotted rgba(139, 233, 253, 0.45);
+    }
+    #ant-log .log-msg .chain-ref:hover { color: #D6FBFF; }
     #log-toggle {
       position: fixed; top: 30px; right: 470px;
       padding: 8px 14px; border-radius: 8px;
@@ -126,14 +133,23 @@ DN.logTerm = (function () {
     }[c]));
   }
 
-  // wrap any ant_NNNN or ant-NNNN or ENS-style "<name>.eth" tokens in
-  // clickable spans. Called after escapeHtml so we know the input is safe.
-  function linkifyAntIds(html) {
-    return html.replace(/\b(ant[_-]\d{3,5})\b/g, (m) => {
+  // Called after escapeHtml so the input is safe. Adds in-log affordances
+  // for ant selection plus Arc contract / receipt URL inspection. We do
+  // not auto-link 32-byte hashes as txs because market ids share the
+  // same shape; tx links must arrive as explicit explorer URLs.
+  function linkifyLogTokens(html) {
+    return html.replace(/\b(https?:\/\/[^\s<]+|0x[a-fA-F0-9]{40}|ant[_-]\d{3,5}|[a-z0-9-]+\.colonny\.eth)\b/g, (m) => {
+      if (/^https?:\/\//.test(m)) {
+        return `<a class="chain-ref" href="${m}" target="_blank" rel="noreferrer">${m}</a>`;
+      }
+      if (/^0x[a-fA-F0-9]{40}$/.test(m)) {
+        return `<a class="chain-ref" href="https://explorer.testnet.arc.network/address/${m}" target="_blank" rel="noreferrer">${m}</a>`;
+      }
+      if (/\.colonny\.eth$/.test(m)) {
+        return `<span class="ant-ref" data-agent="${m}">${m}</span>`;
+      }
       const id = m.replace('-', '_');
       return `<span class="ant-ref" data-agent="${id}">${m}</span>`;
-    }).replace(/\b([a-z0-9-]+\.colonny\.eth)\b/g, (m) => {
-      return `<span class="ant-ref" data-agent="${m}">${m}</span>`;
     });
   }
 
@@ -245,7 +261,7 @@ DN.logTerm = (function () {
     opts = opts || {};
     const ts = opts.ts ? fmtTime(new Date(opts.ts)) : fmtTime();
     const color = opts.color || TAG_COLORS[level] || '#FFD988';
-    const safe = linkifyAntIds(escapeHtml(message));
+    const safe = linkifyLogTokens(escapeHtml(message));
     _queue.push({ ts, color, level, safe });
     scheduleFlush();
   };

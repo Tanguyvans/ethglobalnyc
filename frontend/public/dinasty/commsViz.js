@@ -27,6 +27,18 @@ DN.commsViz = (function () {
   };
   const DEFAULT_ROLE_COLOR = 0xFFD988;
 
+  function economyState() {
+    if (DN.lifecycle && DN.lifecycle.getEconomyState) return DN.lifecycle.getEconomyState();
+    const cfg = (window.DN_CONFIG && window.DN_CONFIG.FORECAST) || {};
+    return { contract: cfg.CONTRACT || '', market_key: '', settle_tx_hash: '' };
+  }
+
+  function shortHash(value) {
+    const text = String(value || '');
+    if (text.length < 14) return text;
+    return text.slice(0, 8) + '...' + text.slice(-6);
+  }
+
   function findAntByAgentId(agentId) {
     if (!agentId || !DN.ants || !DN.ants.list) return null;
     return DN.ants.list.find(a => a.agentRecord && (
@@ -223,7 +235,14 @@ DN.commsViz = (function () {
     const prob = ev.home_probability != null ? Number(ev.home_probability).toFixed(2) : '—';
     const edge = ev.edge != null ? Number(ev.edge).toFixed(2) : '—';
     const bank = ev.bankroll != null ? Math.round(Number(ev.bankroll)) : '—';
-    DN.logTerm.push('FORECAST', aid + ' → ' + side + ' @ ' + prob + ' (edge ' + edge + ', bankroll $' + bank + ')');
+    const economy = economyState();
+    if (economy.contract && !V._forecastContractLogged) {
+      V._forecastContractLogged = true;
+      DN.logTerm.push('CHAIN', 'FORECAST contract ' + economy.contract);
+    }
+    const contractBit = economy.contract ? ', contract ' + shortHash(economy.contract) : '';
+    const marketBit = economy.market_key ? ', market ' + economy.market_key : '';
+    DN.logTerm.push('FORECAST', aid + ' → ' + side + ' @ ' + prob + ' (edge ' + edge + ', bankroll $' + bank + contractBit + marketBit + ')');
   };
 
   V._bumpEdge = function (fromId, toId, weight) {
@@ -356,6 +375,7 @@ DN.commsViz = (function () {
     V._chamberMsgs.length = 0;
     V._arcs.length = 0;
     V._edges.clear();
+    V._forecastContractLogged = false;
   };
 
   return V;

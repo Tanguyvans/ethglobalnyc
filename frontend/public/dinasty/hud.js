@@ -122,6 +122,23 @@ DN.hud = (function () {
       name: (forecastCfg.HOME_TEAM || 'Brazil') + ' vs ' + (forecastCfg.AWAY_TEAM || 'Morocco'),
     };
 
+    function logForecastChainTrail(kind, result) {
+      if (DN.lifecycle && DN.lifecycle.logForecastChainTrail) {
+        DN.lifecycle.logForecastChainTrail(kind, result);
+      } else if (DN.logTerm && result) {
+        const receipt = result.receipt || {};
+        const contract = result.contract || receipt.contract_address || receipt.contract || '';
+        const tx = receipt.tx_hash || '';
+        if (contract) DN.logTerm.push('CHAIN', kind + ' contract ' + contract);
+        if (/^0x[a-fA-F0-9]{64}$/.test(String(tx))) DN.logTerm.push('CHAIN', kind + ' tx ' + tx);
+      }
+    }
+
+    function configuredForecastContract() {
+      const cfgNow = (window.DN_CONFIG && window.DN_CONFIG.FORECAST) || {};
+      return forecastContract || cfgNow.CONTRACT || '';
+    }
+
     function entityId(entity) {
       return entity && (entity.entity_id || entity.id);
     }
@@ -320,13 +337,16 @@ DN.hud = (function () {
 
     function forecastTx(result) {
       const receipt = result && result.receipt;
-      if (receipt && receipt.tx_hash) return receipt.tx_hash;
+      if (receipt && /^0x[a-fA-F0-9]{64}$/.test(String(receipt.tx_hash || ''))) return receipt.tx_hash;
       const steps = result && result.steps;
       if (steps && steps.length) {
         for (let i = steps.length - 1; i >= 0; i--) {
           const r = steps[i].receipt || {};
-          if (r.tx_hash) return r.tx_hash;
-          if (r.transactions && r.transactions.length) return r.transactions[r.transactions.length - 1].tx_hash;
+          if (/^0x[a-fA-F0-9]{64}$/.test(String(r.tx_hash || ''))) return r.tx_hash;
+          if (r.transactions && r.transactions.length) {
+            const tx = r.transactions[r.transactions.length - 1].tx_hash;
+            if (/^0x[a-fA-F0-9]{64}$/.test(String(tx || ''))) return tx;
+          }
         }
       }
       return '';
@@ -629,6 +649,7 @@ DN.hud = (function () {
         .then((result) => {
           const receipt = result.receipt || {};
           forecastContract = result.contract || receipt.contract_address || forecastContract;
+          logForecastChainTrail('DEPLOY', result);
           status.textContent = 'Contract ' + shortHash(forecastContract);
           H.pushThought('Forecast contract deployed: ' + shortHash(forecastContract) + ' · tx ' + shortHash(receipt.tx_hash || ''), 'Arc', '#3FA89F');
         })
@@ -667,20 +688,27 @@ DN.hud = (function () {
       forecastMarketKey = selectedGame.market_key + ':demo-' + Date.now();
       setForecastBusy(true);
       status.textContent = 'Staking demo...';
+      if (DN.logTerm && configuredForecastContract()) {
+        DN.logTerm.push('CONTRACT', 'Using Arc forecast contract ' + configuredForecastContract());
+      }
       H.pushThought('Creating a fresh Arc market for ' + selectedGame.name + ' and staking ant votes.', 'Arc', '#E8A23D');
       DN.databridge.setupForecastDemo({
-        contract: forecastContract || undefined,
+        contract: configuredForecastContract() || undefined,
         market_key: forecastMarketKey,
         market_type: selectedGame.market_type || 'three_way',
         metadata_uri: selectedGame.market_key,
         run_id: DN.databridge.runId || undefined,
+        wait_for_run_forecasts: true,
+        run_forecast_timeout_seconds: 240,
+        allow_fallback_stakes: false,
       })
         .then((result) => {
           forecastContract = result.contract || forecastContract;
           forecastStakes = result.stakes || [];
           const totals = result.totals || {};
+          logForecastChainTrail('STAKE', result);
           status.textContent = 'Staked ' + (totals.total_usdc || '0') + ' USDC';
-          H.pushThought('Demo market funded on Arc from ' + (result.stake_source || 'fallback') + ': ' + (totals.home_usdc || '0') + ' home · ' + (totals.draw_usdc || '0') + ' draw · ' + (totals.away_usdc || '0') + ' away.', 'Arc', '#3FA89F');
+          H.pushThought('Arc market funded from real backend forecasts: ' + (totals.home_usdc || '0') + ' home · ' + (totals.draw_usdc || '0') + ' draw · ' + (totals.away_usdc || '0') + ' away.', 'Arc', '#3FA89F');
         })
         .catch((err) => {
           status.textContent = 'Stake error';
@@ -701,7 +729,7 @@ DN.hud = (function () {
       status.textContent = 'Settling ' + winner + '...';
       H.pushThought('Settling the Arc market with winner: ' + winner + '.', 'Arc', '#E8A23D');
       DN.databridge.settleForecastDemo({
-        contract: forecastContract || undefined,
+        contract: configuredForecastContract() || undefined,
         market_key: forecastMarketKey,
         winner,
         home_team: selectedGame.home_team,
@@ -713,6 +741,7 @@ DN.hud = (function () {
         .then((result) => {
           const tx = forecastTx(result);
           const claimed = (result.claimed_agents || []).join(', ') || 'none';
+          logForecastChainTrail('SETTLE', result);
           status.textContent = 'Settled · ' + result.result;
           H.pushThought('Settlement complete: winners claimed by ' + claimed + (tx ? ' · tx ' + shortHash(tx) : '') + '.', 'Arc', '#3FA89F');
         })
