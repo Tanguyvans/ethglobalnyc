@@ -99,6 +99,53 @@ body.underground #atmos {
 }
 .forecast-select:disabled, .forecast-game-select:disabled { opacity: 0.58; cursor: wait; }
 
+#runs-page {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  width: min(720px, calc(100vw - 420px));
+  max-height: calc(100vh - 48px);
+  display: none;
+  padding: 14px;
+  overflow: hidden;
+}
+#runs-page.show { display: flex; flex-direction: column; }
+.runs-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--hair); }
+.runs-k { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+.runs-title { margin-top: 3px; font-size: 18px; font-weight: 700; line-height: 1.1; }
+.runs-actions { display: flex; gap: 6px; flex: none; }
+.runs-summary { padding: 9px 0; color: var(--ink-soft); font-size: 12px; }
+.runs-list { display: grid; gap: 8px; overflow: auto; padding-right: 2px; }
+.runs-list::-webkit-scrollbar { width: 0; }
+.run-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 124px;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(249, 243, 226, 0.64);
+}
+.run-row-main { min-width: 0; }
+.run-eyebrow { display: flex; gap: 7px; flex-wrap: wrap; color: var(--ink-faint); font: 700 9px var(--mono); text-transform: uppercase; letter-spacing: 0; }
+.run-eyebrow span { padding: 2px 5px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(228, 218, 193, 0.34); }
+.run-title { margin-top: 7px; font-size: 16px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.run-prediction { margin-top: 5px; font: 700 13px var(--font); color: var(--gold-deep); line-height: 1.25; overflow-wrap: anywhere; }
+.run-meta { margin-top: 4px; color: var(--ink-soft); font-size: 11px; line-height: 1.25; overflow-wrap: anywhere; }
+.run-row-actions { display: flex; flex-direction: column; gap: 6px; }
+.runs-empty, .runs-error, .runs-loading {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(249, 243, 226, 0.64);
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.runs-error { color: #8f301f; border-color: rgba(217, 110, 84, 0.45); }
+
 /* ---------- KG stream overlay — small left-side panel, dark amber to
      match the bottom log terminal aesthetic ---------- */
 #kg-overlay {
@@ -415,6 +462,7 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
 
 @media (max-width: 1180px) {
   #backend { width: min(220px, calc(100vw - 48px)); }
+  #runs-page { width: min(560px, calc(100vw - 300px)); }
   .backend-btn { font-size: 10px; padding: 7px 8px; }
   .forecast-select { min-width: 88px; font-size: 10px; }
   .forecast-game-select { font-size: 10px; }
@@ -425,4 +473,17 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
 @media (max-width: 900px) {
   #stats { display: none; }
   #backend { top: 84px; }
+  #runs-page {
+    top: 250px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-height: calc(100vh - 276px);
+  }
+  .runs-head { align-items: stretch; flex-direction: column; gap: 9px; }
+  .runs-actions { width: 100%; }
+  .runs-actions .backend-btn { flex: 1; }
+  .run-row { grid-template-columns: 1fr; min-height: 0; }
+  .run-row-actions { flex-direction: row; }
+  .run-row-actions .backend-btn { flex: 1; }
 }

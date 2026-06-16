@@ -804,6 +804,8 @@ def _compact_vote_breakdown(vote_breakdown: dict) -> dict:
         "raw_prediction_winners": vote_breakdown.get("raw_prediction_winners", {}),
         "raw_scorelines": vote_breakdown.get("raw_scorelines", {}),
         "raw_total_goals": vote_breakdown.get("raw_total_goals", {}),
+        "weighted_side_support": vote_breakdown.get("weighted_side_support", {}),
+        "support_margin": vote_breakdown.get("support_margin", 0.0),
     }
 
 

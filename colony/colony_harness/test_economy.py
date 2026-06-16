@@ -8,7 +8,7 @@ from .agent import AntAgent
 from .decision import build_collective_decision
 from .economy import EconomyLedger, build_paid_knowledge_views, market_spec_for_match, settle_internal_pool
 from .genes import Genome, SourceWeights
-from .models import Finding, InternalStake, MarketSpec, MatchContext
+from .models import Finding, Forecast, InternalStake, MarketSpec, MatchContext
 from .scouts import synthetic_probabilities
 
 
@@ -40,6 +40,35 @@ def _agent(
         bankroll=bankroll,
         accuracy=0.5,
         world_verified=world_verified,
+    )
+
+
+def _forecast(agent: AntAgent, match: MatchContext, *, probability: float, side: str, visible_findings: int = 4) -> Forecast:
+    edge = probability - match.market_home_probability if side == "home" else match.market_home_probability - probability
+    if side == "draw":
+        edge = 0.01
+    return Forecast(
+        agent_id=agent.agent_id,
+        wallet_address=agent.wallet_address,
+        ens_name=agent.ens_name,
+        access_tier="public",
+        visible_findings=visible_findings,
+        persona=agent.genome.persona,
+        risk_profile="balanced",
+        social_stance="neutral_draw" if side == "draw" else ("supportive_home" if side == "home" else "opposing_home"),
+        activity_level="regular",
+        influence_weight="medium",
+        response_delay="normal",
+        active_windows="pre_match",
+        home_probability=probability,
+        market_edge=round(probability - match.market_home_probability, 4),
+        edge_threshold=agent.genome.edge_threshold,
+        edge=round(edge, 4),
+        side=side,  # type: ignore[arg-type]
+        stake=1.0,
+        bankroll=agent.bankroll,
+        decision_reason=f"test {side} forecast",
+        genome_id=agent.genome_id,
     )
 
 
@@ -205,6 +234,33 @@ class EconomyTests(unittest.TestCase):
         self.assertTrue(decision.recommendation["should_place_single_bet"])
         self.assertEqual(decision.match_call["lean"], "home")
         self.assertEqual(decision.prediction["winner"], "France")
+
+    def test_collective_prediction_follows_weighted_side_support_not_home_average_only(self) -> None:
+        match = MatchContext(
+            round_id="round_support_consensus",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.5,
+            odds_home_signal=0.5,
+            news_home_signal=0.5,
+        )
+        agents = [_agent(f"ant_{index:04d}", genome=_genome(edge_threshold=0.02)) for index in range(3)]
+        forecasts = [
+            _forecast(agents[0], match, probability=0.56, side="home"),
+            _forecast(agents[1], match, probability=0.49, side="away"),
+            _forecast(agents[2], match, probability=0.49, side="away"),
+        ]
+
+        decision = build_collective_decision(match=match, agents=agents, forecasts=forecasts)
+
+        self.assertEqual(decision.recommendation["side"], "away")
+        self.assertEqual(decision.match_call["lean"], "away")
+        self.assertEqual(decision.prediction["winner"], "Senegal")
+        self.assertGreater(
+            decision.prediction["scoreline"]["away"],
+            decision.prediction["scoreline"]["home"],
+        )
 
     def test_settlement_distributes_losing_pool_80_10_10(self) -> None:
         winner = _agent("ant_0000", bankroll=0.0)

@@ -281,6 +281,30 @@ def _latest_compact_artifact(run_id: str, filename: str) -> Path:
     return path
 
 
+def _read_latest_compact_json(run_id: str, filename: str) -> dict | None:
+    latest = _latest_compact_dir(run_id)
+    if latest is None:
+        return None
+    path = latest / filename
+    if not path.exists() or not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+
+def _compact_artifact_url(run_id: str, filename: str) -> str | None:
+    latest = _latest_compact_dir(run_id)
+    if latest is None:
+        return None
+    path = latest / filename
+    if not path.exists() or not path.is_file():
+        return None
+    relative = path.relative_to(_run_dir(run_id)).as_posix()
+    return f"/runs/{run_id}/artifacts/{relative}"
+
+
 def _read_events(run_id: str) -> list[dict]:
     path = _safe_artifact_path(run_id, "events.jsonl")
     events: list[dict] = []
@@ -294,6 +318,87 @@ def _read_events(run_id: str) -> list[dict]:
             except json.JSONDecodeError:
                 continue
     return events
+
+
+def _latest_event(run_id: str, event_type: str) -> dict | None:
+    try:
+        events = _read_events(run_id)
+    except HTTPException:
+        return None
+    latest = None
+    for event in events:
+        if event.get("event_type") == event_type:
+            latest = event
+    return latest
+
+
+def _prediction_record(metadata: dict, *, include_incomplete: bool = True) -> dict | None:
+    run_id = str(metadata.get("id") or "")
+    if not run_id:
+        return None
+    decision = _read_latest_compact_json(run_id, "decision.json")
+    if decision is None:
+        decision = _read_latest_compact_json(run_id, "decision.compact.json")
+    if decision is None:
+        event_decision = _latest_event(run_id, "collective_decision")
+        if event_decision:
+            decision = {key: value for key, value in event_decision.items() if key != "event_type"}
+    if decision is None and not include_incomplete:
+        return None
+
+    audit = _read_latest_compact_json(run_id, "scouting_audit.json") or {}
+    manifest = _read_latest_compact_json(run_id, "kg_manifest.json") or {}
+    readiness = audit.get("kg_readiness") or audit.get("readiness") or {}
+    vote_breakdown = (decision or {}).get("vote_breakdown") or {}
+    internal_metrics = (decision or {}).get("internal_metrics") or {}
+    match = dict((decision or {}).get("match") or {})
+    if metadata.get("match") and not match.get("name"):
+        match["name"] = metadata.get("match")
+    if metadata.get("match_id") and not match.get("match_id"):
+        match["match_id"] = metadata.get("match_id")
+
+    artifacts = {
+        "summary": _compact_artifact_url(run_id, "summary.md"),
+        "decision": _compact_artifact_url(run_id, "decision.compact.json"),
+        "full_decision": _compact_artifact_url(run_id, "decision.json"),
+        "forecasts": _compact_artifact_url(run_id, "forecasts.csv"),
+        "kg": f"/runs/{run_id}/kg" if _latest_compact_dir(run_id) is not None else None,
+        "kg_manifest": f"/runs/{run_id}/kg/manifest" if manifest else None,
+        "scouting_audit": f"/runs/{run_id}/scouting-audit" if audit else None,
+        "events": f"/runs/{run_id}/events" if (_run_dir(run_id) / "events.jsonl").exists() else None,
+    }
+
+    return {
+        "run_id": run_id,
+        "kind": metadata.get("kind") or "demo",
+        "status": metadata.get("status"),
+        "created_at": metadata.get("created_at"),
+        "started_at": metadata.get("started_at"),
+        "completed_at": metadata.get("completed_at"),
+        "data_mode": metadata.get("data_mode"),
+        "match": match,
+        "prediction": (decision or {}).get("prediction"),
+        "recommendation": (decision or {}).get("recommendation"),
+        "match_call": (decision or {}).get("match_call"),
+        "score_projection": (decision or {}).get("score_projection"),
+        "metrics": {
+            "confidence": internal_metrics.get("confidence"),
+            "market_edge": internal_metrics.get("market_edge"),
+            "prediction_value_signal": internal_metrics.get("prediction_value_signal"),
+            "weighted_home_probability": internal_metrics.get("weighted_home_probability"),
+            "calibrated_home_probability": internal_metrics.get("calibrated_home_probability"),
+        },
+        "vote_breakdown": vote_breakdown,
+        "scouting": {
+            "kg_load_ready": readiness.get("kg_load_ready"),
+            "scouting_complete": readiness.get("scouting_complete"),
+            "status": readiness.get("status"),
+            "backlog_count": readiness.get("scouting_backlog_count") or readiness.get("backlog_count"),
+            "entity_count": manifest.get("entity_count") or (manifest.get("counts") or {}).get("entities"),
+            "relationship_count": manifest.get("relationship_count") or (manifest.get("counts") or {}).get("relationships"),
+        },
+        "artifacts": {key: value for key, value in artifacts.items() if value},
+    }
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -1711,7 +1816,9 @@ def get_config() -> dict:
             "start_scouting_run": "/scouting/run",
             "start_demo_run": "/runs/demo",
             "list_runs": "/runs",
+            "predictions": "/predictions",
             "run": "/runs/{run_id}",
+            "run_prediction": "/runs/{run_id}/prediction",
             "events": "/runs/{run_id}/events",
             "stream": "/runs/{run_id}/stream",
             "agents": "/runs/{run_id}/agents",
@@ -2455,6 +2562,30 @@ def list_runs() -> dict:
     return {"runs": runs}
 
 
+@app.get("/predictions")
+def list_predictions(limit: int = 50, include_incomplete: bool = True) -> dict:
+    if not RUNS_ROOT.exists():
+        return {"count": 0, "predictions": []}
+    records = []
+    for path in sorted(RUNS_ROOT.iterdir(), reverse=True):
+        if not path.is_dir():
+            continue
+        metadata_path = path / "metadata.json"
+        if not metadata_path.exists():
+            continue
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        record = _prediction_record(metadata, include_incomplete=include_incomplete)
+        if record is not None:
+            records.append(record)
+        if limit > 0 and len(records) >= limit:
+            break
+    return {
+        "count": len(records),
+        "runs_root": str(RUNS_ROOT),
+        "predictions": records,
+    }
+
+
 @app.get("/recent_communications")
 def recent_communications(limit: int = 60) -> dict:
     """
@@ -2521,6 +2652,15 @@ def get_run(run_id: str) -> dict:
             }
         )
     return metadata
+
+
+@app.get("/runs/{run_id}/prediction")
+def get_run_prediction(run_id: str) -> dict:
+    metadata = _read_metadata(run_id)
+    record = _prediction_record(metadata, include_incomplete=True)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Prediction not found for run: {run_id}")
+    return record
 
 
 @app.get("/runs/{run_id}/events", response_class=PlainTextResponse)

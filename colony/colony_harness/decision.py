@@ -50,23 +50,33 @@ def build_collective_decision(
     agent_predictions = [_agent_prediction_payload(vote, match) for vote in votes]
     prediction_counts = _prediction_counts(agent_predictions)
     weighted_side_support = _weighted_side_support(votes)
-    prediction_side = _probability_side(weighted_home_probability)
-    prediction_outcome = _winner_label(prediction_side, match)
     recommendation_side = _collective_recommendation_side(
         weighted_side_support=weighted_side_support,
         raw_counts=raw_counts,
         weighted_edge=weighted_edge,
         collective_edge_threshold=collective_edge_threshold,
     )
+    prediction_side = recommendation_side
+    prediction_outcome = _winner_label(prediction_side, match)
     recommendation_outcome = _winner_label(recommendation_side, match)
     support_margin = _support_margin(weighted_side_support)
+    prediction_value_signal = _prediction_value_signal(
+        prediction_side=prediction_side,
+        weighted_edge=weighted_edge,
+        support_margin=support_margin,
+    )
     confidence = _decision_confidence(
-        edge=weighted_edge,
+        edge=prediction_value_signal,
         support_margin=support_margin,
         participation=len(votes),
     )
+    calibrated_home_probability = _calibrated_home_probability(
+        weighted_home_probability=weighted_home_probability,
+        weighted_side_support=weighted_side_support,
+        prediction_side=prediction_side,
+    )
     score_projection = _score_projection(
-        home_probability=weighted_home_probability,
+        home_probability=calibrated_home_probability,
         home_team=match.home_team,
         away_team=match.away_team,
         recommendation_side=prediction_side,
@@ -94,14 +104,16 @@ def build_collective_decision(
                 "Every ant emits a post-debate prediction. Internally, the prediction is scored against "
                 "the market anchor so the colony can detect value. Votes are weighted by "
                 "knowledge access, World/lineage verification, historical accuracy, and conviction. "
+                "Votes with deeper visible evidence get a modest boost, while evidence-thin votes are damped. "
                 "For group-stage markets every ant must pick one outcome: home win, draw, or away win. "
-                "The final bet is the strongest weighted outcome after debate."
+                "The final prediction and bet follow the strongest weighted outcome after debate."
             ),
             "collective_edge_threshold": collective_edge_threshold,
             "access_multipliers": ACCESS_MULTIPLIERS,
             "world_verified_multiplier": WORLD_VERIFIED_MULTIPLIER,
             "verified_lineage_multiplier": VERIFIED_LINEAGE_MULTIPLIER,
             "weight_cap": 4.0,
+            "evidence_depth_range": [0.88, 1.16],
         },
         match_call={
             "predicted_winner": prediction_outcome,
@@ -129,6 +141,8 @@ def build_collective_decision(
             "weighted_away_probability": round(1.0 - weighted_home_probability, 4),
             "market_home_probability": round(match.market_home_probability, 4),
             "market_edge": round(weighted_edge, 4),
+            "prediction_value_signal": round(prediction_value_signal, 4),
+            "calibrated_home_probability": round(calibrated_home_probability, 4),
             "confidence": confidence,
         },
         score_projection=score_projection,
@@ -156,7 +170,8 @@ def _weighted_vote(agent: AntAgent, forecast: Forecast) -> WeightedVote:
     reputation = 0.65 + max(0.0, min(agent.accuracy, 1.0))
     conviction = 0.65 + min(abs(forecast.edge) / 0.08, 1.35)
     budget = 1.0 + min(max(agent.genome.query_budget, 0.0), 3.0) * 0.05
-    raw_weight = access * world * lineage * reputation * conviction * budget
+    evidence_depth = _evidence_depth_multiplier(forecast.visible_findings)
+    raw_weight = access * world * lineage * reputation * conviction * budget * evidence_depth
     weight = min(raw_weight, 4.0)
     return WeightedVote(
         agent=agent,
@@ -170,8 +185,14 @@ def _weighted_vote(agent: AntAgent, forecast: Forecast) -> WeightedVote:
             "reputation": round(reputation, 4),
             "conviction": round(conviction, 4),
             "query_budget": round(budget, 4),
+            "evidence_depth": round(evidence_depth, 4),
         },
     )
+
+
+def _evidence_depth_multiplier(visible_findings: int) -> float:
+    finding_count = min(max(int(visible_findings or 0), 0), 8)
+    return 0.88 + finding_count * 0.035
 
 
 def _recommendation_side(weighted_edge: float, threshold: float) -> str:
@@ -224,6 +245,34 @@ def _support_margin(weighted_side_support: dict[str, float]) -> float:
     if len(values) < 2:
         return values[0] if values else 0.0
     return values[0] - values[1]
+
+
+def _prediction_value_signal(*, prediction_side: str, weighted_edge: float, support_margin: float) -> float:
+    if prediction_side == "away":
+        return -weighted_edge
+    if prediction_side == "draw":
+        return max(abs(weighted_edge), support_margin * 0.08)
+    return weighted_edge
+
+
+def _calibrated_home_probability(
+    *,
+    weighted_home_probability: float,
+    weighted_side_support: dict[str, float],
+    prediction_side: str,
+) -> float:
+    home_support = float(weighted_side_support.get("home", 0.0))
+    away_support = float(weighted_side_support.get("away", 0.0))
+    support_probability = 0.5 + (home_support - away_support) * 0.22
+    if prediction_side == "draw":
+        value = 0.5 + (home_support - away_support) * 0.04
+    elif prediction_side == "home":
+        value = max(weighted_home_probability, support_probability, 0.501)
+    elif prediction_side == "away":
+        value = min(weighted_home_probability, support_probability, 0.499)
+    else:
+        value = weighted_home_probability
+    return round(min(max(value, 0.01), 0.99), 4)
 
 
 def _decision_confidence(*, edge: float, support_margin: float, participation: int) -> float:

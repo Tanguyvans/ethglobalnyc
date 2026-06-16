@@ -7,7 +7,14 @@ window.DN = window.DN || {};
 
 DN.databridge = (function () {
   const cfg = window.DN_CONFIG || {};
-  const apiUrl = (cfg.API_URL || '').replace(/\/$/, '');
+  const apiOverride = (function () {
+    try {
+      return new URLSearchParams(window.location.search).get('api') || '';
+    } catch (err) {
+      return '';
+    }
+  })();
+  const apiUrl = (apiOverride || cfg.API_URL || '').replace(/\/$/, '');
   const B = { ready: false, source: null, apiUrl, runId: null };
   let thoughts = [];
   let ti = 0;
@@ -322,6 +329,23 @@ DN.databridge = (function () {
         B.runs = payload.runs || [];
         return payload;
       });
+  };
+
+  B.fetchPredictions = function (opts) {
+    const params = new URLSearchParams();
+    opts = opts || {};
+    if (opts.limit) params.set('limit', opts.limit);
+    if (opts.include_incomplete != null) params.set('include_incomplete', opts.include_incomplete ? 'true' : 'false');
+    return apiJson('/predictions' + (params.toString() ? '?' + params.toString() : ''))
+      .then((payload) => {
+        B.predictions = payload.predictions || [];
+        return payload;
+      });
+  };
+
+  B.fetchRunPrediction = function (runId) {
+    if (!runId) return Promise.reject(new Error('run id required'));
+    return apiJson('/runs/' + encodeURIComponent(runId) + '/prediction');
   };
 
   B.fetchRunKg = function (runId) {

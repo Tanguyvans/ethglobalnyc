@@ -77,6 +77,7 @@ DN.hud = (function () {
         '<button class="backend-btn secondary" id="backend-scout">Run Scout</button>' +
         '<button class="backend-btn" id="backend-run">Run Full Pipe</button>' +
         '<button class="backend-btn secondary" id="backend-run-fast">Run Agent</button>' +
+        '<button class="backend-btn secondary" id="backend-runs">Runs</button>' +
         '<button class="backend-btn secondary" id="backend-reset" title="Stop the running debate and reset agents to idle">Reset</button>' +
         '<button class="backend-btn secondary backend-toggle" id="backend-adv-toggle" title="Show advanced controls">▾</button>' +
       '</div>' +
@@ -102,6 +103,7 @@ DN.hud = (function () {
     const antsBtn = $('backend-ants');
     const kgBtn = $('backend-kg');
     const scoutBtn = $('backend-scout');
+    const runsBtn = $('backend-runs');
     const forecastDeployBtn = $('forecast-deploy');
     const x402BuyBtn = $('x402-buy');
     const forecastSetupBtn = $('forecast-setup');
@@ -378,6 +380,172 @@ DN.hud = (function () {
       });
     }
 
+    function ensureRunsPage() {
+      let page = $('runs-page');
+      if (page) return page;
+      page = document.createElement('div');
+      page.id = 'runs-page';
+      page.className = 'panel';
+      const hud = $('hud') || document.body;
+      hud.appendChild(page);
+      return page;
+    }
+
+    function formatRunDate(value) {
+      if (!value) return 'pending';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value).replace('T', ' ').slice(0, 16);
+      return date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    function matchLabel(record) {
+      const match = (record && record.match) || {};
+      if (match.name) return match.name;
+      if (match.home_team && match.away_team) return match.home_team + ' vs ' + match.away_team;
+      return (record && record.run_id) || 'Run';
+    }
+
+    function scoreLabel(record) {
+      const prediction = (record && record.prediction) || {};
+      const score = prediction.scoreline || (((record && record.score_projection) || {}).most_likely_score || {});
+      return score.label || 'score pending';
+    }
+
+    function supportLabel(record) {
+      const votes = (record && record.vote_breakdown) || {};
+      const weighted = votes.weighted_side_support || {};
+      if (weighted.home != null || weighted.draw != null || weighted.away != null) {
+        return ['home', 'draw', 'away'].map((side) => side + ' ' + Math.round((weighted[side] || 0) * 100) + '%').join(' · ');
+      }
+      const raw = votes.raw_forecast_sides || {};
+      return ['home', 'draw', 'away'].map((side) => side + ' ' + (raw[side] || 0)).join(' · ');
+    }
+
+    function scoutingLabel(record) {
+      const scouting = (record && record.scouting) || {};
+      if (scouting.scouting_complete === true) return 'scouting complete';
+      if (scouting.status) return String(scouting.status).replace(/_/g, ' ');
+      if (record && record.kind === 'scouting') return 'scouting pending';
+      return 'run artifacts';
+    }
+
+    function renderRunsPage(payload, error) {
+      const page = ensureRunsPage();
+      const records = (payload && payload.predictions) || [];
+      const rows = records.map((record) => {
+        const prediction = record.prediction || {};
+        const recommendation = record.recommendation || {};
+        const metrics = record.metrics || {};
+        const scouting = record.scouting || {};
+        const winner = prediction.winner || recommendation.winner || 'pending';
+        const confidence = prediction.confidence || recommendation.confidence_label || 'pending';
+        const edgeValue = metrics.prediction_value_signal != null ? metrics.prediction_value_signal : metrics.market_edge;
+        const edge = edgeValue != null ? Number(edgeValue).toFixed(3) : 'n/a';
+        const entities = scouting.entity_count != null ? scouting.entity_count : 0;
+        const links = scouting.relationship_count != null ? scouting.relationship_count : 0;
+        const canLoad = !!(record.artifacts && record.artifacts.events);
+        const canKg = !!(record.artifacts && record.artifacts.kg);
+        return '<div class="run-row" data-run="' + esc(record.run_id) + '">' +
+          '<div class="run-row-main">' +
+            '<div class="run-eyebrow"><span>' + esc(record.kind || 'demo') + '</span><span>' + esc(record.status || 'unknown') + '</span><span>' + esc(formatRunDate(record.completed_at || record.created_at)) + '</span></div>' +
+            '<div class="run-title">' + esc(matchLabel(record)) + '</div>' +
+            '<div class="run-prediction">' + esc(winner) + ' · ' + esc(scoreLabel(record)) + ' · ' + esc(confidence) + '</div>' +
+            '<div class="run-meta">' + esc(supportLabel(record)) + ' · value ' + esc(edge) + ' · ' + esc(scoutingLabel(record)) + '</div>' +
+            '<div class="run-meta">' + esc(entities) + ' KG nodes · ' + esc(links) + ' links</div>' +
+          '</div>' +
+          '<div class="run-row-actions">' +
+            '<button class="backend-btn secondary run-load" ' + (canLoad ? '' : 'disabled') + '>Load</button>' +
+            '<button class="backend-btn secondary run-kg" ' + (canKg ? '' : 'disabled') + '>KG</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      page.innerHTML =
+        '<div class="runs-head">' +
+          '<div><div class="runs-k">History</div><div class="runs-title">Previous runs and predictions</div></div>' +
+          '<div class="runs-actions">' +
+            '<button class="backend-btn secondary" id="runs-refresh">Refresh</button>' +
+            '<button class="backend-btn secondary" id="runs-close">Close</button>' +
+          '</div>' +
+        '</div>' +
+        (error ? '<div class="runs-error">' + esc(error) + '</div>' : '') +
+        '<div class="runs-summary">' + esc(records.length) + ' runs · scouting and forecast artifacts from the backend</div>' +
+        '<div class="runs-list">' + (rows || '<div class="runs-empty">No run predictions yet.</div>') + '</div>';
+      page.classList.add('show');
+      const close = $('runs-close');
+      const refresh = $('runs-refresh');
+      if (close) close.addEventListener('click', () => page.classList.remove('show'));
+      if (refresh) refresh.addEventListener('click', () => H.refreshRunsPage(true));
+      page.querySelectorAll('.run-load').forEach((button) => {
+        button.addEventListener('click', () => {
+          const row = button.closest('.run-row');
+          const runId = row && row.getAttribute('data-run');
+          if (!runId || !DN.databridge || !DN.databridge.loadRun) return;
+          button.disabled = true;
+          status.textContent = 'Loading run...';
+          DN.databridge.loadRun(runId)
+            .then(() => {
+              if (DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(runId);
+              if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
+              if (H._pollComms) H._pollComms();
+              status.textContent = 'Loaded ' + runId.slice(0, 18);
+              if (DN.logTerm) DN.logTerm.push('RUN', 'Loaded historical run ' + runId + '.');
+            })
+            .catch((err) => {
+              status.textContent = 'Run load error';
+              if (DN.logTerm) DN.logTerm.push('RUN', 'Could not load run ' + runId + ': ' + (err.message || err));
+            })
+            .finally(() => { button.disabled = false; });
+        });
+      });
+      page.querySelectorAll('.run-kg').forEach((button) => {
+        button.addEventListener('click', () => {
+          const row = button.closest('.run-row');
+          const runId = row && row.getAttribute('data-run');
+          if (!runId || !DN.databridge || !DN.databridge.fetchRunKg) return;
+          button.disabled = true;
+          status.textContent = 'Loading run KG...';
+          DN.databridge.fetchRunKg(runId)
+            .then((kg) => {
+              if (DN.kgview) DN.kgview.showGraph(kg, 'Run KG ' + runId.slice(0, 18));
+              status.textContent = 'Run KG loaded';
+              if (DN.logTerm) DN.logTerm.push('KG', 'Loaded KG for historical run ' + runId + '.');
+            })
+            .catch((err) => {
+              status.textContent = 'Run KG error';
+              if (DN.logTerm) DN.logTerm.push('KG', 'Could not load run KG ' + runId + ': ' + (err.message || err));
+            })
+            .finally(() => { button.disabled = false; });
+        });
+      });
+    }
+
+    H.refreshRunsPage = function (showErrors) {
+      if (!DN.databridge || !DN.databridge.fetchPredictions) {
+        renderRunsPage(null, 'Prediction history is not available from this backend.');
+        return Promise.resolve(null);
+      }
+      const page = ensureRunsPage();
+      page.innerHTML = '<div class="runs-loading">Loading run history...</div>';
+      page.classList.add('show');
+      return DN.databridge.fetchPredictions({ limit: 60, include_incomplete: true })
+        .then((payload) => {
+          renderRunsPage(payload);
+          status.textContent = 'Runs loaded';
+          return payload;
+        })
+        .catch((err) => {
+          const message = err.message || String(err);
+          renderRunsPage(null, message);
+          if (showErrors) H.pushThought('Could not load previous predictions: ' + message, 'Backend', '#D96E54');
+          return null;
+        });
+    };
+
     function isUpcomingGroupStage(game) {
       return game && game.group && game.date && game.date >= '2026-06-14' && !game.score;
     }
@@ -543,6 +711,17 @@ DN.hud = (function () {
         .finally(() => { kgBtn.disabled = false; });
     });
 
+    if (runsBtn) {
+      runsBtn.addEventListener('click', () => {
+        const page = ensureRunsPage();
+        if (page.classList.contains('show')) {
+          page.classList.remove('show');
+          return;
+        }
+        H.refreshRunsPage(true);
+      });
+    }
+
     scoutBtn.addEventListener('click', () => {
       if (!DN.databridge || !DN.databridge.startScoutingRun) return;
       setScoutingBusy(true);
@@ -579,6 +758,8 @@ DN.hud = (function () {
           if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(newId);
           if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
           if (H._pollComms) H._pollComms();
+          const runsPage = $('runs-page');
+          if (runsPage && runsPage.classList.contains('show') && H.refreshRunsPage) H.refreshRunsPage(false);
         })
         .catch((err) => {
           status.textContent = 'Scouting error';
