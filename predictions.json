@@ -1,6 +1,6 @@
 {
   "description": "Ledger of all Colony prediction-market trades (buys/sells). Values are hard on-chain data (Polygon), verified via the transaction receipts.",
-  "venue": "polygun",
+  "venue": "per-trade (see execution_layer: polygun | polymarket-clob)",
   "wallets": {
     "polygun_trading_address": "0xe9E32Ca24aa1eF725F650b5489281FE621363AA9",
     "treasury": "0xcc16bEC342794f35a32d4Ba2c76BF9D759C131eB"
@@ -18,6 +18,7 @@
       "action": "buy",
       "placed_by": "adil",
       "method": "manual",
+      "execution_layer": "polygun",
       "event": "World Cup Winner",
       "market_question": "Will France win the 2026 FIFA World Cup?",
       "outcome": "Yes (France)",
@@ -39,6 +40,7 @@
       "action": "buy",
       "placed_by": "claude",
       "method": "auto",
+      "execution_layer": "polygun",
       "event": "World Cup Winner",
       "market_question": "Will France win the 2026 FIFA World Cup?",
       "outcome": "Yes (France)",
@@ -61,6 +63,7 @@
       "action": "buy",
       "placed_by": "claude",
       "method": "auto",
+      "execution_layer": "polygun",
       "bet_phase": "pregame",
       "colony_pick": true,
       "event": "Qatar vs. Switzerland (Jun 13)",
@@ -85,6 +88,7 @@
       "action": "buy",
       "placed_by": "claude",
       "method": "auto",
+      "execution_layer": "polygun",
       "bet_phase": "pregame",
       "event": "Brazil vs. Morocco (Jun 13)",
       "market_question": "Will Brazil win on 2026-06-13?",
@@ -109,6 +113,7 @@
       "action": "buy",
       "placed_by": "adil",
       "method": "manual",
+      "execution_layer": "polygun",
       "bet_phase": "pregame",
       "event": "Haiti vs. Scotland (Jun 13)",
       "market_question": "Will Scotland win on 2026-06-13?",
@@ -132,6 +137,7 @@
       "action": "buy",
       "placed_by": "adil",
       "method": "manual",
+      "execution_layer": "polygun",
       "bet_phase": "pregame",
       "event": "Haiti vs. Scotland (Jun 13)",
       "market_question": "Will Scotland win on 2026-06-13?",
@@ -155,6 +161,7 @@
       "action": "buy",
       "placed_by": "claude",
       "method": "auto",
+      "execution_layer": "polygun",
       "bet_phase": "pregame",
       "event": "Australia vs. Turkiye (Jun 14)",
       "market_question": "Will Turkiye win on 2026-06-14?",
@@ -170,7 +177,7 @@
       "status": "filled",
       "block": 88470140,
       "tx_hash": "0xaf2fb94c9ec720771cbb6bac4ada5ccdc2456a854a0bf94e5e9c2fad5637d717",
-      "note": "Ants/consensus pick. PolyGun showed only 'Transaction Submitted' (no confirmation) but it FILLED on-chain \u2014 verified before NOT retrying (avoided a Scotland-style double-bet)."
+      "note": "Ants/consensus pick. PolyGun showed only 'Transaction Submitted' (no confirmation) but it FILLED on-chain — verified before NOT retrying (avoided a Scotland-style double-bet)."
     },
     {
       "id": 8,
@@ -178,6 +185,7 @@
       "action": "buy",
       "placed_by": "claude",
       "method": "auto",
+      "execution_layer": "polygun",
       "bet_phase": "in-play",
       "event": "Cote d'Ivoire vs. Ecuador (Jun 14)",
       "market_question": "Will Ecuador win on 2026-06-14?",
@@ -193,7 +201,45 @@
       "status": "filled",
       "block": 88518355,
       "tx_hash": "0xc692c2b69f6a937f4ca363a4b081b9b24e134e230edc88fcef6cd83b6a3b94d5",
-      "note": "User pick. LIVE in-play bet @ ~31c (draw was favorite 44c). Filled fine \u2014 mid-game two-sided liquidity (contrast: 99c winners were unbuyable). PolyGun showed only 'Submitted'; verified filled on-chain."
+      "note": "User pick. LIVE in-play bet @ ~31c (draw was favorite 44c). Filled fine — mid-game two-sided liquidity (contrast: 99c winners were unbuyable). PolyGun showed only 'Submitted'; verified filled on-chain."
+    },
+    {
+      "id": 9,
+      "ts_utc": "2026-06-18T13:31:35Z",
+      "action": "buy",
+      "placed_by": "claude",
+      "method": "auto",
+      "execution_layer": "polygun",
+      "side": "yes",
+      "polygun_market_id": 1897108,
+      "outcome_token_id": "29904085738634800807850286108673899231278214025131538572228243310371586316124",
+      "shares": 9.523808,
+      "avg_price": 0.2171,
+      "pusd_to_maker": 2.067379,
+      "pusd_fee": null,
+      "pusd_total": 2.067379,
+      "status": "filled",
+      "block": 88723000,
+      "tx_hash": "0x3beb31a2ae131cb95c1fd4aae9a051b0fccc91eee7dd036a04a3bf9753367364"
+    },
+    {
+      "id": 10,
+      "ts_utc": "2026-06-18T14:32:55Z",
+      "action": "buy",
+      "placed_by": "claude",
+      "method": "auto",
+      "execution_layer": "polygun",
+      "side": "yes",
+      "polygun_market_id": 1897246,
+      "outcome_token_id": "24996055382005658349790471423878721697831808533961896596758588230034679203014",
+      "shares": 14.285713,
+      "avg_price": 0.145,
+      "pusd_to_maker": 2.071579,
+      "pusd_fee": null,
+      "pusd_total": 2.071579,
+      "status": "filled",
+      "block": 88725453,
+      "tx_hash": "0x99452a3c7a0a8bf8f1dc86cbc3e672c35d8b8b3253a5373d88b9eda6a0d6dabc"
     }
   ]
 }

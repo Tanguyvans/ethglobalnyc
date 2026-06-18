@@ -90,6 +90,9 @@ def main() -> int:
     ap.add_argument("--side", default="yes")
     ap.add_argument("--placed-by", default="claude")
     ap.add_argument("--method", default="auto", choices=["auto", "manual"])
+    ap.add_argument("--execution-layer", default="polygun",
+                    choices=["polygun", "polymarket-clob"],
+                    help="which rail executed the trade")
     ap.add_argument("--event", default=None)
     ap.add_argument("--market-question", default=None)
     ap.add_argument("--outcome", default=None)
@@ -107,7 +110,8 @@ def main() -> int:
     onchain = decode_trade(args.tx_hash)
     rec = {"id": max([t.get("id", 0) for t in trades], default=0) + 1,
            "ts_utc": onchain["ts_utc"], "action": args.action,
-           "placed_by": args.placed_by, "method": args.method}
+           "placed_by": args.placed_by, "method": args.method,
+           "execution_layer": args.execution_layer}
     if args.bet_phase:
         rec["bet_phase"] = args.bet_phase
     if args.event:
