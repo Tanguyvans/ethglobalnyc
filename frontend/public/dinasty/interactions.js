@@ -106,6 +106,12 @@ DN.interactions = (function () {
       if (hit) DN.app.dropFood(hit.point);
       return;
     }
+    if (I.tool === 'found') {
+      ray.setFromCamera(pointer, cam());
+      const hit = ray.intersectObject(DN.world.terrain, false)[0];
+      if (hit) DN.app.createUserColony(hit.point);
+      return;
+    }
     ray.setFromCamera(pointer, cam());
     const hits = ray.intersectObjects(hoverList(), false);
     if (hits.length) {

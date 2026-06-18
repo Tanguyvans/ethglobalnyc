@@ -67,6 +67,21 @@ DN.app = (function () {
       DN.flora.update(dt, el);
       DN.resources.update(dt, el);
       DN.colony.update(dt, el);
+      if (DN.queen && DN.queen.update) DN.queen.update(dt, el);
+      // Live world: broadcast my queen position (throttled inside supa.js)
+      // and tick smoothing for other players' ghost queens.
+      if (DN.supa && DN.supa.ready) {
+        DN.supa.tick(dt);
+        const w = DN.wallet;
+        if (w && w.connected && w.pubkey && DN.queen && DN.queen.has && DN.queen.has()) {
+          const p = DN.queen.position && DN.queen.position();
+          if (p) {
+            const facing = (DN.queen.group && DN.queen.group.rotation) ? DN.queen.group.rotation.y : 0;
+            const accent = (typeof w.accentColor === 'function') ? w.accentColor() : 0xE8C24A;
+            DN.supa.broadcastQueen({ pubkey: w.pubkey, x: p.x, z: p.z, facing, accent });
+          }
+        }
+      }
       DN.ants.update(dt, el, Math.max(0.0001, timeScale));
       DN.trails.update(dt, el);
       if (DN.commsViz && DN.commsViz.update) DN.commsViz.update(dt, el);
@@ -156,6 +171,116 @@ DN.app = (function () {
     if (res) { DN.trails.rebuild(); DN.hud.pushThought('New forage cache detected — nearest foragers rerouting.', 'Forage', '#E8A23D'); }
   };
 
+  // Find the colony currently owned by the connected wallet, if any.
+  App.findMyColony = function () {
+    const w = window.DN && DN.wallet;
+    if (!w || !w.connected || !w.pubkey) return null;
+    return DN.colony.list.find(c => c.owner === w.pubkey) || null;
+  };
+
+  function saveMyColony(pubkey, payload) {
+    // localStorage is the synchronous fallback / offline cache.
+    try { localStorage.setItem('dn:my-colony:' + pubkey, JSON.stringify(payload)); } catch (e) {}
+    // Supabase mirrors it to the live world so other players see it.
+    if (DN.supa && DN.supa.ready) {
+      DN.supa.saveColony({ pubkey, ...payload }).catch(() => {});
+    }
+  }
+  function loadMyColonyLocal(pubkey) {
+    try { return JSON.parse(localStorage.getItem('dn:my-colony:' + pubkey) || 'null'); } catch (e) { return null; }
+  }
+  // Returns a Promise<payload|null>. Prefers Supabase (source of truth),
+  // falls back to the local cache when offline / not configured.
+  async function loadMyColony(pubkey) {
+    if (DN.supa && DN.supa.ready) {
+      const row = await DN.supa.loadMyColony(pubkey).catch(() => null);
+      if (row) {
+        try { localStorage.setItem('dn:my-colony:' + pubkey, JSON.stringify({
+          angle: row.angle, dist: row.dist, accent: Number(row.accent), name: row.name
+        })); } catch (e) {}
+        return { angle: row.angle, dist: row.dist, accent: Number(row.accent), name: row.name };
+      }
+    }
+    return loadMyColonyLocal(pubkey);
+  }
+
+  App.createUserColony = function (worldPos) {
+    const w = window.DN && DN.wallet;
+    if (!(w && w.connected)) {
+      DN.hud.pushThought('Connect your Phantom wallet first to found your colony.', 'Wallet', '#D96E54');
+      return null;
+    }
+    // One colony per wallet. If the user already founded one this
+    // session, jump there instead of placing another.
+    const existing = App.findMyColony();
+    if (existing) {
+      App.selectColony(existing);
+      DN.hud.pushThought('You already have a colony — flying you home.', 'Colony', '#E8A23D');
+      return existing;
+    }
+    const angle = Math.atan2(worldPos.z, worldPos.x);
+    const dist = Math.hypot(worldPos.x, worldPos.z);
+    const accent = (typeof w.accentColor === 'function') ? w.accentColor() : 0xE8A23D;
+    const shortAddr = (typeof w.shortAddress === 'function' && w.shortAddress()) || (w.pubkey ? w.pubkey.slice(0, 4) : 'You');
+    const name = shortAddr + "'s Colony";
+    const col = DN.colony.foundColony({ angle, dist, accent, name, owner: w.pubkey });
+    if (col) {
+      saveMyColony(w.pubkey, { angle, dist, accent, name });
+      App.selectColony(col);
+      DN.hud.pushThought('Your colony was founded by ' + shortAddr + '.', 'Colony', '#' + accent.toString(16).padStart(6, '0'));
+      if (DN.onboarding && DN.onboarding.notifyColonyFounded) DN.onboarding.notifyColonyFounded();
+      if (DN.minimap && DN.minimap.refresh) DN.minimap.refresh();
+    } else {
+      DN.hud.pushThought('Too close to another colony — try a clearer spot.', 'Wallet', '#D96E54');
+    }
+    return col;
+  };
+
+  // Restore a previously-founded colony for the connected wallet, so the
+  // 1-per-wallet rule survives page reloads. Now async because Supabase
+  // is the source of truth (with a localStorage fallback).
+  App.restoreMyColony = async function () {
+    const w = window.DN && DN.wallet;
+    if (!w || !w.connected || !w.pubkey) return null;
+    if (App.findMyColony()) return null;       // already present
+    const saved = await loadMyColony(w.pubkey);
+    if (!saved) return null;
+    const col = DN.colony.foundColony({
+      angle: saved.angle, dist: saved.dist,
+      accent: saved.accent, name: saved.name, owner: w.pubkey
+    });
+    if (col && DN.minimap && DN.minimap.refresh) DN.minimap.refresh();
+    return col;
+  };
+
+  // Materialise a remote player's colony into the local world. Idempotent:
+  // if a colony with that owner already exists, leaves it alone.
+  function applyRemoteColony(row) {
+    if (!row || !row.pubkey) return null;
+    const w = window.DN && DN.wallet;
+    // Skip our own — App.restoreMyColony handles that path.
+    if (w && w.connected && w.pubkey === row.pubkey) return null;
+    const existing = DN.colony.list.find(c => c.owner === row.pubkey);
+    if (existing) return existing;
+    const col = DN.colony.foundColony({
+      angle: row.angle,
+      dist: row.dist,
+      accent: Number(row.accent),
+      name: row.name,
+      owner: row.pubkey,
+    });
+    if (col && DN.minimap && DN.minimap.refresh) DN.minimap.refresh();
+    return col;
+  }
+
+  // Pull every existing colony from Supabase and render the ones that
+  // aren't already on screen. Called once on boot.
+  App.hydrateLiveWorld = async function () {
+    if (!(DN.supa && DN.supa.ready)) return;
+    const rows = await DN.supa.loadColonies().catch(() => []);
+    for (const row of rows) applyRemoteColony(row);
+  };
+
   App.enterColony = function (col) {
     if (App.view !== 'surface') return;
     App.selection = col;
@@ -235,16 +360,42 @@ DN.app = (function () {
     track.addEventListener('pointerup', () => scrub = false);
     document.querySelectorAll('#tools .tool[data-tool]').forEach(t => t.addEventListener('click', () => DN.interactions.setTool(t.dataset.tool)));
     document.getElementById('tool-recenter').addEventListener('click', () => App.setLens(0));
+    // World-map tool: toggle Cinematic <-> Minecraft (explore) view. The
+    // button reflects the current mode by lighting up while in Minecraft.
+    const mapBtn = document.getElementById('tool-map');
+    function syncModeBtn() {
+      if (mapBtn) mapBtn.classList.toggle('active', DN.camera.mode === 'explore');
+    }
+    if (mapBtn) mapBtn.addEventListener('click', () => {
+      App.setCameraMode(DN.camera.mode === 'explore' ? 'cinematic' : 'explore');
+      syncModeBtn();
+    });
+    syncModeBtn();
+    // Keep the button in sync when the mode is changed from elsewhere
+    // (keyboard, lens, escape, etc).
+    const _origSetMode = App.setCameraMode;
+    App.setCameraMode = function (m) { _origSetMode(m); syncModeBtn(); };
     document.querySelectorAll('#cammode .cm').forEach(el => el.addEventListener('click', () => App.setCameraMode(el.dataset.mode)));
     document.getElementById('exitbtn').addEventListener('click', App.exitColony);
 
     addEventListener('keydown', e => {
-      if (e.code === 'Space') { e.preventDefault(); document.getElementById('play-btn').click(); }
+      if (e.code === 'Space') {
+        if (DN.camera && DN.camera.mode === 'explore') return; // camera uses Space to ascend
+        e.preventDefault(); document.getElementById('play-btn').click();
+      }
       else if (e.key >= '1' && e.key <= '6' && App.view === 'surface' && DN.camera.mode !== 'explore') App.setLens(parseInt(e.key) - 1);
       else if (e.key === 'f' || e.key === 'F') DN.interactions.setTool(DN.interactions.tool === 'food' ? 'inspect' : 'food');
       else if (e.key === 'c' || e.key === 'C') App.setCameraMode(DN.camera.mode === 'explore' ? 'cinematic' : 'explore');
       else if (e.key === 'e' || e.key === 'E') { if (App.selection && App.selection.stats) App.enterColony(App.selection); }
-      else if (e.key === 'Escape') { if (App.view === 'underground') App.exitColony(); else if (DN.camera.mode === 'explore') App.setCameraMode('cinematic'); else App.clearSelection(); }
+      else if (e.key === 'm' || e.key === 'M') { if (DN.minimap && DN.minimap.toggle) DN.minimap.toggle(); }
+      else if (e.key === 'v' || e.key === 'V') { App.setCameraMode(DN.camera.mode === 'explore' ? 'cinematic' : 'explore'); }
+      else if (e.key === 'r' || e.key === 'R') { App.setLens(0); }
+      else if (e.key === 'Escape') {
+        if (App.view === 'underground') App.exitColony();
+        else if (DN.minimap && DN.minimap.isOpen && DN.minimap.isOpen()) DN.minimap.close();
+        else if (DN.camera.mode === 'explore') App.setCameraMode('cinematic');
+        else App.clearSelection();
+      }
     });
     addEventListener('resize', () => DN.underground.resize());
   }
@@ -276,7 +427,43 @@ DN.app = (function () {
 
     setTimeout(() => { document.getElementById('intro').classList.add('hide'); DN.camera.flyTo(new THREE.Vector3(0, 4, 0), 300, 165, 2.4); DN.camera.autoRotate(true); }, 900);
     setTimeout(() => { document.getElementById('intro').style.display = 'none'; }, 2100);
+    if (DN.minimap && DN.minimap.init) DN.minimap.init();
+    if (DN.onboarding && DN.onboarding.start) DN.onboarding.start();
+    if (DN.wallet && typeof DN.wallet.onChange === 'function') {
+      DN.wallet.onChange((snap) => {
+        if (snap.connected) {
+          if (DN.supa && DN.supa.setSelf) DN.supa.setSelf(snap.pubkey);
+          App.restoreMyColony().then(() => spawnQueenForWallet());
+        }
+      });
+      if (DN.wallet.connected) {
+        if (DN.supa && DN.supa.setSelf) DN.supa.setSelf(DN.wallet.pubkey);
+        App.restoreMyColony().then(() => spawnQueenForWallet());
+      }
+    }
+    // Live world wiring — independent of wallet (so spectators see colonies
+    // too). Hydrate existing colonies, subscribe to new ones, attach scene
+    // to the ghost-queen renderer.
+    if (DN.supa && DN.supa.attachScene) DN.supa.attachScene(world.scene, THREE);
+    App.hydrateLiveWorld();
+    if (DN.supa && DN.supa.subscribeColonies) {
+      DN.supa.subscribeColonies((row) => applyRemoteColony(row));
+    }
   };
+
+  // Spawn the player's queen avatar at their colony's entrance (or origin
+  // if no colony yet). Uses the wallet's accent for the crown.
+  function spawnQueenForWallet() {
+    if (!DN.queen || !DN.queen.spawn) return;
+    if (DN.queen.has && DN.queen.has()) return;     // already spawned
+    const w = DN.wallet;
+    const accent = (w && typeof w.accentColor === 'function') ? w.accentColor() : 0xE8C24A;
+    DN.queen.spawn(world.scene, accent);
+    const mine = App.findMyColony && App.findMyColony();
+    if (mine && mine.entrance) {
+      DN.queen.moveTo(mine.entrance.x, mine.entrance.z, mine.group ? mine.group.rotation.y + Math.PI : 0);
+    }
+  }
 
   return App;
 })();

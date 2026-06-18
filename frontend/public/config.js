@@ -14,4 +14,14 @@ window.DN_CONFIG = window.DN_CONFIG || {
     HOME_TEAM: 'Brazil',
     AWAY_TEAM: 'Morocco',
   },
+
+  // ---------------- Supabase (live world: colonies + queens) -----------
+  // URL is the public project endpoint. Anon key is a public JWT — safe to
+  // ship to the browser (RLS gates writes). Grab it from Supabase →
+  // Project Settings → API → "anon public". Until you paste it the live
+  // world stays offline and the client falls back to localStorage.
+  SUPABASE_URL: 'https://cpdymkonlzxyzrneclld.supabase.co',
+  // Supabase "publishable" key (new format replacing legacy anon JWT).
+  // Public-safe to ship in the browser; RLS gates writes.
+  SUPABASE_ANON_KEY: 'sb_publishable_C7ox1PLpPISdDzTCbwv_0Q_8pO5-znM',
 };

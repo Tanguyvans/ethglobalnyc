@@ -7,6 +7,30 @@ DN.ants = (function () {
   const P = DN.palette;
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
   function ground(x, z) { return DN.world.heightAt(x, z); }
+  // height a colony mound adds at a world point — a smooth dome rising to the summit,
+  // then a dip into the crater shaft near the centre so ants climb the hill and visibly
+  // drop into the hole at the top instead of clipping through the mound.
+  function moundLift(col, x, z) {
+    if (!col || !col._mR) return 0;
+    const dx = x - col.pos.x, dz = z - col.pos.z;
+    const d = Math.sqrt(dx * dx + dz * dz);
+    if (d >= col._mR) return 0;
+    let h = col._mH * 0.5 * (1 + Math.cos(Math.PI * (d / col._mR)));   // dome
+    const cr = col._mCr;
+    if (cr && d < cr) {                          // inside the rim -> follow the shaft down
+      const f = d / cr;                          // 0 centre .. 1 rim
+      const shaftY = col._mH - (col._mSd || 3) * (1 - f);
+      h = Math.min(h, shaftY);
+    }
+    return h;
+  }
+  // ground height including whichever colony mound an ant is standing on
+  function surf(x, z) {
+    let lift = 0;
+    const list = DN.colony && DN.colony.list;
+    if (list) { for (let i = 0; i < list.length; i++) { const l = moundLift(list[i], x, z); if (l > lift) lift = l; } }
+    return ground(x, z) + lift;
+  }
 
   // ---- shared trail cache: ants travelling between the same (colony,
   // resource) pair ride a single Quadratic Bezier curve. That way many ants
@@ -99,38 +123,96 @@ DN.ants = (function () {
 
   function buildAntGeo(mark) {
     const b = new AntBuilder();
-    const body = P.ant, dark = P.antDark, light = P.antLight;
-    // gaster (abdomen) — tapered teardrop from 3 segments
-    b.box([0.5, 0.5, 0.5], [0, 0.42, -0.34], body);
-    b.box([0.6, 0.58, 0.5], [0, 0.42, -0.66], body);
-    b.box([0.42, 0.42, 0.34], [0, 0.42, -0.98], body);
-    b.box([0.34, 0.26, 0.4], [0, 0.54, -0.6], mark);         // dorsal faction stripe
-    // petiole (waist) + thorax hump
-    b.box([0.18, 0.16, 0.22], [0, 0.4, -0.04], dark);
-    b.box([0.42, 0.4, 0.56], [0, 0.4, 0.18], dark);
-    b.box([0.3, 0.34, 0.32], [0, 0.52, 0.06], dark);
-    // head
-    b.box([0.5, 0.46, 0.44], [0, 0.44, 0.66], dark);
-    b.box([0.1, 0.14, 0.08], [0.2, 0.5, 0.86], 0x0e0e0e);    // eyes
-    b.box([0.1, 0.14, 0.08], [-0.2, 0.5, 0.86], 0x0e0e0e);
-    // mandibles (angled forward)
-    b.box([0.06, 0.07, 0.26], [0.13, 0.36, 0.98], dark, false, null, 0, { axis: 'y', a: 0.32 });
-    b.box([0.06, 0.07, 0.26], [-0.13, 0.36, 0.98], dark, false, null, 0, { axis: 'y', a: -0.32 });
-    // antennae (animated, gentle)
-    b.box([0.05, 0.05, 0.5], [0.13, 0.62, 1.02], light, true, [0.1, 0.58, 0.8], 1.4, { axis: 'x', a: -0.5 });
-    b.box([0.05, 0.05, 0.5], [-0.13, 0.62, 1.02], light, true, [-0.1, 0.58, 0.8], 1.9, { axis: 'x', a: -0.5 });
-    // 6 legs (tripod gait phases)
-    const hipY = 0.34, legZ = [0.34, 0.04, -0.28];
+    // Matte-black warrior-ant palette — body reads as black with a subtle
+    // top-light sheen so anatomy stays legible against the warm world.
+    const body  = 0x0e0e0e; // base
+    const dark  = 0x050505; // shadow / joints
+    const light = 0x242424; // dorsal sheen
+    const sheen = 0x363636; // top crown
+    const eye   = 0x0a0a0a; // compound eyes (slightly distinct from body)
+
+    // ---------------- GASTER (abdomen) ----------------
+    // Tapered teardrop built from layered slabs so the silhouette curves.
+    const gz = -0.45;
+    b.box([0.56, 0.50, 0.32], [0, 0.46, gz + 0.20], body);     // front shoulder
+    b.box([0.66, 0.60, 0.36], [0, 0.48, gz - 0.04], body);     // widest belly
+    b.box([0.62, 0.58, 0.34], [0, 0.46, gz - 0.32], body);
+    b.box([0.50, 0.46, 0.28], [0, 0.42, gz - 0.56], body);
+    b.box([0.34, 0.30, 0.20], [0, 0.38, gz - 0.74], body);
+    b.box([0.18, 0.16, 0.12], [0, 0.36, gz - 0.86], dark);     // tail tip
+    // dorsal sheen + small faction stripe on top (colony identity)
+    b.box([0.32, 0.06, 0.42], [0, 0.74, gz - 0.10], light);
+    b.box([0.16, 0.06, 0.22], [0, 0.78, gz - 0.10], mark);
+
+    // ---------------- PETIOLE & POSTPETIOLE (narrow waist) ----------------
+    b.box([0.10, 0.14, 0.10], [0, 0.42, -0.10], dark);          // petiole node
+    b.box([0.08, 0.18, 0.06], [0, 0.50, -0.10], dark);          // peak
+    b.box([0.12, 0.12, 0.10], [0, 0.40,  0.02], dark);          // postpetiole
+
+    // ---------------- THORAX / MESOSOMA (arched dome) ----------------
+    b.box([0.40, 0.32, 0.50], [0, 0.42, 0.22], body);
+    b.box([0.34, 0.22, 0.46], [0, 0.58, 0.24], body);
+    b.box([0.22, 0.10, 0.36], [0, 0.70, 0.22], light);          // top sheen
+    b.box([0.30, 0.26, 0.18], [0, 0.48, 0.42], body);           // pronotum bulge
+
+    // ---------------- HEAD ----------------
+    b.box([0.52, 0.44, 0.42], [0, 0.46, 0.72], body);           // main head
+    b.box([0.44, 0.20, 0.38], [0, 0.64, 0.72], light);          // top dome
+    b.box([0.34, 0.10, 0.32], [0, 0.72, 0.72], sheen);          // crown
+    b.box([0.46, 0.30, 0.18], [0, 0.40, 0.86], body);           // forward face
+    // compound eyes — large bean shapes angled outward
+    b.box([0.14, 0.18, 0.12], [ 0.24, 0.52, 0.80], eye, false, null, 0, { axis: 'y', a:  0.22 });
+    b.box([0.14, 0.18, 0.12], [-0.24, 0.52, 0.80], eye, false, null, 0, { axis: 'y', a: -0.22 });
+
+    // mandibles — long sickle: 2 angled segments per side curving inward
+    b.box([0.06, 0.08, 0.22], [ 0.14, 0.36, 1.00], dark, false, null, 0, { axis: 'y', a:  0.38 });
+    b.box([0.06, 0.08, 0.18], [ 0.22, 0.36, 1.18], dark, false, null, 0, { axis: 'y', a: -0.42 });
+    b.box([0.06, 0.08, 0.22], [-0.14, 0.36, 1.00], dark, false, null, 0, { axis: 'y', a: -0.38 });
+    b.box([0.06, 0.08, 0.18], [-0.22, 0.36, 1.18], dark, false, null, 0, { axis: 'y', a:  0.42 });
+
+    // antennae — elbowed 3-segment, animated as a unit (shared root+phase)
+    // Right
+    {
+      const r = [0.15, 0.66, 0.84];
+      b.box([0.05, 0.05, 0.34], [ 0.20, 0.74, 1.00], light, true, r, 1.2, { axis: 'x', a: -0.55 }); // scape
+      b.box([0.06, 0.06, 0.06], [ 0.24, 0.84, 1.18], dark,  true, r, 1.2);                          // elbow
+      b.box([0.04, 0.04, 0.30], [ 0.28, 0.86, 1.34], light, true, r, 1.2, { axis: 'x', a:  0.32 }); // flagellum
+      b.box([0.035,0.035,0.10], [ 0.30, 0.80, 1.52], dark,  true, r, 1.2, { axis: 'x', a:  0.50 }); // tip
+    }
+    // Left
+    {
+      const r = [-0.15, 0.66, 0.84];
+      b.box([0.05, 0.05, 0.34], [-0.20, 0.74, 1.00], light, true, r, 2.4, { axis: 'x', a: -0.55 });
+      b.box([0.06, 0.06, 0.06], [-0.24, 0.84, 1.18], dark,  true, r, 2.4);
+      b.box([0.04, 0.04, 0.30], [-0.28, 0.86, 1.34], light, true, r, 2.4, { axis: 'x', a:  0.32 });
+      b.box([0.035,0.035,0.10], [-0.30, 0.80, 1.52], dark,  true, r, 2.4, { axis: 'x', a:  0.50 });
+    }
+
+    // ---------------- LEGS ----------------
+    // 6 legs, tripod gait. Each leg: coxa stub (at body wall) + femur
+    // (horizontal bone spanning from hip OUT to knee) + knee + tibia
+    // (drops vertical to foot) + tarsus foot hook. All segments share
+    // root+phase so the leg-animation shader rotates them as one unit.
+    // Hips sit at the thorax wall (x = ±0.18); knees ~0.40 outboard.
+    const hipY = 0.36, legZ = [0.35, 0.18, -0.02];
     for (let s = 0; s < 2; s++) {
       const sign = s ? -1 : 1;
       for (let i = 0; i < 3; i++) {
-        const hx = 0.22 * sign, hz = legZ[i];
+        const hx = 0.18 * sign, hz = legZ[i];
         const root = [hx, hipY, hz];
         const ph = ((s + i) % 2) * Math.PI;
-        // upper segment angled out
-        b.box([0.06, 0.06, 0.46], [hx + 0.3 * sign, hipY + 0.05, hz], dark, true, root, ph, { axis: 'z', a: sign * 0.7 });
-        // foot segment down to ground
-        b.box([0.05, 0.4, 0.05], [hx + 0.54 * sign, hipY - 0.2, hz], dark, true, root, ph);
+        const kneeX = hx + 0.42 * sign;
+        // coxa — chunky hip joint embedded in the body wall
+        b.box([0.14, 0.14, 0.14], [hx + 0.02 * sign, hipY, hz], dark, true, root, ph);
+        // femur — long horizontal bone from coxa OUT to knee
+        // (length along X so it visibly bridges the body and the leg post)
+        b.box([0.40, 0.07, 0.07], [hx + 0.22 * sign, hipY + 0.04, hz], dark, true, root, ph, { axis: 'z', a: sign * 0.18 });
+        // knee joint
+        b.box([0.09, 0.09, 0.09], [kneeX, hipY + 0.08, hz], dark, true, root, ph);
+        // tibia — drops vertical from knee toward ground
+        b.box([0.06, 0.44, 0.06], [kneeX + 0.02 * sign, hipY - 0.16, hz], dark, true, root, ph, { axis: 'z', a: sign * -0.10 });
+        // tarsus foot — small forward hook resting on ground
+        b.box([0.06, 0.06, 0.12], [kneeX + 0.04 * sign, hipY - 0.40, hz + 0.04], dark, true, root, ph);
       }
     }
     return b.geometry();
@@ -444,7 +526,7 @@ DN.ants = (function () {
         a.deadTimer -= dt;
         const ttl = Math.max(0, a.deadTimer / 2.0);
         const dieScale = a.scale * Math.max(0.18, ttl);
-        const gy = ground(a.x, a.z);
+        const gy = surf(a.x, a.z);
         _p.set(a.x, gy + 0.02, a.z);
         // tip forward as it dies (pitch rotation on X axis)
         _e.set(Math.PI * 0.45 * (1 - ttl), a.yaw, 0);
@@ -487,7 +569,7 @@ DN.ants = (function () {
         a.migT += dt * (a.scriptSpeed || 0.14) * timeScale;
         if (a.migT < 0) {
           // still waiting at parent entrance — render in place
-          const gy = ground(a.x, a.z);
+          const gy = surf(a.x, a.z);
           _p.set(a.x, gy + 0.05, a.z);
           _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
           _s.setScalar(a.scale);
@@ -514,7 +596,7 @@ DN.ants = (function () {
             a.settleLeft = Math.random() * 10;
           }
           // render in place this frame so we don't pop
-          const gy0 = ground(a.x, a.z);
+          const gy0 = surf(a.x, a.z);
           _p.set(a.x, gy0 + 0.05, a.z);
           _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
           _s.setScalar(a.scale);
@@ -533,7 +615,7 @@ DN.ants = (function () {
           while (d > Math.PI) d -= 6.283;
           while (d < -Math.PI) d += 6.283;
           a.yaw += d * Math.min(1, dt * 8);
-          const gy = ground(a.x, a.z);
+          const gy = surf(a.x, a.z);
           _p.set(a.x, gy + 0.05, a.z);
           _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
           _s.setScalar(a.scale);
@@ -564,7 +646,7 @@ DN.ants = (function () {
           a.x -= (dx / d) * 1.5 * dt;
           a.z -= (dz / d) * 1.5 * dt;
         }
-        const gy = ground(a.x, a.z);
+        const gy = surf(a.x, a.z);
         _p.set(a.x, gy + 0.05, a.z);
         _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
         _s.setScalar(a.scale);
@@ -626,7 +708,7 @@ DN.ants = (function () {
       const ty = Math.atan2(_curveTan.x * dirSign, _curveTan.z * dirSign);
       let d = ty - a.yaw; while (d > Math.PI) d -= 6.283; while (d < -Math.PI) d += 6.283;
       a.yaw += d * Math.min(1, dt * 8);
-      const gy = ground(a.x, a.z);
+      const gy = surf(a.x, a.z);
       _p.set(a.x, gy + 0.05, a.z);
       _e.set(0, a.yaw, 0); _q.setFromEuler(_e);
       _s.setScalar(a.scale);
@@ -655,7 +737,7 @@ DN.ants = (function () {
     // selection glow follows the currently inspected ant
     if (A.selectedAnt && A.selectionGlow) {
       const a = A.selectedAnt;
-      const gy = ground(a.x, a.z);
+      const gy = surf(a.x, a.z);
       A.selectionGlow.position.set(a.x, gy + 1.4, a.z);
       // pulse opacity for visibility
       A.selectionGlow.material.opacity = 0.65 + Math.sin(elapsed * 5) * 0.2;
@@ -680,7 +762,7 @@ DN.ants = (function () {
           continue;
         }
         const c = OUTCOME_COLOR[a.outcome] || OUTCOME_COLOR.pending;
-        const gy = ground(a.x, a.z);
+        const gy = surf(a.x, a.z);
         pos[i * 3]     = a.x;
         pos[i * 3 + 1] = gy + 1.6;
         pos[i * 3 + 2] = a.z;
@@ -826,7 +908,7 @@ DN.ants = (function () {
     if (ci === undefined) return null;
     return A.list.find(a => a.ci === ci && a.inst === instanceId) || null;
   };
-  A.heroPos = function (a) { return new THREE.Vector3(a.wx || a.x, (a.wy || ground(a.x, a.z)) + 1, a.wz || a.z); };
+  A.heroPos = function (a) { return new THREE.Vector3(a.wx || a.x, (a.wy || surf(a.x, a.z)) + 1, a.wz || a.z); };
 
   return A;
 })();

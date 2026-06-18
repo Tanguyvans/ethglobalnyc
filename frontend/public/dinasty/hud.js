@@ -43,6 +43,7 @@ DN.hud = (function () {
       `<div class="reg${i === 0 ? ' active' : ''}" data-i="${i}"><span class="reg-dot" style="background:${hex(b.ground.grass)};color:${hex(b.ground.grass)}"></span><div class="reg-tx"><div class="reg-name">${b.name}</div><div class="reg-tag">${b.tag}</div></div></div>`).join('');
     $('regions').querySelectorAll('.reg').forEach(el => el.addEventListener('click', () => DN.app.setBiome(parseInt(el.dataset.i))));
     initBackendControl();
+    initWalletControl();
     H.clearInspector();
     // MVP polish: strip every persistent HUD chrome element except the
     // backend pill (Run button), exit-banner, and the bottom log
@@ -50,7 +51,7 @@ DN.hud = (function () {
     // NOTE: do NOT include `inspector` here — CSS hides it by default
     // and `.has-content` (added by H.showAnt / H.showColony) shows it.
     // Forcing inline display:none here would beat that toggle.
-    ['hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'keys', 'regions', 'brand', 'stats'].forEach(id => {
+    ['hotbar', 'transport', 'thoughts', 'cammode', 'keys', 'regions', 'brand', 'stats'].forEach(id => {
       const el = $(id); if (el) el.style.display = 'none';
     });
     return H;
@@ -936,6 +937,81 @@ DN.hud = (function () {
     });
   }
 
+  function initWalletControl() {
+    const root = $('wallet');
+    if (!root) return;
+    const w = DN.wallet;
+    if (!w) {
+      root.style.display = 'none';
+      return;
+    }
+
+    function render() {
+      if (!w.installed) {
+        root.innerHTML =
+          '<div class="wallet-copy"><div class="wallet-k">Wallet</div>' +
+          '<div class="wallet-s">Phantom not detected</div></div>' +
+          '<a class="wallet-btn" id="wallet-install" href="https://phantom.app/" target="_blank" rel="noopener noreferrer">Get Phantom</a>';
+        return;
+      }
+      if (!w.connected) {
+        root.innerHTML =
+          '<div class="wallet-copy"><div class="wallet-k">Wallet</div>' +
+          '<div class="wallet-s">Phantom ready</div></div>' +
+          '<button class="wallet-btn" id="wallet-connect" type="button">Connect Wallet</button>';
+        const btn = $('wallet-connect');
+        if (btn) btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          btn.textContent = 'Connecting…';
+          try {
+            await w.connect();
+            H.pushThought('Wallet connected: ' + w.shortAddress(), 'Wallet', '#3FA89F');
+          } catch (err) {
+            const msg = (err && err.message) || String(err);
+            H.pushThought('Wallet connect failed: ' + msg, 'Wallet', '#D96E54');
+            btn.disabled = false;
+            btn.textContent = 'Connect Wallet';
+          }
+        });
+        return;
+      }
+      // connected
+      const addr = esc(w.shortAddress());
+      root.innerHTML =
+        '<div class="wallet-copy"><div class="wallet-k">Wallet</div>' +
+        '<div class="wallet-connected">' +
+          '<button class="wallet-addr" id="wallet-addr" type="button" title="Copy full address">' + addr + '</button>' +
+          '<span class="wallet-badge">Testnet</span>' +
+        '</div></div>' +
+        '<button class="wallet-btn secondary" id="wallet-disconnect" type="button" title="Disconnect wallet">Disconnect</button>';
+      const addrBtn = $('wallet-addr');
+      if (addrBtn) addrBtn.addEventListener('click', async () => {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(w.pubkey);
+          }
+          H.pushThought('Address copied: ' + w.shortAddress(), 'Wallet', '#3FA89F');
+        } catch (err) {
+          H.pushThought('Copy failed: ' + ((err && err.message) || err), 'Wallet', '#D96E54');
+        }
+      });
+      const offBtn = $('wallet-disconnect');
+      if (offBtn) offBtn.addEventListener('click', async () => {
+        offBtn.disabled = true;
+        try {
+          await w.disconnect();
+          H.pushThought('Wallet disconnected.', 'Wallet', '#8C7E60');
+        } catch (err) {
+          H.pushThought('Disconnect failed: ' + ((err && err.message) || err), 'Wallet', '#D96E54');
+          offBtn.disabled = false;
+        }
+      });
+    }
+
+    render();
+    w.onChange(render);
+  }
+
   H.setActiveBiome = function (i) {
     $('regions').querySelectorAll('.reg').forEach(el => el.classList.toggle('active', parseInt(el.dataset.i) === i));
   };
@@ -1370,7 +1446,7 @@ DN.hud = (function () {
     const back = $('backend'); if (back) back.style.display = on ? 'none' : '';
     // Belt-and-braces: ensure the rest stays hidden in both modes.
     // Inspector is excluded — its visibility is class-driven.
-    ['stats', 'hotbar', 'tools', 'transport', 'thoughts', 'cammode', 'brand', 'regions', 'enterbanner', 'keys'].forEach(id => {
+    ['stats', 'hotbar', 'transport', 'thoughts', 'cammode', 'brand', 'regions', 'enterbanner', 'keys'].forEach(id => {
       const el = $(id); if (el) el.style.display = 'none';
     });
     if (H._ugRoot) H._ugRoot.style.display = 'none';

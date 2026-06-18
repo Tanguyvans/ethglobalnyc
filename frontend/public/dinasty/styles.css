@@ -73,9 +73,9 @@ body.underground #atmos {
 
 /* ---------- backend run test ---------- */
 #backend {
-  position: absolute; top: 24px; right: 24px; width: min(360px, calc(100vw - 48px));
-  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
-  padding: 8px 10px 10px 12px;
+  position: absolute; top: 14px; right: 14px; width: min(304px, calc(100vw - 28px));
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  padding: 6px 8px 8px 10px;
 }
 .backend-copy { min-width: 0; }
 .backend-k { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-faint); font-weight: 650; }
@@ -278,7 +278,10 @@ body.underground #atmos {
 .reg-tag { font-size: 10px; color: var(--ink-faint); margin-top: 1px; }
 
 /* ---------- inspector (right) ---------- */
-#inspector { display: none; position: absolute; top: 276px; right: 24px; width: 300px; padding: 18px; max-height: calc(100vh - 414px); overflow-y: auto; flex-direction: column; }
+/* Inspector docks in the tight right column under wallet, and STOPS above
+   the minimap. Bottom anchor prevents the long colony panel from extending
+   into the minimap region. */
+#inspector { display: none; position: absolute; top: 226px; right: 14px; width: 304px; padding: 12px 14px; bottom: 268px; max-height: none; overflow-y: auto; flex-direction: column; }
 #inspector.has-content { display: flex; }
 #inspector::-webkit-scrollbar { width: 0; }
 .insp-empty { color: var(--ink-faint); font-size: 12.5px; line-height: 1.65; }
@@ -371,14 +374,95 @@ body.underground #atmos {
 .slot.active .sl-name { color: var(--gold); }
 .slot .sl-key { position: absolute; top: 4px; right: 6px; font-size: 8px; font-family: var(--mono); color: var(--ink-faint); }
 
-/* ---------- left tool rail ---------- */
-#tools { position: absolute; bottom: 22px; left: 24px; display: flex; flex-direction: column; gap: 7px; padding: 7px; }
-.tool { width: 44px; height: 44px; border-radius: 4px; cursor: pointer; display: grid; place-items: center; position: relative; border: 1px solid transparent; transition: all .18s; }
-.tool:hover { background: rgba(74,58,30,0.08); }
-.tool.active { background: var(--gold); }
-.tool svg { width: 19px; height: 19px; stroke: var(--ink-soft); fill: none; stroke-width: 1.6; }
-.tool.active svg { stroke: #2a1d08; }
-.tool .tip { position: absolute; left: 54px; top: 50%; transform: translateY(-50%); background: var(--panel-strong); border: 1px solid var(--border);
+/* ---------- bottom-center pixel tool rail (3D, chunky) ---------- */
+#tools {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: row; gap: 8px;
+  padding: 8px 10px;
+  z-index: 6;
+  background:
+    linear-gradient(180deg, rgba(255, 231, 168, 0.55) 0%, rgba(255, 231, 168, 0) 22%),
+    linear-gradient(180deg, #F1E3B6 0%, #D9C285 100%);
+  border: 2px solid #4A3308;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 244, 200, 0.85),
+    inset 0 -3px 0 rgba(100, 70, 18, 0.45),
+    inset 2px 0 0 rgba(255, 244, 200, 0.35),
+    inset -2px 0 0 rgba(100, 70, 18, 0.35),
+    4px 4px 0 rgba(40, 26, 6, 0.55),
+    0 14px 38px -18px rgba(40, 26, 6, 0.7);
+}
+.tool {
+  width: 48px; height: 48px; border-radius: 4px;
+  cursor: pointer; display: grid; place-items: center; position: relative;
+  background: linear-gradient(180deg, #FFF1C6 0%, #E5C480 100%);
+  border: 2px solid #4A3308;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 252, 224, 0.95),
+    inset 0 -3px 0 rgba(120, 84, 24, 0.55),
+    inset 2px 0 0 rgba(255, 252, 224, 0.45),
+    inset -2px 0 0 rgba(120, 84, 24, 0.45),
+    2px 3px 0 rgba(40, 26, 6, 0.55);
+  transition: transform .1s ease, box-shadow .1s ease, filter .14s ease;
+  image-rendering: pixelated;
+}
+.tool:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 252, 224, 0.95),
+    inset 0 -3px 0 rgba(120, 84, 24, 0.55),
+    inset 2px 0 0 rgba(255, 252, 224, 0.45),
+    inset -2px 0 0 rgba(120, 84, 24, 0.45),
+    3px 4px 0 rgba(40, 26, 6, 0.6);
+}
+.tool:active, .tool.active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #E0A828 0%, #B07E1C 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 232, 160, 0.85),
+    inset 0 -3px 0 rgba(60, 36, 4, 0.65),
+    inset 2px 0 0 rgba(255, 232, 160, 0.35),
+    inset -2px 0 0 rgba(60, 36, 4, 0.35),
+    1px 1px 0 rgba(40, 26, 6, 0.55);
+}
+.tool svg {
+  width: 22px; height: 22px;
+  stroke: #2a1d08; fill: none; stroke-width: 2;
+  stroke-linecap: square; stroke-linejoin: miter;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(1px 1px 0 rgba(255, 252, 224, 0.7));
+}
+.tool.active svg { filter: drop-shadow(1px 1px 0 rgba(255, 232, 160, 0.65)); }
+.tool .tip {
+  position: absolute; left: 50%; bottom: calc(100% + 9px);
+  transform: translateX(-50%);
+  background: #2C2820; color: #FFE7A8;
+  border: 2px solid #4A3308;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 5px 9px; white-space: nowrap;
+  border-radius: 3px;
+  box-shadow: 2px 2px 0 rgba(40, 26, 6, 0.55);
+  opacity: 0; pointer-events: none;
+  transition: opacity .14s ease;
+}
+.tool .tip b { font-family: var(--mono); color: #FFD78A; }
+.tool .tip::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #2C2820;
+}
+.tool:hover .tip { opacity: 1; }
+
+/* Stub keeps the original ".tool .tip" rule selector pattern below from
+   wiping out anything that depended on it. The :left rule was specific to
+   the old vertical rail and is now neutralised by the bottom-rail rules. */
+.tool .tip-legacy { position: absolute; left: 54px; top: 50%; transform: translateY(-50%); background: var(--panel-strong); border: 1px solid var(--border);
   color: var(--ink); font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: 9px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .16s; box-shadow: var(--shadow); }
 .tool .tip b { font-family: var(--mono); color: var(--gold); }
 .tool:hover .tip { opacity: 1; }
@@ -461,18 +545,22 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
 #intro p { font-size: 13px; color: var(--ink-faint); margin-top: 8px; letter-spacing: 0.04em; }
 
 @media (max-width: 1180px) {
-  #backend { width: min(220px, calc(100vw - 48px)); }
+  #backend { width: min(264px, calc(100vw - 28px)); }
+  #wallet  { width: min(264px, calc(100vw - 28px)); }
   #runs-page { width: min(560px, calc(100vw - 300px)); }
   .backend-btn { font-size: 10px; padding: 7px 8px; }
   .forecast-select { min-width: 88px; font-size: 10px; }
   .forecast-game-select { font-size: 10px; }
-  #inspector { top: 316px; width: 270px; max-height: calc(100vh - 454px); }
+  /* Keep the same top/bottom anchor strategy: inspector lives in the gap
+     between the wallet panel and the minimap, never overflows into either. */
+  #inspector { top: 226px; right: 14px; width: 264px; bottom: 268px; max-height: none; }
   .stat { min-width: 72px; padding: 5px 11px; }
 }
 
 @media (max-width: 900px) {
   #stats { display: none; }
-  #backend { top: 84px; }
+  #backend { top: 14px; }
+  #inspector { top: 296px; bottom: 268px; }
   #runs-page {
     top: 250px;
     left: 16px;
@@ -487,3 +575,352 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
   .run-row-actions { flex-direction: row; }
   .run-row-actions .backend-btn { flex: 1; }
 }
+
+/* ---------- found-colony tool button (wallet-gated user placement) ---------- */
+.tool[data-tool="found"]:hover { background: rgba(74,58,30,0.08); }
+.tool[data-tool="found"].active { background: var(--gold); }
+.tool[data-tool="found"].active svg { stroke: #2a1d08; }
+
+/* ---------- onboarding coachmark overlay ---------- */
+#onboarding {
+  position: fixed; inset: 0; z-index: 80; pointer-events: none;
+  font-family: var(--font);
+  background: transparent;
+  opacity: 1; transition: opacity .45s ease, background .35s ease;
+}
+/* `ob-dim` adds the cinematic vignette — only while a centered card is
+   on screen (steps 1 & 3). For corner-pointed steps we leave the world
+   un-dimmed so the tool the user is meant to click stays readable. */
+#onboarding.ob-dim {
+  background:
+    radial-gradient(80% 60% at 50% 50%, rgba(20, 14, 6, 0) 0%, rgba(20, 14, 6, 0.55) 70%, rgba(10, 6, 2, 0.78) 100%);
+}
+#onboarding.hide { opacity: 0; }
+
+/* soft halo on the focused target */
+.ob-spotlight {
+  position: absolute; border-radius: 50%;
+  background:
+    radial-gradient(closest-side, rgba(255, 231, 168, 0.18) 0%, rgba(255, 231, 168, 0.06) 55%, rgba(255, 231, 168, 0) 100%);
+  filter: blur(2px);
+  opacity: 0; transform: scale(0.6); pointer-events: none;
+  transition: opacity .35s ease, transform .55s cubic-bezier(.2,.9,.25,1.2), left .45s ease, top .45s ease, width .45s ease, height .45s ease;
+}
+.ob-spotlight.show { opacity: 1; transform: scale(1); }
+.ob-spotlight::after {
+  content: ""; position: absolute; inset: 22%; border-radius: 50%;
+  border: 2px dashed rgba(255, 231, 168, 0.55);
+  animation: ob-spin 7s linear infinite;
+}
+@keyframes ob-spin { to { transform: rotate(360deg); } }
+
+/* arrow pointer — gold gradient, dropshadow, gently bobs */
+.ob-pointer {
+  position: absolute; width: 64px; height: 64px;
+  transform: translate(-50%, -50%);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease, left .45s cubic-bezier(.2,.9,.25,1.2), top .45s cubic-bezier(.2,.9,.25,1.2);
+  filter: drop-shadow(3px 4px 0 rgba(54, 40, 18, 0.55)) drop-shadow(0 0 16px rgba(255, 220, 150, 0.45));
+}
+.ob-pointer.show { opacity: 1; }
+.ob-pointer svg { width: 100%; height: 100%; display: block; }
+/* `ob-from-<side>` = which side of the target the pointer sits on, so
+   the arrow tip points back toward the target. Base SVG points UP. */
+.ob-pointer.ob-from-right  svg { animation: ob-bob-from-right  1.2s ease-in-out infinite; }
+.ob-pointer.ob-from-left   svg { animation: ob-bob-from-left   1.2s ease-in-out infinite; }
+.ob-pointer.ob-from-top    svg { animation: ob-bob-from-top    1.2s ease-in-out infinite; }
+.ob-pointer.ob-from-bottom svg { animation: ob-bob-from-bottom 1.2s ease-in-out infinite; }
+@keyframes ob-bob-from-right  { 0%,100% { transform: rotate(-90deg) translateY(0); } 50% { transform: rotate(-90deg) translateY(10px); } }
+@keyframes ob-bob-from-left   { 0%,100% { transform: rotate( 90deg) translateY(0); } 50% { transform: rotate( 90deg) translateY(10px); } }
+@keyframes ob-bob-from-top    { 0%,100% { transform: rotate(180deg) translateY(0); } 50% { transform: rotate(180deg) translateY(8px);  } }
+@keyframes ob-bob-from-bottom { 0%,100% { transform: rotate(  0deg) translateY(0); } 50% { transform: rotate(  0deg) translateY(8px);  } }
+
+/* card — sunlit parchment with the pixel-shadow signature */
+.ob-card {
+  position: absolute; pointer-events: auto;
+  width: min(420px, calc(100vw - 48px));
+  padding: 22px 22px 18px;
+  background: var(--panel-strong);
+  border: 2px solid var(--border-strong);
+  border-radius: 7px;
+  box-shadow:
+    4px 4px 0 rgba(74, 58, 30, 0.35),
+    0 22px 60px -22px rgba(54, 40, 18, 0.55),
+    0 0 0 1px rgba(255, 231, 168, 0.35) inset;
+  opacity: 0; transform: translateY(10px) scale(.985);
+  transition: opacity .42s ease, transform .42s cubic-bezier(.2,.9,.25,1.2);
+}
+.ob-card.show { opacity: 1; transform: translateY(0) scale(1); }
+.ob-card.ob-pos-center { left: 50%; top: 50%; transform: translate(-50%, -50%) translateY(10px) scale(.985); }
+.ob-card.ob-pos-center.show { transform: translate(-50%, -50%) scale(1); }
+.ob-card.ob-pos-bottomleft { left: 22px; bottom: 22px; }
+.ob-card.ob-pos-topright   { right: 22px; top: 22px; }
+
+.ob-card::before {
+  content: ""; position: absolute; inset: 0; border-radius: 7px; pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 231, 168, 0.30) 0%, rgba(255, 231, 168, 0) 50%),
+    radial-gradient(120% 80% at 100% 100%, rgba(176, 126, 28, 0.18) 0%, rgba(176, 126, 28, 0) 55%);
+  mix-blend-mode: overlay;
+}
+
+.ob-step {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gold-deep);
+  display: inline-block; padding: 4px 9px; border-radius: 999px;
+  background: rgba(176, 126, 28, 0.16);
+  border: 1px solid rgba(176, 126, 28, 0.4);
+  margin-bottom: 11px;
+}
+.ob-card h2 {
+  font-family: var(--display); font-size: 18px; line-height: 1.35;
+  color: var(--ink); margin: 0 0 10px;
+  text-shadow: var(--pixel-shadow);
+}
+.ob-card p {
+  font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 16px;
+}
+.ob-card p b {
+  color: var(--gold-deep);
+  background: linear-gradient(180deg, transparent 62%, rgba(255, 220, 150, 0.55) 62%);
+  padding: 0 2px;
+}
+
+.ob-actions { display: flex; gap: 10px; align-items: center; }
+.ob-card button {
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  padding: 9px 14px; border-radius: 5px; cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .18s ease;
+}
+.ob-card .ob-next {
+  background: linear-gradient(180deg, #E8C24A 0%, #B07E1C 100%);
+  color: #2C2820;
+  border: 2px solid #6B4710;
+  box-shadow: 3px 3px 0 rgba(74, 58, 30, 0.45);
+}
+.ob-card .ob-next:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 rgba(74, 58, 30, 0.55); }
+.ob-card .ob-next:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(74, 58, 30, 0.45); }
+.ob-card .ob-skip {
+  background: transparent;
+  color: var(--ink-faint);
+  border: 2px solid transparent;
+}
+.ob-card .ob-skip:hover { color: var(--ink-soft); }
+
+.ob-dots {
+  display: flex; gap: 6px; margin-top: 12px; justify-content: flex-end;
+}
+.ob-dots span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(74, 58, 30, 0.22);
+  transition: background .25s ease, transform .25s ease;
+}
+.ob-dots span.active {
+  background: var(--gold);
+  transform: scale(1.25);
+  box-shadow: 0 0 8px rgba(255, 220, 150, 0.7);
+}
+
+@media (max-width: 720px) {
+  .ob-card.ob-pos-bottomleft { left: 12px; right: 12px; bottom: 12px; width: auto; }
+  .ob-pointer { width: 48px; height: 48px; }
+}
+
+/* ---------- phantom wallet panel ---------- */
+/* Docks directly below the backend panel so the top-right column is one
+   tight stack instead of two competing panels — gives the 3D viewport
+   the whole right half of the screen back. */
+#wallet {
+  position: absolute; top: 14px; right: 14px;
+  /* approximate y offset = backend panel height (~96px) + 8px gap */
+  margin-top: 104px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px 8px 10px;
+  width: min(304px, calc(100vw - 28px));
+}
+.wallet-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wallet-k { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-faint); font-weight: 650; }
+.wallet-s { font-size: 11px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wallet-connected { display: flex; align-items: center; gap: 6px; }
+.wallet-addr {
+  font: 700 12px var(--mono); color: var(--ink); background: var(--slot);
+  border: 1px solid var(--border-strong); border-radius: 4px;
+  padding: 4px 7px; cursor: pointer; letter-spacing: 0.02em;
+}
+.wallet-addr:hover { background: var(--panel-strong); color: var(--gold-deep); }
+.wallet-badge {
+  font: 700 9px var(--font); letter-spacing: 0.13em; text-transform: uppercase;
+  color: #2a1d08; background: var(--gold); border: 1px solid var(--gold-deep);
+  border-radius: 3px; padding: 2px 5px;
+}
+.wallet-btn {
+  border: 1px solid var(--gold-deep); border-radius: 4px; background: var(--gold); color: #2a1d08;
+  font: 700 11px var(--font); padding: 7px 9px; cursor: pointer; white-space: nowrap;
+  text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+}
+.wallet-btn.secondary { background: var(--slot); color: var(--ink); border-color: var(--border-strong); }
+.wallet-btn:disabled { opacity: 0.58; cursor: wait; }
+.wallet-btn:hover:not(:disabled) { filter: brightness(1.04); }
+
+@media (max-width: 900px) {
+  #wallet { top: 14px; right: 14px; margin-top: 168px; }
+}
+
+/* ---------- minimap / compass ---------- */
+#minimap {
+  position: fixed; right: 14px; bottom: 110px; z-index: 7;
+  padding: 8px 9px 7px;
+  width: 196px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--panel-strong);
+  box-shadow:
+    4px 4px 0 rgba(74, 58, 30, 0.35),
+    0 18px 50px -22px rgba(54, 40, 18, 0.55);
+  font-family: var(--font);
+  user-select: none;
+  opacity: 0;
+  transform: translateY(8px) scale(.96);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity .28s ease, transform .28s cubic-bezier(.2,.9,.25,1.2), visibility .28s linear;
+}
+#minimap.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
+.mm-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 7px;
+}
+.mm-title {
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--gold-deep);
+}
+#mm-locate {
+  font-family: var(--font); font-size: 11px; font-weight: 600;
+  padding: 4px 9px;
+  background: linear-gradient(180deg, #E8C24A 0%, #B07E1C 100%);
+  color: #2C2820;
+  border: 1.5px solid #6B4710;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 rgba(74, 58, 30, 0.45);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .18s ease, filter .18s ease;
+}
+#mm-locate:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 rgba(74, 58, 30, 0.5); }
+#mm-locate:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(74, 58, 30, 0.45); }
+#mm-locate:disabled {
+  cursor: not-allowed; opacity: 0.45; filter: grayscale(0.6);
+  box-shadow: 1px 1px 0 rgba(74, 58, 30, 0.25);
+}
+.mm-canvas-wrap {
+  position: relative;
+  border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border-strong);
+  background: #1c1206;
+}
+#mm-canvas { display: block; width: 200px; height: 200px; }
+.mm-legend {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+  color: rgba(255, 220, 150, 0.85);
+  padding: 5px 7px 4px;
+  background: rgba(20, 12, 4, 0.7);
+  border-top: 1px solid rgba(232, 197, 138, 0.18);
+}
+.mm-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  border: 1px solid #2a1d08; vertical-align: middle;
+}
+.mm-dot-mine  { background: #FFD78A; box-shadow: 0 0 6px rgba(255, 220, 150, 0.7); }
+.mm-dot-other { background: #B07E1C; }
+
+@media (max-width: 720px) {
+  #minimap { width: 168px; }
+  #mm-canvas { width: 150px; height: 150px; }
+}
+
+/* ============================================================================
+   TOOLBAR-STYLE UI — give every box & button the chunky beveled control-panel
+   look of the bottom tool rail (warm theme, original fonts). Plus a wallet
+   connect that stays present on every screen. Appended; later rules win.
+   ============================================================================ */
+
+/* --- every .panel becomes a framed, raised control-panel module --- */
+.panel {
+  border: 2px solid var(--gold-deep);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 252, 224, 0.85),
+    inset 0 -4px 0 rgba(120, 84, 24, 0.30),
+    inset 2px 0 0 rgba(255, 250, 230, 0.45),
+    inset -2px 0 0 rgba(120, 84, 24, 0.30),
+    3px 4px 0 rgba(40, 26, 6, 0.45),
+    0 10px 20px -12px rgba(40, 26, 6, 0.55);
+}
+
+/* --- shared chunky beveled button face (mirrors .tool) --- */
+.backend-btn, .wallet-btn, .speed, .cm, .play-btn, #exitbtn,
+.forecast-select, .forecast-game-select {
+  border: 2px solid var(--gold-deep);
+  border-radius: 5px;
+  background: linear-gradient(180deg, #F6ECCB 0%, #E7D7AE 100%);
+  color: #2a1d08;
+  font-family: var(--font); font-weight: 700;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 252, 224, 0.95),
+    inset 0 -3px 0 rgba(120, 84, 24, 0.45),
+    inset 2px 0 0 rgba(255, 252, 224, 0.40),
+    inset -2px 0 0 rgba(120, 84, 24, 0.40),
+    2px 3px 0 rgba(40, 26, 6, 0.50);
+  transition: transform .1s ease, box-shadow .1s ease, filter .14s ease;
+}
+.backend-btn:hover, .wallet-btn:hover:not(:disabled), .speed:hover, .cm:hover,
+.play-btn:hover, #exitbtn:hover, .forecast-select:hover, .forecast-game-select:hover {
+  filter: brightness(1.06); transform: translateY(-1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 252, 224, 0.95),
+    inset 0 -3px 0 rgba(120, 84, 24, 0.55),
+    inset 2px 0 0 rgba(255, 252, 224, 0.45),
+    inset -2px 0 0 rgba(120, 84, 24, 0.45),
+    3px 4px 0 rgba(40, 26, 6, 0.55);
+}
+/* pressed + active (selected speed / cam mode / primary CTA) -> gold key */
+.backend-btn:active, .wallet-btn:active, .speed:active, .cm:active, .play-btn:active,
+#exitbtn:active, .speed.active, .cm.active, .wallet-btn:not(.secondary) {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #E0A828 0%, #B07E1C 100%);
+  color: #2a1d08;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 232, 160, 0.85),
+    inset 0 -3px 0 rgba(60, 36, 4, 0.65),
+    inset 2px 0 0 rgba(255, 232, 160, 0.35),
+    inset -2px 0 0 rgba(60, 36, 4, 0.35),
+    1px 1px 0 rgba(40, 26, 6, 0.55);
+}
+.wallet-btn:not(.secondary) { transform: none; }     /* don't keep the CTA pressed-down */
+.wallet-btn:not(.secondary):hover { transform: translateY(-1px); }
+.play-btn svg { fill: #2a1d08; }
+.cm svg { stroke: #2a1d08; }
+.cm.active svg, .speed.active { color: #2a1d08; }
+
+/* --- WALLET CONNECT: present on every screen, above every overlay --- */
+#wallet {
+  position: fixed; top: 14px; right: 14px; z-index: 60; pointer-events: auto;
+  /* clear the taller backend panel above it (beveled buttons + fixture dropdown) */
+  margin-top: 232px;
+}
+@media (max-width: 900px) { #wallet { margin-top: 232px; } }
+/* never dimmed/hidden by view-change rules */
+body.underground #wallet,
+body.explore-mode #wallet { opacity: 1 !important; pointer-events: auto !important; }
+.wallet-addr {
+  background: linear-gradient(180deg, #F6ECCB 0%, #E7D7AE 100%);
+  border: 2px solid var(--gold-deep); color: #2a1d08;
+  box-shadow: inset 0 1px 0 rgba(255,252,224,.9), 1px 2px 0 rgba(40,26,6,.45);
+}
+.wallet-badge { border: 2px solid var(--gold-deep); }

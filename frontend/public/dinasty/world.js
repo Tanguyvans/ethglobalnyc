@@ -81,8 +81,11 @@ DN.world = (function () {
     // keeps the surround green so the finite terrain never reveals a white void.
     scene.fog = null;
 
-    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 8000);
-    camera.position.set(40, 14, 70);
+    // Wider FOV (was 60) makes the basin feel expansive — the world reads
+    // as a big map instead of a cropped diorama. Camera pulled back a touch
+    // for the same reason.
+    const camera = new THREE.PerspectiveCamera(74, innerWidth / innerHeight, 0.1, 8000);
+    camera.position.set(46, 18, 82);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(1);

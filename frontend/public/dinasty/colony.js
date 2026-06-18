@@ -20,30 +20,135 @@ DN.colony = (function () {
     { angle: 5.9,  dist: 96 }
   ];
 
+  // Smooth low-poly ant-hill. The body is a single revolved profile (LatheGeometry)
+  // so it gets one clean convex silhouette with an upturned crater rim sculpted in —
+  // no terraced seams — and is shaded with a height-based dirt gradient (the trick
+  // flora.js uses on trees). Returns a vertex-colored BufferGeometry that
+  // DN.util.voxelMat (vertexColors + flatShading) renders directly.
   function buildMound(accent, seed) {
-    const b = new DN.util.VoxelBuilder();
     const rng = (function (a) { return function () { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })(seed);
-    // stacked tapering rings of dirt blocks -> rounded mound
-    const layers = 6;
-    for (let l = 0; l < layers; l++) {
-      const t = l / layers;
-      const R = 7.5 * (1 - t * 0.85);
-      const y = l * 1.0;
-      const blocks = Math.max(4, Math.round(R * 2.4));
-      for (let i = 0; i < blocks; i++) {
-        const a = (i / blocks) * 6.28 + l * 0.4;
-        const rr = R + (rng() - 0.5) * 0.8;
-        const bx = Math.cos(a) * rr, bz = Math.sin(a) * rr;
-        const s = 1.5 + rng() * 0.8;
-        b.box([s, 1.3, s], [bx, y + 0.5, bz], rng() < 0.3 ? P.dirtDark : P.dirt);
+    const soil = new THREE.Color(P.dirt), soilDark = new THREE.Color(P.dirtDark);
+    const soilLight = new THREE.Color(0x9C7A45), hole = new THREE.Color(0x231708);
+    const greens = [0x5A7A2E, 0x6B8A37, 0x46602A];
+    const SEG = 16;                 // radial facets — low-poly but smooth-reading
+    const tc = new THREE.Color();   // scratch color reused by gradient fns
+
+    const T = function (x, y, z, sx, sy, sz, ry) {
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry || 0, 0));
+      m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(sx, sy == null ? sx : sy, sz == null ? sx : sz));
+      return m;
+    };
+    const parts = [];
+    // color may be a hex/THREE.Color (flat) or a fn(y, r) -> THREE.Color (per-vertex)
+    const add = function (geo, matrix, color) { parts.push({ geo: geo, matrix: matrix, color: color }); };
+    const j = function (s) { return 1 + (rng() - 0.5) * s; };
+    const V2 = function (x, y) { return new THREE.Vector2(x, y); };
+
+    // --- mound body: one revolved convex profile, base -> dome -> upturned crater rim ---
+    const H = 6.2 * j(0.08);        // peak height (rim crest), slight per-colony variance
+    const W = 7.7 * j(0.05);        // base radius
+    const bodyPts = [
+      V2(W,        0.00 * H),
+      V2(W * 0.94, 0.11 * H),
+      V2(W * 0.82, 0.27 * H),
+      V2(W * 0.68, 0.45 * H),
+      V2(W * 0.54, 0.62 * H),
+      V2(W * 0.42, 0.77 * H),
+      V2(W * 0.35, 0.89 * H),
+      V2(W * 0.37, 0.965 * H),      // rim flares slightly outward -> raised lip
+      V2(W * 0.32, 1.00 * H)        // rim crest
+    ];
+    const bodyCol = function (y) {
+      const t = Math.max(0, Math.min(1, y / H));
+      if (t < 0.55) tc.copy(soilDark).lerp(soil, t / 0.55);
+      else tc.copy(soil).lerp(soilLight, (t - 0.55) / 0.45);
+      return tc;
+    };
+    add(new THREE.LatheGeometry(bodyPts, SEG), T(0, 0, 0, 1, 1, 1, rng() * 6.28), bodyCol);
+
+    // --- summit entrance: a wide, deep shaft sunk into the crest. THIS is the
+    //     colony's only entrance — ants climb the mound and drop in from the top. ---
+    const rimY = H, rimR = W * 0.34;
+    const craterPts = [
+      V2(rimR,        rimY),
+      V2(rimR * 0.82, rimY - 0.55),
+      V2(rimR * 0.60, rimY - 1.30),
+      V2(rimR * 0.42, rimY - 2.10),
+      V2(rimR * 0.30, rimY - 2.80),
+      V2(0.05,        rimY - 3.05)
+    ];
+    const craterCol = function (y) {
+      const t = Math.max(0, Math.min(1, (rimY - y) / 3.05));
+      return tc.copy(soilDark).lerp(hole, Math.min(1, t * 1.5));   // fades to near-black down the shaft
+    };
+    add(new THREE.LatheGeometry(craterPts, SEG), T(0, 0, 0, 1, 1, 1), craterCol);
+
+    // surface radius of the body at a given height (lets props sit on the slope)
+    const surfaceR = function (yy) {
+      const p = bodyPts;
+      if (yy <= p[0].y) return p[0].x;
+      for (let k = 1; k < p.length; k++) {
+        if (yy <= p[k].y) { const f = (yy - p[k - 1].y) / (p[k].y - p[k - 1].y); return p[k - 1].x + (p[k].x - p[k - 1].x) * f; }
       }
+      return p[p.length - 1].x;
+    };
+
+    // --- a worn switchback path of trodden steps spiralling up to the summit hole ---
+    const steps = 9;
+    const baseAng = rng() * 6.28;
+    for (let i = 0; i < steps; i++) {
+      const f = i / (steps - 1);
+      const yy = 0.35 + f * (H - 1.0);
+      const ang = baseAng + f * Math.PI * 1.5 + (rng() - 0.5) * 0.2;  // winds ~3/4 turn around
+      const rr = surfaceR(yy) + 0.12;
+      const sw = 1.0 - 0.45 * f;                 // steps narrow as they climb
+      add(new THREE.CylinderGeometry(sw * 0.7, sw * 0.8, 0.32, 6), T(Math.cos(ang) * rr, yy, Math.sin(ang) * rr, 1, 1, 1, rng() * 6.28), soilDark);
     }
-    // crater rim cap
-    b.box([3.2, 1.0, 3.2], [0, layers * 1.0, 0], P.dirtDark);
-    // dark entrance throat (front, +z)
-    b.box([2.6, 2.4, 2.6], [0, 1.0, 7.2], 0x140d07);
-    b.box([3.4, 0.8, 1.6], [0, 0.4, 8.0], P.dirtDark);
-    return b.geometry();
+
+    // --- excavated pebbles ringing the base (low-poly rocks, like flora's rock clusters) ---
+    const peb = 9;
+    for (let i = 0; i < peb; i++) {
+      const a = (i / peb) * 6.2832 + rng() * 0.7;
+      const rr = W * 0.92 + rng() * 2.0;
+      const s = 0.45 + rng() * 0.9;
+      const geo = (i % 2) ? new THREE.DodecahedronGeometry(s, 0) : new THREE.IcosahedronGeometry(s, 0);
+      add(geo, T(Math.cos(a) * rr, s * 0.4, Math.sin(a) * rr, 1, 0.7, 1, rng() * 6.28), rng() < 0.5 ? soilDark : soil);
+    }
+
+    // --- a few grass tufts for a touch of life around the dug earth ---
+    for (let i = 0; i < 6; i++) {
+      const a = rng() * 6.2832;
+      const rr = W * 0.96 + rng() * 1.8;
+      add(new THREE.ConeGeometry(0.32, 1.0 + rng() * 0.8, 5), T(Math.cos(a) * rr, 0.55, Math.sin(a) * rr, 1, 1, 1, rng() * 6.28), greens[(rng() * greens.length) | 0]);
+    }
+
+    // merge everything into one flat-shaded, vertex-colored geometry
+    const pos = [], norm = [], col = [], nm = new THREE.Matrix3(), v = new THREE.Vector3(), n = new THREE.Vector3(), c = new THREE.Color();
+    parts.forEach(function (p) {
+      const g = p.geo.index ? p.geo.toNonIndexed() : p.geo;
+      const pa = g.attributes.position, na = g.attributes.normal;
+      nm.getNormalMatrix(p.matrix);
+      const fn = typeof p.color === 'function';
+      if (!fn) c.set(p.color);
+      for (let i = 0; i < pa.count; i++) {
+        v.fromBufferAttribute(pa, i);                 // local position (for gradient eval)
+        if (fn) c.copy(p.color(v.y, Math.hypot(v.x, v.z)));
+        v.applyMatrix4(p.matrix);
+        n.fromBufferAttribute(na, i).applyMatrix3(nm).normalize();
+        pos.push(v.x, v.y, v.z); norm.push(n.x, n.y, n.z); col.push(c.r, c.g, c.b);
+      }
+      if (g !== p.geo) g.dispose();
+      p.geo.dispose();
+    });
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    out.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(norm), 3));
+    out.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+    // craterR = opening radius at the rim; shaftDepth = how far the hole sinks below the crest.
+    // Both feed the ant-lift in ants.js so ants ride up the mound and drop into the top hole.
+    out.userData = { peakH: H, baseR: W, craterR: rimR, shaftDepth: 3.05 };
+    return out;
   }
 
   // Build a single colony at (angle, dist) and register it. Returns the
@@ -58,11 +163,16 @@ DN.colony = (function () {
     g.rotation.y = angle + Math.PI;
     const yaw = g.rotation.y;
 
-    const mound = new THREE.Mesh(buildMound(accent, 50 + idx), DN.util.voxelMat({ roughness: 1.0 }));
+    const moundGeo = buildMound(accent, 50 + idx);
+    const moundMat = DN.util.voxelMat({ roughness: 1.0 });
+    moundMat.side = THREE.DoubleSide;   // mound is a hollow shell — render both sides so the
+                                        // open summit shaft reads as a real hole, not see-through
+    const mound = new THREE.Mesh(moundGeo, moundMat);
     mound.castShadow = true; mound.receiveShadow = true;
     g.add(mound);
 
-    // accent crystal marker on the crater
+    // accent crystal marker — kept (founding/idle animations still drive it) but hidden:
+    // the entrance is now the summit shaft, so no crystal beacon sits on top.
     const cb = new DN.util.VoxelBuilder();
     cb.box([0.9, 2.2, 0.9], [0, 0, 0], accent);
     cb.box([0.5, 1.0, 0.5], [0, 1.4, 0], accent);
@@ -70,9 +180,10 @@ DN.colony = (function () {
     markerMat.transparent = true;
     const marker = new THREE.Mesh(cb.geometry(), markerMat);
     marker.position.set(0, 7.4, 0);
+    marker.visible = false;
     g.add(marker);
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: DN.util.softSprite(), color: accent, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending }));
-    glow.scale.set(10, 10, 1); glow.position.set(0, 8, 0);
+    glow.scale.set(7, 7, 1); glow.position.set(0, moundGeo.userData.peakH - 0.6, 0);  // light glowing up out of the summit shaft
     g.add(glow);
 
     // ground footprint ring (accent), grows when selected
@@ -84,8 +195,9 @@ DN.colony = (function () {
 
     group.add(g);
 
-    const ex = cx + Math.sin(yaw) * 7.5, ez = cz + Math.cos(yaw) * 7.5;
-    const entrance = new THREE.Vector3(ex, ground(ex, ez), ez);
+    // entrance is the shaft at the summit — ants converge on the centre, climb the
+    // mound surface (see ants.js surf()) and drop into the hole from the top.
+    const entrance = new THREE.Vector3(cx, cy + moundGeo.userData.peakH - 0.5, cz);
 
     const pick = new THREE.Mesh(new THREE.SphereGeometry(9, 16, 12), new THREE.MeshBasicMaterial({ visible: false }));
     pick.position.set(cx, cy + 4, cz);
@@ -97,6 +209,8 @@ DN.colony = (function () {
       corePos: new THREE.Vector3(cx, cy + 7, cz),
       entrance,
       group: g, mound, marker, glow, ring, pickTarget: pick,
+      _mH: moundGeo.userData.peakH, _mR: moundGeo.userData.baseR,
+      _mCr: moundGeo.userData.craterR, _mSd: moundGeo.userData.shaftDepth,
       directive: 'forage', selected: false, _t: Math.random() * 6,
       stats: {
         population: 180 + Math.round(Math.random() * 220),
@@ -159,7 +273,13 @@ DN.colony = (function () {
 
     // pick a clear (angle, dist) — at least 60 units from existing colonies
     let angle = opts.angle, dist = opts.dist;
-    if (angle == null || dist == null) {
+    if (angle != null && dist != null) {
+      // caller-provided placement (e.g. user click): still enforce spacing.
+      const tx = Math.cos(angle) * dist, tz = Math.sin(angle) * dist;
+      for (const c of C.list) {
+        if (Math.hypot(c.pos.x - tx, c.pos.z - tz) < 60) return null;
+      }
+    } else {
       for (let tries = 0; tries < 40; tries++) {
         const ta = Math.random() * Math.PI * 2;
         const td = 70 + Math.random() * 70;
@@ -173,6 +293,7 @@ DN.colony = (function () {
       if (angle == null) return null;
     }
     const col = C._buildOne(angle, dist, idx, accent, factionName);
+    if (opts.owner) col.owner = opts.owner;
 
     if (DN.logTerm) DN.logTerm.push('FOUND', 'Colony "' + factionName + '" founded.');
 
