@@ -76,6 +76,7 @@ body.underground #atmos {
   position: absolute; top: 14px; right: 14px; width: min(304px, calc(100vw - 28px));
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
   padding: 6px 8px 8px 10px;
+  z-index: 62;
 }
 .backend-copy { min-width: 0; }
 .backend-k { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-faint); font-weight: 650; }
@@ -98,6 +99,78 @@ body.underground #atmos {
   padding: 0 7px; cursor: pointer;
 }
 .forecast-select:disabled, .forecast-game-select:disabled { opacity: 0.58; cursor: wait; }
+.kg-plugin-panel {
+  border-top: 1px solid var(--hair);
+  padding-top: 6px;
+}
+.kg-plugin-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 9px; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-faint); font-weight: 750;
+}
+.kg-plugin-list {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  max-height: 150px;
+  overflow: auto;
+  padding-right: 2px;
+}
+.kg-plugin-row {
+  display: grid;
+  grid-template-columns: 18px minmax(82px, 1fr);
+  grid-template-areas:
+    "check name"
+    "check meta";
+  column-gap: 6px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 1px solid rgba(117, 93, 54, 0.28);
+  border-radius: 5px;
+  background: rgba(255, 249, 229, 0.52);
+  cursor: pointer;
+}
+.kg-plugin-row input { grid-area: check; margin: 0; accent-color: var(--gold-deep); }
+.kg-plugin-name { grid-area: name; font-size: 11px; font-weight: 760; color: var(--ink); line-height: 1.1; }
+.kg-plugin-meta {
+  grid-area: meta;
+  margin-top: 2px;
+  font-size: 9px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kg-plugin-row.disabled {
+  opacity: 0.58;
+  cursor: help;
+  background: rgba(230, 220, 195, 0.42);
+}
+.kg-plugin-options {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.kg-plugin-options label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.kg-timeout-input {
+  height: 30px;
+  width: 64px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--panel-strong);
+  color: var(--ink);
+  font: 700 11px var(--font);
+  padding: 0 7px;
+}
 
 #runs-page {
   position: absolute;
@@ -865,7 +938,7 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
 
 /* --- shared chunky beveled button face (mirrors .tool) --- */
 .backend-btn, .wallet-btn, .speed, .cm, .play-btn, #exitbtn,
-.forecast-select, .forecast-game-select {
+.forecast-select, .forecast-game-select, .kg-timeout-input {
   border: 2px solid var(--gold-deep);
   border-radius: 5px;
   background: linear-gradient(180deg, #F6ECCB 0%, #E7D7AE 100%);
@@ -880,7 +953,7 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
   transition: transform .1s ease, box-shadow .1s ease, filter .14s ease;
 }
 .backend-btn:hover, .wallet-btn:hover:not(:disabled), .speed:hover, .cm:hover,
-.play-btn:hover, #exitbtn:hover, .forecast-select:hover, .forecast-game-select:hover {
+.play-btn:hover, #exitbtn:hover, .forecast-select:hover, .forecast-game-select:hover, .kg-timeout-input:hover {
   filter: brightness(1.06); transform: translateY(-1px);
   box-shadow:
     inset 0 2px 0 rgba(255, 252, 224, 0.95),
@@ -908,13 +981,17 @@ body.underground #stats, body.underground #hotbar, body.underground #tools, body
 .cm svg { stroke: #2a1d08; }
 .cm.active svg, .speed.active { color: #2a1d08; }
 
-/* --- WALLET CONNECT: present on every screen, above every overlay --- */
+/* --- WALLET CONNECT: present, but never over the KG plugin picker --- */
 #wallet {
-  position: fixed; top: 14px; right: 14px; z-index: 60; pointer-events: auto;
-  /* clear the taller backend panel above it (beveled buttons + fixture dropdown) */
-  margin-top: 232px;
+  position: fixed;
+  top: auto;
+  right: 14px;
+  bottom: 14px;
+  z-index: 58;
+  pointer-events: auto;
+  margin-top: 0;
 }
-@media (max-width: 900px) { #wallet { margin-top: 232px; } }
+@media (max-width: 900px) { #wallet { top: auto; bottom: 14px; margin-top: 0; } }
 /* never dimmed/hidden by view-change rules */
 body.underground #wallet,
 body.explore-mode #wallet { opacity: 1 !important; pointer-events: auto !important; }

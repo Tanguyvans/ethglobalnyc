@@ -1,0 +1,64 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="coreBg" x1="190" y1="122" x2="834" y2="902" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#40372A"/>
+      <stop offset="1" stop-color="#15130F"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="330" y1="252" x2="696" y2="783" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE79B"/>
+      <stop offset="0.55" stop-color="#C69027"/>
+      <stop offset="1" stop-color="#6E4816"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="271" y1="313" x2="722" y2="694" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9FE75C"/>
+      <stop offset="1" stop-color="#426E28"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="249" y1="306" x2="780" y2="716" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8DFFF1"/>
+      <stop offset="1" stop-color="#23C6C6"/>
+    </linearGradient>
+    <filter id="coreShadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#1F1608" flood-opacity="0.26"/>
+    </filter>
+    <g id="hexCell">
+      <path d="M0 -74L64 -37V37L0 74L-64 37V-37L0 -74Z"/>
+    </g>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#F9F3E2"/>
+
+  <g filter="url(#coreShadow)">
+    <path d="M512 91L872 299V725L512 933L152 725V299L512 91Z" fill="url(#coreBg)"/>
+    <path d="M512 142L828 324V700L512 882L196 700V324L512 142Z" fill="#F9F3E2"/>
+    <path d="M512 174L800 340V684L512 850L224 684V340L512 174Z" fill="#2C2820"/>
+
+    <path d="M268 525C341 318 584 233 753 357" stroke="url(#cyan)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M756 499C683 706 440 791 271 667" stroke="url(#cyan)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M268 525C341 318 584 233 753 357" stroke="#F9F3E2" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+    <path d="M756 499C683 706 440 791 271 667" stroke="#F9F3E2" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+
+    <use href="#hexCell" transform="translate(512 512)" fill="url(#amber)"/>
+    <use href="#hexCell" transform="translate(386 512) scale(0.82)" fill="#8FCF4D"/>
+    <use href="#hexCell" transform="translate(638 512) scale(0.82)" fill="#8FCF4D"/>
+    <use href="#hexCell" transform="translate(449 403) scale(0.82)" fill="url(#amber)"/>
+    <use href="#hexCell" transform="translate(575 403) scale(0.82)" fill="url(#amber)"/>
+    <use href="#hexCell" transform="translate(449 621) scale(0.82)" fill="url(#amber)"/>
+    <use href="#hexCell" transform="translate(575 621) scale(0.82)" fill="url(#amber)"/>
+
+    <path d="M386 512L449 403H575L638 512L575 621H449L386 512Z" stroke="#2C2820" stroke-width="20" stroke-linejoin="round"/>
+    <circle cx="512" cy="512" r="54" fill="#2C2820"/>
+    <path d="M447 535C484 490 536 471 594 478" stroke="#F9F3E2" stroke-width="22" stroke-linecap="round"/>
+    <path d="M447 535L491 552L528 509L562 524L594 478" stroke="url(#cyan)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <circle cx="268" cy="525" r="33" fill="#18C8C9"/>
+    <circle cx="753" cy="357" r="33" fill="#18C8C9"/>
+    <circle cx="756" cy="499" r="33" fill="#18C8C9"/>
+    <circle cx="271" cy="667" r="33" fill="#18C8C9"/>
+    <circle cx="268" cy="525" r="14" fill="#F9F3E2"/>
+    <circle cx="753" cy="357" r="14" fill="#F9F3E2"/>
+    <circle cx="756" cy="499" r="14" fill="#F9F3E2"/>
+    <circle cx="271" cy="667" r="14" fill="#F9F3E2"/>
+
+    <path d="M512 174L800 340V684L512 850L224 684V340L512 174Z" stroke="#11100D" stroke-width="24" stroke-linejoin="round"/>
+  </g>
+</svg>

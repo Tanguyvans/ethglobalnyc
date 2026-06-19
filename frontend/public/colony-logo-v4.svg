@@ -1,0 +1,94 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="ocean" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(386 286) rotate(52) scale(720)">
+      <stop stop-color="#17B7F1"/>
+      <stop offset="0.58" stop-color="#0572BE"/>
+      <stop offset="1" stop-color="#06386F"/>
+    </radialGradient>
+    <linearGradient id="route" x1="264" y1="278" x2="760" y2="746" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6DF8F0"/>
+      <stop offset="1" stop-color="#20D3DD"/>
+    </linearGradient>
+    <linearGradient id="mound" x1="0" y1="-96" x2="0" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0A14A"/>
+      <stop offset="0.62" stop-color="#B66E25"/>
+      <stop offset="1" stop-color="#7E4319"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#05284A" flood-opacity="0.22"/>
+    </filter>
+    <clipPath id="globeClip">
+      <circle cx="512" cy="512" r="426"/>
+    </clipPath>
+    <g id="ant" fill="#07131A" stroke="#07131A" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="-18" cy="0" rx="13" ry="16"/>
+      <circle cx="0" cy="0" r="10"/>
+      <ellipse cx="20" cy="0" rx="15" ry="11"/>
+      <path d="M-8 -9L-24 -26M-8 9L-24 26M1 -10L-2 -31M1 10L-2 31M13 -8L31 -24M13 8L31 24" stroke-width="4" fill="none"/>
+      <path d="M31 -4C40 -15 49 -17 57 -17M31 4C40 15 49 17 57 17" stroke-width="4" fill="none"/>
+    </g>
+    <g id="colony">
+      <ellipse cx="0" cy="72" rx="116" ry="30" fill="#1A130A" opacity="0.2"/>
+      <path d="M-104 64C-92 6 -67 -43 -28 -73C3 -97 39 -86 67 -44C91 -8 108 37 112 64C72 92 -61 93 -104 64Z" fill="url(#mound)"/>
+      <path d="M-61 55C-42 1 -13 -48 31 -72M-17 65C-3 14 21 -31 61 -45M31 67C45 26 62 -5 89 -17" stroke="#F0BE67" stroke-width="13" stroke-linecap="round" opacity="0.45"/>
+      <path d="M-108 64C-68 90 66 91 112 64" stroke="#653412" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
+      <ellipse cx="3" cy="42" rx="34" ry="46" fill="#071017"/>
+      <path d="M-84 71C-68 60 -48 60 -32 73M48 73C65 58 87 61 101 73M-16 82C-2 71 21 71 36 83" stroke="#5E3416" stroke-width="12" stroke-linecap="round"/>
+      <path d="M-82 48C-53 53 -34 49 -16 35M57 51C38 44 27 35 19 22" stroke="#7A4B1F" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+    </g>
+  </defs>
+
+  <circle cx="512" cy="512" r="470" fill="#F8FBFF"/>
+
+  <g filter="url(#softShadow)">
+    <circle cx="512" cy="512" r="426" fill="url(#ocean)"/>
+    <g clip-path="url(#globeClip)">
+      <path d="M190 303C237 254 312 245 362 278C403 306 393 358 426 385C462 416 452 466 403 475C346 486 349 536 297 548C246 560 205 525 179 477C149 421 148 346 190 303Z" fill="#86D446"/>
+      <path d="M339 548C393 577 441 647 426 720C414 776 373 813 328 794C286 775 281 724 296 677C313 625 301 585 339 548Z" fill="#86D446"/>
+      <path d="M550 262C624 231 733 260 799 322C840 360 838 421 785 431C737 441 716 405 678 431C629 465 580 448 560 400C546 368 513 313 550 262Z" fill="#92D84A"/>
+      <path d="M602 469C683 435 768 477 803 548C839 619 815 723 747 764C695 795 650 768 660 703C667 656 636 625 594 617C543 607 521 503 602 469Z" fill="#8AD247"/>
+      <path d="M777 277C844 290 891 342 917 398C937 443 919 486 879 488C835 491 827 452 785 441C742 430 717 393 731 346C741 311 746 271 777 277Z" fill="#9BDD52"/>
+      <path d="M796 731C833 719 875 735 889 767C902 797 873 829 832 826C791 822 763 742 796 731Z" fill="#8DD64A"/>
+      <path d="M188 643C221 621 260 631 278 665C298 703 271 760 223 747C184 737 160 661 188 643Z" fill="#93DA50"/>
+
+      <path d="M512 236L754 376L754 648L512 788L270 648L270 376Z" stroke="#08345E" stroke-width="54" stroke-linejoin="round" opacity="0.34"/>
+      <path d="M512 236L754 376L754 648L512 788L270 648L270 376Z" stroke="url(#route)" stroke-width="34" stroke-linejoin="round"/>
+      <path d="M512 236L754 376L754 648L512 788L270 648L270 376Z" stroke="#B7FFFA" stroke-width="10" stroke-linejoin="round" opacity="0.78"/>
+
+      <circle cx="512" cy="236" r="38" fill="#0ABDC8"/>
+      <circle cx="512" cy="236" r="21" fill="#F8FFFF"/>
+      <circle cx="270" cy="376" r="34" fill="#0ABDC8"/>
+      <circle cx="270" cy="376" r="19" fill="#F8FFFF"/>
+      <circle cx="754" cy="376" r="34" fill="#0ABDC8"/>
+      <circle cx="754" cy="376" r="19" fill="#F8FFFF"/>
+      <circle cx="754" cy="648" r="34" fill="#0ABDC8"/>
+      <circle cx="754" cy="648" r="19" fill="#F8FFFF"/>
+      <circle cx="270" cy="648" r="34" fill="#0ABDC8"/>
+      <circle cx="270" cy="648" r="19" fill="#F8FFFF"/>
+      <circle cx="512" cy="788" r="34" fill="#0ABDC8"/>
+      <circle cx="512" cy="788" r="19" fill="#F8FFFF"/>
+
+      <use href="#ant" transform="translate(376 296) rotate(30) scale(0.52)"/>
+      <use href="#ant" transform="translate(444 335) rotate(30) scale(0.52)"/>
+      <use href="#ant" transform="translate(594 286) rotate(150) scale(0.52)"/>
+      <use href="#ant" transform="translate(662 326) rotate(150) scale(0.52)"/>
+      <use href="#ant" transform="translate(754 470) rotate(90) scale(0.52)"/>
+      <use href="#ant" transform="translate(754 552) rotate(90) scale(0.52)"/>
+      <use href="#ant" transform="translate(652 707) rotate(150) scale(0.52)"/>
+      <use href="#ant" transform="translate(585 746) rotate(150) scale(0.52)"/>
+      <use href="#ant" transform="translate(372 707) rotate(30) scale(0.52)"/>
+      <use href="#ant" transform="translate(439 746) rotate(30) scale(0.52)"/>
+      <use href="#ant" transform="translate(270 470) rotate(90) scale(0.52)"/>
+      <use href="#ant" transform="translate(270 552) rotate(90) scale(0.52)"/>
+    </g>
+
+    <circle cx="512" cy="512" r="426" stroke="#062D59" stroke-width="28"/>
+    <circle cx="512" cy="512" r="398" stroke="#64E9F1" stroke-width="6" opacity="0.24"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <use href="#colony" transform="translate(512 170) scale(0.78)"/>
+    <use href="#colony" transform="translate(248 724) scale(0.72)"/>
+    <use href="#colony" transform="translate(776 724) scale(0.72)"/>
+  </g>
+</svg>

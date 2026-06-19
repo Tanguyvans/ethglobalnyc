@@ -61,8 +61,8 @@ DN.hud = (function () {
     const root = $('backend');
     if (!root) return;
     // Collapsed control surface: the primary `Run` button plus the Match
-    // dropdown stay always visible. The 7 debug buttons (Get ants / Get
-    // KG / Run scouting / Deploy / Buy KG / Stake demo / Settle) live
+    // dropdown stay always visible. The debug buttons (Get ants / Get
+    // KG / Deploy / Buy KG / Stake demo / Settle) live
     // inside a `▾ Advanced` disclosure so the chrome stays clean.
     root.innerHTML =
       '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
@@ -75,12 +75,20 @@ DN.hud = (function () {
           '<option value="Draw">Draw</option>' +
           '<option value="Morocco">Morocco</option>' +
         '</select>' +
-        '<button class="backend-btn secondary" id="backend-scout">Run Scout</button>' +
+        '<button class="backend-btn secondary" id="backend-scout">Run KG</button>' +
         '<button class="backend-btn" id="backend-run">Run Full Pipe</button>' +
         '<button class="backend-btn secondary" id="backend-run-fast">Run Agent</button>' +
         '<button class="backend-btn secondary" id="backend-runs">Runs</button>' +
         '<button class="backend-btn secondary" id="backend-reset" title="Stop the running debate and reset agents to idle">Reset</button>' +
         '<button class="backend-btn secondary backend-toggle" id="backend-adv-toggle" title="Show advanced controls">▾</button>' +
+      '</div>' +
+      '<div class="kg-plugin-panel" id="kg-plugin-panel">' +
+        '<div class="kg-plugin-head"><span>KG plugins</span><span id="kg-plugin-summary">loading</span></div>' +
+        '<div class="kg-plugin-list" id="kg-plugin-list">Loading plugins...</div>' +
+        '<div class="kg-plugin-options">' +
+          '<label>Mode <select class="forecast-select" id="kg-run-mode"><option value="fast">fast</option><option value="deep">deep</option></select></label>' +
+          '<label>Timeout <input class="kg-timeout-input" id="kg-run-timeout" type="number" min="5" max="300" step="5" value="120"></label>' +
+        '</div>' +
       '</div>' +
       '<div class="backend-advanced" id="backend-advanced" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap">' +
         '<button class="backend-btn secondary" id="backend-ants">Get ants</button>' +
@@ -112,7 +120,13 @@ DN.hud = (function () {
     const forecastWinner = $('forecast-winner');
     const forecastGame = $('forecast-game');
     const status = $('backend-status');
+    const kgPluginList = $('kg-plugin-list');
+    const kgPluginSummary = $('kg-plugin-summary');
+    const kgRunMode = $('kg-run-mode');
+    const kgRunTimeout = $('kg-run-timeout');
     const forecastCfg = (window.DN_CONFIG && window.DN_CONFIG.FORECAST) || {};
+    const configuredKgRun = (window.DN_CONFIG && window.DN_CONFIG.KG_RUN) || {};
+    let kgPluginCatalog = [];
     let forecastContract = forecastCfg.CONTRACT || '';
     let forecastMarketKey = '';
     let forecastStakes = [];
@@ -124,6 +138,77 @@ DN.hud = (function () {
       away_team: forecastCfg.AWAY_TEAM || 'Morocco',
       name: (forecastCfg.HOME_TEAM || 'Brazil') + ' vs ' + (forecastCfg.AWAY_TEAM || 'Morocco'),
     };
+
+    function fallbackKgModules() {
+      const modules = configuredKgRun.modules || ['fixture', 'public_x', 'polymarket_market_context', 'wikidata_profiles'];
+      return modules.map((id, index) => ({
+        id,
+        display_name: id.replace(/_/g, ' ').replace(/^./, (ch) => ch.toUpperCase()),
+        description: 'Configured frontend KG plugin.',
+        claim_types: [],
+        configured: true,
+        default_enabled: true,
+        ui_order: index,
+      }));
+    }
+
+    function renderKgPlugins(payload) {
+      const defaults = (payload && payload.defaults) || configuredKgRun || {};
+      kgPluginCatalog = (payload && payload.modules && payload.modules.length ? payload.modules : fallbackKgModules())
+        .filter((module) => module && module.id);
+      const selectedDefaults = new Set(defaults.modules || configuredKgRun.modules || kgPluginCatalog.filter((module) => module.default_enabled).map((module) => module.id));
+      if (kgRunMode) kgRunMode.value = defaults.mode || configuredKgRun.mode || 'fast';
+      if (kgRunTimeout) kgRunTimeout.value = defaults.timeout || configuredKgRun.timeout || 120;
+      if (!kgPluginList) return;
+      kgPluginList.innerHTML = kgPluginCatalog.map((module) => {
+        const disabled = module.configured === false;
+        const checked = !disabled && selectedDefaults.has(module.id);
+        const claims = (module.claim_types || []).slice(0, 4).join(', ');
+        const missing = disabled ? module.setup_hint || module.missing_env?.join(', ') || 'setup required' : claims;
+        return '<label class="kg-plugin-row' + (disabled ? ' disabled' : '') + '" title="' + esc(module.description || '') + '">' +
+          '<input type="checkbox" value="' + esc(module.id) + '" ' + (checked ? 'checked ' : '') + (disabled ? 'disabled ' : '') + '>' +
+          '<span class="kg-plugin-name">' + esc(module.display_name || module.id) + '</span>' +
+          '<span class="kg-plugin-meta">' + esc(missing || module.source_family || '') + '</span>' +
+        '</label>';
+      }).join('');
+      kgPluginList.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+        input.addEventListener('change', updateKgPluginSummary);
+      });
+      updateKgPluginSummary();
+    }
+
+    function selectedKgModules(opts) {
+      if (!kgPluginList) return (configuredKgRun.modules || ['fixture']).slice();
+      const selected = Array.from(kgPluginList.querySelectorAll('input[type="checkbox"]:checked'))
+        .map((input) => input.value)
+        .filter(Boolean);
+      if (selected.length) return selected;
+      return opts && opts.allowEmpty ? [] : ['fixture'];
+    }
+
+    function updateKgPluginSummary() {
+      const selected = selectedKgModules({ allowEmpty: true });
+      if (kgPluginSummary) kgPluginSummary.textContent = selected.length + ' selected';
+      if (scoutBtn) scoutBtn.disabled = selected.length === 0;
+    }
+
+    function loadKgPlugins() {
+      if (!DN.databridge || !DN.databridge.fetchKgModules) {
+        renderKgPlugins(null);
+        return Promise.resolve(null);
+      }
+      return DN.databridge.fetchKgModules()
+        .then((payload) => {
+          renderKgPlugins(payload);
+          return payload;
+        })
+        .catch((err) => {
+          renderKgPlugins(null);
+          if (kgPluginSummary) kgPluginSummary.textContent = 'local defaults';
+          if (DN.logTerm) DN.logTerm.push('KG', 'Could not load KG plugin catalog: ' + (err.message || err));
+          return null;
+        });
+    }
 
     function logForecastChainTrail(kind, result) {
       if (DN.lifecycle && DN.lifecycle.logForecastChainTrail) {
@@ -379,6 +464,15 @@ DN.hud = (function () {
       [scoutBtn, btn, fastBtn, forecastGame].forEach((el) => {
         if (el) el.disabled = busy;
       });
+      [kgRunMode, kgRunTimeout].forEach((el) => {
+        if (el) el.disabled = busy;
+      });
+      if (kgPluginList) {
+        kgPluginList.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+          input.disabled = busy || kgPluginCatalog.some((module) => module.id === input.value && module.configured === false);
+        });
+      }
+      if (!busy) updateKgPluginSummary();
     }
 
     function ensureRunsPage() {
@@ -552,6 +646,7 @@ DN.hud = (function () {
     }
 
     updateWinnerOptions();
+    loadKgPlugins();
     if (DN.databridge && DN.databridge.fetchForecastConfig) {
       DN.databridge.fetchForecastConfig()
         .then((payload) => {
@@ -724,11 +819,30 @@ DN.hud = (function () {
     }
 
     scoutBtn.addEventListener('click', () => {
-      if (!DN.databridge || !DN.databridge.startScoutingRun) return;
+      if (!DN.databridge || !(DN.databridge.startKgRun || DN.databridge.startScoutingRun)) return;
       setScoutingBusy(true);
-      status.textContent = 'OpenFootball scout...';
-      H.pushThought('OpenFootball fixture scout started for ' + selectedGame.name + '.', 'Backend', '#3FA89F');
-      if (DN.logTerm) DN.logTerm.push('SCOUT', 'OpenFootball fixture scout kicked off for ' + selectedGame.name + '.');
+      const modules = selectedKgModules({ allowEmpty: true });
+      if (!modules.length) {
+        setScoutingBusy(false);
+        status.textContent = 'Choose KG plugins';
+        H.pushThought('Select at least one KG plugin before running.', 'Backend', '#D96E54');
+        return;
+      }
+      const kgDefaults = Object.assign(
+        {
+          mode: 'fast',
+          modules,
+          timeout: 120,
+          camel_agents: 4,
+        },
+        (window.DN_CONFIG && window.DN_CONFIG.KG_RUN) || {},
+      );
+      kgDefaults.modules = modules;
+      if (kgRunMode && kgRunMode.value) kgDefaults.mode = kgRunMode.value;
+      if (kgRunTimeout && kgRunTimeout.value) kgDefaults.timeout = Number(kgRunTimeout.value) || kgDefaults.timeout;
+      status.textContent = 'KG run...';
+      H.pushThought('KG run started for ' + selectedGame.name + ' with ' + modules.length + ' plugins.', 'Backend', '#3FA89F');
+      if (DN.logTerm) DN.logTerm.push('KG', 'KG-only run kicked off for ' + selectedGame.name + ' · ' + modules.join(', ') + '.');
       if (DN.kgview && DN.kgview.showScoutingProgress) {
         DN.kgview.showScoutingProgress({
           match: selectedGame.name,
@@ -737,34 +851,43 @@ DN.hud = (function () {
           opponent: selectedGame.away_team,
         });
       }
-      DN.databridge.startScoutingRun({
+      const kgPayload = Object.assign({}, kgDefaults, {
         match: selectedGame.name,
         match_id: selectedGame.match_id || selectedGame.market_key,
-        data_mode: 'openfootball',
+      });
+      const legacyScoutingPayload = {
+        match: selectedGame.name,
+        match_id: selectedGame.match_id || selectedGame.market_key,
+        data_mode: 'public',
+        refresh_data: false,
+        include_x: true,
+        include_camel: false,
         include_deepseek_scout: false,
-        agents: 1,
+        agents: 4,
         rooms: 1,
         voice_mode: 'template',
-      })
+        agent_wallets: false,
+      };
+      const starter = DN.databridge.startKgRun || DN.databridge.startScoutingRun;
+      starter(DN.databridge.startKgRun ? kgPayload : legacyScoutingPayload)
         .then((result) => {
           const manifest = result.manifest || {};
           const kg = result.kg || {};
           const entities = manifest.entity_count || kg.entity_count || 0;
           const links = manifest.relationship_count || kg.relationship_count || 0;
           const ready = manifest.validation && manifest.validation.kg_load_ready === false ? 'needs review' : 'ready';
-          status.textContent = 'Scouting ' + ready + ' · ' + entities + ' entities';
-          H.pushThought('Scouting finished: ' + entities + ' KG entities and ' + links + ' relationships.', 'Backend', '#3FA89F');
-          if (DN.logTerm) DN.logTerm.push('SYSTEM', 'Scouting finished. Re-polling communications.');
+          status.textContent = 'KG ' + ready + ' · ' + entities + ' entities';
+          H.pushThought('KG run finished: ' + entities + ' entities and ' + links + ' relationships.', 'Backend', '#3FA89F');
+          if (DN.logTerm) DN.logTerm.push('KG', 'KG run finished. Opening run results.');
           const newId = (DN.databridge && DN.databridge.runId) || null;
           if (DN.databridge && DN.databridge.resetCommsRun) DN.databridge.resetCommsRun(newId);
           if (DN.commsViz && DN.commsViz.reset) DN.commsViz.reset();
           if (H._pollComms) H._pollComms();
-          const runsPage = $('runs-page');
-          if (runsPage && runsPage.classList.contains('show') && H.refreshRunsPage) H.refreshRunsPage(false);
+          if (H.refreshRunsPage) H.refreshRunsPage(false);
         })
         .catch((err) => {
-          status.textContent = 'Scouting error';
-          H.pushThought('Scouting failed: ' + (err.message || err), 'Backend', '#D96E54');
+          status.textContent = 'KG run error';
+          H.pushThought('KG run failed: ' + (err.message || err), 'Backend', '#D96E54');
         })
         .finally(() => {
           setScoutingBusy(false);
@@ -809,10 +932,8 @@ DN.hud = (function () {
       }
     }
 
-    // Primary Run skips the visual scouting phase — KG already exists on
-    // the backend, so we go straight to "show KG → ants converge →
-    // debate driven by real backend events". Use the Fast button (or
-    // the ▾ Advanced tray) if you want to re-run the visual scout.
+    // Primary Run skips the KG-only builder. Use Run KG when you want to
+    // regenerate and inspect the real match KG before the agent pipeline.
     btn.addEventListener('click', () => runLifecycle({ scout: false }));
     if (fastBtn) fastBtn.addEventListener('click', () => runLifecycle({ scout: false }));
     const resetBtn = $('backend-reset');

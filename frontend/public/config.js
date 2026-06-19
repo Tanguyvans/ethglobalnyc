@@ -9,6 +9,12 @@ window.DN_CONFIG = window.DN_CONFIG || {
     wallet_provider: 'dynamic',
     wallet_store: 'colony/data/agent-wallets.dynamic.200.public.json',
   },
+  KG_RUN: {
+    mode: 'fast',
+    modules: ['fixture', 'public_x', 'polymarket_market_context', 'wikidata_profiles'],
+    timeout: 120,
+    camel_agents: 4,
+  },
   FORECAST: {
     CONTRACT: '0xc40a8f2e29fe061cd4c0fe92cc73b9b43f9ada87',
     HOME_TEAM: 'Brazil',

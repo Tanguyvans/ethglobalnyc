@@ -550,34 +550,33 @@ DN.kgview = (function () {
 
   K.replayGraph = function (graph, title, opts) {
     opts = opts || {};
-    // Cap to a small node count so the SVG stays cheap and the user
-    // sees a clean, readable graph instead of a blob. Pick nodes
-    // group-balanced (round-robin by entity_type) so every cluster is
-    // represented even when we trim.
-    const MAX_NODES = opts.maxNodes || 42;
     const allEntities = graph.entities || [];
     const allRels = graph.relationships || [];
 
-    const byGroup = {};
-    for (const e of allEntities) {
-      const g = (e && (e.entity_type || e.type)) || 'misc';
-      (byGroup[g] = byGroup[g] || []).push(e);
+    let entities = allEntities;
+    let relationships = allRels;
+    if (opts.maxNodes && allEntities.length > opts.maxNodes) {
+      const byGroup = {};
+      for (const e of allEntities) {
+        const g = (e && (e.entity_type || e.type)) || 'misc';
+        (byGroup[g] = byGroup[g] || []).push(e);
+      }
+      const groupKeys = Object.keys(byGroup);
+      entities = [];
+      let gIdx = 0, exhausted = 0;
+      while (entities.length < opts.maxNodes && exhausted < groupKeys.length) {
+        const list = byGroup[groupKeys[gIdx % groupKeys.length]];
+        if (list && list.length) { entities.push(list.shift()); exhausted = 0; }
+        else exhausted++;
+        gIdx++;
+      }
+      const keepIds = new Set(entities.map((e) => e && (e.entity_id || e.id)).filter(Boolean));
+      relationships = allRels.filter((r) => {
+        const s = r && (r.source_id || r.source);
+        const t = r && (r.target_id || r.target);
+        return keepIds.has(s) && keepIds.has(t);
+      });
     }
-    const groupKeys = Object.keys(byGroup);
-    const entities = [];
-    let gIdx = 0, exhausted = 0;
-    while (entities.length < MAX_NODES && exhausted < groupKeys.length) {
-      const list = byGroup[groupKeys[gIdx % groupKeys.length]];
-      if (list && list.length) { entities.push(list.shift()); exhausted = 0; }
-      else exhausted++;
-      gIdx++;
-    }
-    const keepIds = new Set(entities.map((e) => e && (e.entity_id || e.id)).filter(Boolean));
-    const relationships = allRels.filter((r) => {
-      const s = r && (r.source_id || r.source);
-      const t = r && (r.target_id || r.target);
-      return keepIds.has(s) && keepIds.has(t);
-    });
 
     const entityChunk = opts.entityChunk || 6;
     const relationshipChunk = opts.relationshipChunk || 18;

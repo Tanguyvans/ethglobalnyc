@@ -1,0 +1,85 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="v5Ocean" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(362 274) rotate(51) scale(720)">
+      <stop stop-color="#20B9E8"/>
+      <stop offset="0.6" stop-color="#0877B8"/>
+      <stop offset="1" stop-color="#06345F"/>
+    </radialGradient>
+    <linearGradient id="v5Route" x1="254" y1="248" x2="772" y2="742" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8AFFF8"/>
+      <stop offset="1" stop-color="#21CED8"/>
+    </linearGradient>
+    <linearGradient id="v5Mound" x1="0" y1="-88" x2="0" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DB9940"/>
+      <stop offset="0.7" stop-color="#A85E21"/>
+      <stop offset="1" stop-color="#6B3517"/>
+    </linearGradient>
+    <filter id="v5Shadow" x="-25%" y="-25%" width="150%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#062848" flood-opacity="0.22"/>
+    </filter>
+    <clipPath id="v5GlobeClip">
+      <circle cx="512" cy="512" r="420"/>
+    </clipPath>
+    <g id="v5Ant" fill="#071116" stroke="#071116" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="-15" cy="0" rx="12" ry="15"/>
+      <circle cx="1" cy="0" r="9"/>
+      <ellipse cx="18" cy="0" rx="13" ry="10"/>
+      <path d="M-7 -8L-23 -22M-7 8L-23 22M2 -9L0 -28M2 9L0 28M12 -7L29 -20M12 7L29 20" stroke-width="3.7" fill="none"/>
+      <path d="M29 -4C38 -14 46 -15 54 -14M29 4C38 14 46 15 54 14" stroke-width="3.7" fill="none"/>
+    </g>
+    <g id="v5Colony">
+      <ellipse cx="0" cy="68" rx="98" ry="22" fill="#0E1A18" opacity="0.18"/>
+      <path d="M-90 58C-75 5 -48 -42 -13 -66C18 -88 48 -64 70 -23C86 9 96 39 98 58C63 82 -55 82 -90 58Z" fill="url(#v5Mound)"/>
+      <path d="M-55 50C-39 5 -12 -39 24 -62M-12 61C0 19 21 -20 54 -39M31 61C43 28 55 5 75 -11" stroke="#E8B15C" stroke-width="9" stroke-linecap="round" opacity="0.5"/>
+      <ellipse cx="2" cy="42" rx="29" ry="39" fill="#061016"/>
+      <path d="M-90 58C-56 79 60 80 98 58" stroke="#633315" stroke-width="9" stroke-linecap="round" opacity="0.55"/>
+    </g>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#FFFFFF"/>
+
+  <g filter="url(#v5Shadow)">
+    <circle cx="512" cy="512" r="420" fill="url(#v5Ocean)"/>
+    <g clip-path="url(#v5GlobeClip)">
+      <path d="M188 313C245 251 350 259 395 323C425 366 395 415 432 454C468 493 440 555 382 553C327 550 306 603 251 582C188 558 146 485 152 411C155 371 166 337 188 313Z" fill="#84CE4B"/>
+      <path d="M341 572C400 613 440 696 414 758C393 807 336 808 305 764C276 721 303 670 287 631C278 607 301 579 341 572Z" fill="#93D65B"/>
+      <path d="M543 278C613 238 744 259 813 331C856 376 838 438 776 438C719 438 714 486 650 480C590 474 552 422 535 369C520 323 516 294 543 278Z" fill="#9BDA55"/>
+      <path d="M600 515C657 466 762 492 802 566C846 647 808 751 730 775C664 795 652 729 606 711C545 687 528 577 600 515Z" fill="#86CD4C"/>
+      <path d="M781 280C844 289 896 339 915 395C935 454 885 500 829 475C782 454 743 384 754 328C759 302 766 278 781 280Z" fill="#A1DF5B"/>
+      <path d="M815 731C858 724 893 749 899 785C905 821 857 846 816 825C779 807 778 737 815 731Z" fill="#98D955"/>
+      <path d="M194 660C230 632 281 642 297 686C312 729 277 779 231 762C190 747 164 684 194 660Z" fill="#9DDF5E"/>
+
+      <path d="M512 252C383 314 291 474 268 650" stroke="#06305A" stroke-width="25" stroke-linecap="round" opacity="0.35"/>
+      <path d="M512 252C641 314 733 474 756 650" stroke="#06305A" stroke-width="25" stroke-linecap="round" opacity="0.35"/>
+      <path d="M268 650C390 758 634 758 756 650" stroke="#06305A" stroke-width="25" stroke-linecap="round" opacity="0.35"/>
+      <path d="M512 252C383 314 291 474 268 650" stroke="url(#v5Route)" stroke-width="15" stroke-linecap="round"/>
+      <path d="M512 252C641 314 733 474 756 650" stroke="url(#v5Route)" stroke-width="15" stroke-linecap="round"/>
+      <path d="M268 650C390 758 634 758 756 650" stroke="url(#v5Route)" stroke-width="15" stroke-linecap="round"/>
+
+      <use href="#v5Ant" transform="translate(439 311) rotate(137) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(369 394) rotate(124) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(315 498) rotate(108) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(285 596) rotate(96) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(585 311) rotate(43) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(655 394) rotate(56) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(709 498) rotate(72) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(739 596) rotate(84) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(360 714) rotate(23) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(456 746) rotate(7) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(568 746) rotate(-7) scale(0.48)"/>
+      <use href="#v5Ant" transform="translate(664 714) rotate(-23) scale(0.48)"/>
+    </g>
+
+    <circle cx="512" cy="512" r="420" stroke="#062D55" stroke-width="30"/>
+    <circle cx="512" cy="512" r="390" stroke="#78F4F0" stroke-width="5" opacity="0.22"/>
+  </g>
+
+  <g filter="url(#v5Shadow)">
+    <circle cx="512" cy="252" r="28" fill="#11C7D0"/>
+    <circle cx="268" cy="650" r="25" fill="#11C7D0"/>
+    <circle cx="756" cy="650" r="25" fill="#11C7D0"/>
+    <use href="#v5Colony" transform="translate(512 181) scale(0.72)"/>
+    <use href="#v5Colony" transform="translate(268 692) scale(0.66)"/>
+    <use href="#v5Colony" transform="translate(756 692) scale(0.66)"/>
+  </g>
+</svg>

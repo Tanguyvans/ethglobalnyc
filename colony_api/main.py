@@ -35,6 +35,9 @@ DEFAULT_RUNS_ROOT = REPO_ROOT / "colony" / "runs" / "api"
 RUNS_ROOT = Path(os.environ.get("COLONY_API_RUNS_DIR", str(DEFAULT_RUNS_ROOT))).resolve()
 RUN_DEMO = REPO_ROOT / "colony" / "run_demo.py"
 RUN_MATCH = REPO_ROOT / "colony" / "run_match.py"
+SCOUTING_MATRIX = REPO_ROOT / "colony" / "scouting_matrix.py"
+SCOUTING_SOURCE_CATALOG = REPO_ROOT / "colony" / "config" / "scouting_source_catalog.json"
+COLONY_ENV = REPO_ROOT / "colony" / ".env"
 WORLD_CUP_KG = REPO_ROOT / "colony" / "data" / "world_cup_kg.json"
 WORLD_CUP_KG_SUMMARY = REPO_ROOT / "colony" / "data" / "world_cup_kg.summary.md"
 DEFAULT_PUBLIC_WALLET_STORE = "colony/data/agent-wallets.dynamic.200.public.json"
@@ -50,6 +53,7 @@ FUND_AGENTS_CLI = REPO_ROOT / "arc" / "fund-agents.mjs"
 REGISTER_ENS_IDENTITIES = REPO_ROOT / "colony" / "register_ens_identities.py"
 DEFAULT_PUBLIC_API_BASE_URL = "https://ethglobalnyc-production.up.railway.app"
 RUN_EVENT_LOCK = threading.Lock()
+DEFAULT_KG_RUN_MODULES = ["fixture", "public_x", "polymarket_market_context", "wikidata_profiles"]
 
 COLONY_SRC = REPO_ROOT / "colony"
 if str(COLONY_SRC) not in sys.path:
@@ -112,6 +116,19 @@ class ScoutingRunRequest(BaseModel):
     agent_wallets: bool = True
     wallet_provider: Literal["local", "dynamic"] | None = "dynamic"
     wallet_store: str | None = DEFAULT_PUBLIC_WALLET_STORE
+
+
+class KGRunRequest(BaseModel):
+    match: str = "Brazil vs Morocco"
+    match_id: str | None = None
+    mode: Literal["fast", "deep"] = "fast"
+    modules: list[str] = Field(
+        default_factory=lambda: list(DEFAULT_KG_RUN_MODULES),
+        min_length=1,
+        max_length=12,
+    )
+    timeout: int = Field(default=120, ge=5, le=300)
+    camel_agents: int = Field(default=4, ge=0, le=12)
 
 
 class RunRecord(BaseModel):
@@ -419,6 +436,105 @@ def _model_dump(model: BaseModel) -> dict:
     if hasattr(model, "model_dump"):
         return model.model_dump()
     return model.dict()
+
+
+def _configured_env_names() -> set[str]:
+    names = {key for key, value in os.environ.items() if str(value).strip()}
+    if COLONY_ENV.exists():
+        for raw_line in COLONY_ENV.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[len("export "):].strip()
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("\"'")
+            if key and value:
+                names.add(key)
+    return names
+
+
+def _load_scouting_source_catalog() -> dict:
+    if not SCOUTING_SOURCE_CATALOG.exists():
+        return {"modules": {}}
+    try:
+        payload = json.loads(SCOUTING_SOURCE_CATALOG.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"modules": {}}
+    return payload if isinstance(payload, dict) else {"modules": {}}
+
+
+def _module_env_requirements(
+    module_id: str,
+    modules: dict,
+    *,
+    seen: set[str] | None = None,
+) -> tuple[set[str], list[list[str]]]:
+    seen = seen or set()
+    if module_id in seen:
+        return set(), []
+    seen.add(module_id)
+    module = modules.get(module_id) or {}
+    required = {str(name) for name in module.get("requires_env", []) if str(name).strip()}
+    any_groups = [
+        [str(name) for name in group if str(name).strip()]
+        for group in module.get("requires_any_env", [])
+        if isinstance(group, list)
+    ]
+    for included in module.get("includes", []) or []:
+        child_required, child_any_groups = _module_env_requirements(str(included), modules, seen=seen)
+        required.update(child_required)
+        any_groups.extend(child_any_groups)
+    return required, any_groups
+
+
+def _module_setup_state(module_id: str, modules: dict, configured_env: set[str]) -> dict:
+    required, any_groups = _module_env_requirements(module_id, modules)
+    missing_required = sorted(name for name in required if name not in configured_env)
+    missing_any = [group for group in any_groups if not any(name in configured_env for name in group)]
+    return {
+        "configured": not missing_required and not missing_any,
+        "missing_env": missing_required,
+        "missing_any_env": missing_any,
+    }
+
+
+def _kg_module_records() -> list[dict]:
+    catalog = _load_scouting_source_catalog()
+    modules = catalog.get("modules") or {}
+    configured_env = _configured_env_names()
+    records: list[dict] = []
+    for module_id, module in modules.items():
+        if not isinstance(module, dict):
+            continue
+        if module.get("ui_hidden"):
+            continue
+        if module.get("status") != "implemented":
+            continue
+        setup = _module_setup_state(str(module_id), modules, configured_env)
+        records.append(
+            {
+                "id": str(module_id),
+                "display_name": module.get("display_name") or str(module_id).replace("_", " ").title(),
+                "description": module.get("description") or "",
+                "status": module.get("status"),
+                "source_family": module.get("source_family") or "",
+                "claim_types": list(module.get("claim_types") or []),
+                "docs_url": module.get("docs_url") or "",
+                "setup_url": module.get("setup_url") or "",
+                "setup_hint": module.get("setup_hint") or "",
+                "requires_setup": not setup["configured"],
+                "configured": setup["configured"],
+                "missing_env": setup["missing_env"],
+                "missing_any_env": setup["missing_any_env"],
+                "default_enabled": str(module_id) in DEFAULT_KG_RUN_MODULES,
+                "ui_order": module.get("ui_order", 999),
+            }
+        )
+    return sorted(records, key=lambda item: (item["ui_order"], item["display_name"]))
 
 
 def _default_wallet_store() -> str:
@@ -1117,6 +1233,34 @@ def _build_scouting_command(request: ScoutingRunRequest, run_dir: Path) -> list[
     return command
 
 
+def _build_kg_command(request: KGRunRequest, run_dir: Path) -> list[str]:
+    command = [
+        sys.executable,
+        str(SCOUTING_MATRIX),
+        "--kg",
+        str(WORLD_CUP_KG),
+        "--env",
+        str(COLONY_ENV),
+        "--source-catalog",
+        str(SCOUTING_SOURCE_CATALOG),
+        "--match",
+        request.match,
+        "--mode",
+        request.mode,
+        "--timeout",
+        str(request.timeout),
+        "--camel-agents",
+        str(request.camel_agents),
+        "--limit",
+        "1",
+        "--out-dir",
+        str(run_dir / "compact"),
+    ]
+    for module in request.modules:
+        command.extend(["--module", module])
+    return command
+
+
 def _emit_kg_stream_events(run_id: str, compact_dir: Path) -> None:
     graph_path = compact_dir / "world_graph.json"
     manifest_path = compact_dir / "kg_manifest.json"
@@ -1296,7 +1440,7 @@ def _execute_run(run_id: str, command: list[str]) -> None:
                         handle.write(compact_text)
                 else:
                     root_events.write_text(compact_text, encoding="utf-8")
-        if metadata.get("kind") == "scouting" and returncode == 0:
+        if metadata.get("kind") in {"scouting", "kg"} and returncode == 0:
             _emit_kg_stream_events(run_id, latest)
     _write_metadata(run_id, metadata)
 
@@ -1796,6 +1940,7 @@ def health() -> dict:
         "service": "colony-api",
         "runs_root": str(RUNS_ROOT),
         "run_demo_exists": RUN_DEMO.exists(),
+        "kg_runner_exists": SCOUTING_MATRIX.exists(),
     }
 
 
@@ -1813,6 +1958,8 @@ def get_config() -> dict:
             "ants": "/ants",
             "world_cup_kg": "/kg/world-cup",
             "world_cup_kg_summary": "/kg/world-cup/summary",
+            "start_kg_run": "/kg/run",
+            "kg_modules": "/kg/modules",
             "start_scouting_run": "/scouting/run",
             "start_demo_run": "/runs/demo",
             "list_runs": "/runs",
@@ -1844,6 +1991,12 @@ def get_config() -> dict:
             "agent_wallets": _env_bool("COLONY_API_DEFAULT_AGENT_WALLETS", True),
             "wallet_provider": wallet_provider,
             "wallet_store": _default_wallet_store(),
+        },
+        "kg_run_defaults": {
+            "mode": "fast",
+            "modules": DEFAULT_KG_RUN_MODULES,
+            "timeout": 120,
+            "camel_agents": 4,
         },
         "limits": {
             "agents": {"min": 1, "max": 500},
@@ -2471,6 +2624,86 @@ def get_world_cup_kg() -> dict:
 def get_world_cup_kg_summary() -> PlainTextResponse:
     path = _safe_repo_path(str(WORLD_CUP_KG_SUMMARY.relative_to(REPO_ROOT)))
     return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="text/markdown")
+
+
+@app.get("/kg/modules")
+def get_kg_modules() -> dict:
+    modules = _kg_module_records()
+    configured_defaults = [
+        module["id"]
+        for module in modules
+        if module["default_enabled"] and module["configured"]
+    ]
+    return {
+        "defaults": {
+            "mode": "fast",
+            "modules": configured_defaults or ["fixture"],
+            "timeout": 120,
+            "camel_agents": 4,
+        },
+        "modules": modules,
+    }
+
+
+@app.post("/kg/run", response_model=RunRecord, status_code=202)
+def start_kg_run(request: KGRunRequest, background_tasks: BackgroundTasks) -> dict:
+    if not SCOUTING_MATRIX.exists():
+        raise HTTPException(status_code=500, detail="colony/scouting_matrix.py is missing")
+    if not WORLD_CUP_KG.exists():
+        raise HTTPException(status_code=500, detail="World Cup KG is missing")
+    if not SCOUTING_SOURCE_CATALOG.exists():
+        raise HTTPException(status_code=500, detail="scouting source catalog is missing")
+    catalog_modules = (_load_scouting_source_catalog().get("modules") or {})
+    unknown_modules = [module for module in request.modules if module not in catalog_modules]
+    if unknown_modules:
+        raise HTTPException(status_code=400, detail=f"Unknown KG module(s): {', '.join(unknown_modules)}")
+    configured_env = _configured_env_names()
+    not_configured = [
+        module
+        for module in request.modules
+        if not _module_setup_state(module, catalog_modules, configured_env)["configured"]
+    ]
+    if not_configured:
+        raise HTTPException(status_code=400, detail=f"KG module(s) require setup: {', '.join(not_configured)}")
+
+    RUNS_ROOT.mkdir(parents=True, exist_ok=True)
+    run_id = f"kg_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    run_dir = _run_dir(run_id)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    command = _build_kg_command(request, run_dir)
+    metadata = {
+        "id": run_id,
+        "kind": "kg",
+        "status": "queued",
+        "created_at": _utc_now(),
+        "started_at": None,
+        "completed_at": None,
+        "returncode": None,
+        "command": command,
+        "run_dir": str(run_dir),
+        "events_path": str(run_dir / "events.jsonl"),
+        "compact_runs_dir": str(run_dir / "compact"),
+        "match": request.match,
+        "match_id": request.match_id,
+        "kg_mode": request.mode,
+        "modules": request.modules,
+        "timeout": request.timeout,
+        "camel_agents": request.camel_agents,
+    }
+    _write_metadata(run_id, metadata)
+    _append_run_event(
+        run_id,
+        {
+            "event_type": "kg_stage",
+            "stage": "kg_queued",
+            "match": request.match,
+            "match_id": request.match_id,
+            "mode": request.mode,
+            "modules": request.modules,
+        },
+    )
+    background_tasks.add_task(_execute_run, run_id, command)
+    return metadata
 
 
 @app.post("/scouting/run", response_model=RunRecord, status_code=202)

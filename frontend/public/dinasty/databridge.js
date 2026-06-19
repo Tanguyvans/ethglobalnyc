@@ -308,7 +308,7 @@ DN.databridge = (function () {
   }
 
   function runMatchesScoutingTarget(run, opts) {
-    if (!run || run.kind !== 'scouting' || run.status !== 'succeeded') return false;
+    if (!run || !['scouting', 'kg'].includes(run.kind) || run.status !== 'succeeded') return false;
     opts = opts || {};
     const wantedId = opts.match_id || opts.market_key || '';
     const wantedName = kgMatchKey(opts.match || opts.name || '');
@@ -353,6 +353,16 @@ DN.databridge = (function () {
     return apiJson('/runs/' + encodeURIComponent(runId) + '/kg')
       .then((payload) => {
         payload.source_run_id = runId;
+        return payload;
+      });
+  };
+
+  B.fetchKgModules = function () {
+    return apiJson('/kg/modules')
+      .then((payload) => {
+        B.kgModules = payload.modules || [];
+        B.kgModuleDefaults = (payload.defaults && payload.defaults.modules) || [];
+        B.kgRunDefaults = payload.defaults || {};
         return payload;
       });
   };
@@ -432,18 +442,57 @@ DN.databridge = (function () {
   function showCompletedScoutingGraph(kg, opts) {
     if (!DN.kgview || !kg) return;
     opts = opts || {};
+    const title = opts.title || 'Completed scouting KG';
     if (DN.kgview.replayGraph) {
-      DN.kgview.replayGraph(kg, 'Completed scouting KG', {
+      DN.kgview.replayGraph(kg, title, {
         entityChunk: 10,
         relationshipChunk: 80,
         delayMs: 220,
         onComplete: opts.onComplete,
       });
     } else {
-      DN.kgview.showGraph(kg, 'Completed scouting KG');
+      DN.kgview.showGraph(kg, title);
       if (typeof opts.onComplete === 'function') opts.onComplete();
     }
   }
+
+  B.startKgRun = function (opts) {
+    if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
+    const body = Object.assign(
+      {
+        match: 'Brazil vs Morocco',
+        mode: 'fast',
+        modules: ['fixture', 'public_x', 'polymarket_market_context', 'wikidata_profiles'],
+        timeout: 120,
+        camel_agents: 4,
+      },
+      opts || {},
+    );
+    const showGraphOnComplete = body.show_completed_graph !== false;
+    delete body.show_completed_graph;
+    if (DN.logTerm) DN.logTerm.push('KG', 'Submitting KG run for ' + body.match + '...');
+    return fetch(apiUrl + '/kg/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then((r) => (r.ok ? r.json() : r.text().then((t) => Promise.reject(new Error(t || r.status)))))
+      .then((run) => {
+        B.runId = run.id;
+        if (B.resetCommsRun) B.resetCommsRun(run.id);
+        if (DN.kgview && DN.kgview.showScoutingProgress) {
+          DN.kgview.showScoutingProgress({
+            match: body.match,
+            matchId: body.match_id,
+          });
+        } else if (DN.kgview) {
+          DN.kgview.reset('Live KG run');
+        }
+        if (DN.logTerm) DN.logTerm.push('KG', 'Run ' + run.id + ' queued · modules ' + (body.modules || []).join(', ') + '.');
+        if (!window.EventSource) return pollScoutingRun(run.id, { showGraphOnComplete, title: 'Completed KG run' });
+        return streamScoutingRun(run.id, { showGraphOnComplete, title: 'Completed KG run' });
+      });
+  };
 
   B.startScoutingRun = function (opts) {
     if (!apiUrl) return Promise.reject(new Error('No backend API configured.'));
@@ -666,7 +715,7 @@ DN.databridge = (function () {
                 fetch(apiUrl + '/runs/' + runId + '/kg/manifest').then((r) => (r.ok ? r.json() : null)).catch(() => null),
                 fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
               ]).then(([kg, manifest, audit]) => {
-                if (opts.showGraphOnComplete !== false) showCompletedScoutingGraph(kg);
+                if (opts.showGraphOnComplete !== false) showCompletedScoutingGraph(kg, opts);
                 resolve({ id: runId, run, kg, manifest, audit });
               });
             } else if (run.status === 'failed') {
@@ -712,7 +761,7 @@ DN.databridge = (function () {
           fetch(apiUrl + '/runs/' + runId + '/kg/manifest').then((r) => (r.ok ? r.json() : null)).catch(() => null),
           fetch(apiUrl + '/runs/' + runId + '/scouting-audit').then((r) => (r.ok ? r.json() : null)).catch(() => null),
         ]).then(([kg, manifest, audit]) => {
-          if (opts.showGraphOnComplete !== false) showCompletedScoutingGraph(kg);
+          if (opts.showGraphOnComplete !== false) showCompletedScoutingGraph(kg, opts);
           resolve({ id: runId, run: latestStatus, kg, manifest, audit });
         }, reject);
       });

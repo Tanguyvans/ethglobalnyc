@@ -85,6 +85,35 @@ Use `voice_mode: "llm"` for the deployed frontend interaction. Use
 `voice_mode: "template"` only for cheap smoke tests or when OpenRouter/DeepSeek
 variables are not configured in Railway.
 
+## Start A KG-Only Run
+
+Use `POST /kg/run` when the frontend only needs to build and inspect the match
+knowledge graph. This does not run the full agent debate pipeline.
+
+Fetch selectable plugins first:
+
+```bash
+curl https://ethglobalnyc-production.up.railway.app/kg/modules
+```
+
+```bash
+curl -X POST https://ethglobalnyc-production.up.railway.app/kg/run \
+  -H "Content-Type: application/json" \
+  -d '{"match":"Portugal vs Uzbekistan","mode":"fast","modules":["fixture","public_x","polymarket_market_context","wikidata_profiles"],"timeout":120,"camel_agents":4}'
+```
+
+Then load:
+
+```text
+GET /runs/{run_id}/kg
+GET /runs/{run_id}/kg/manifest
+GET /runs/{run_id}/scouting-audit
+GET /runs/{run_id}/events
+```
+
+`GET /kg/world-cup` is the static tournament fixture KG. Do not use it as the
+result of a KG run.
+
 The committed wallet store is sanitized:
 
 ```text
