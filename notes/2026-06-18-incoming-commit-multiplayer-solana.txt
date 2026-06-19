@@ -1,0 +1,123 @@
+================================================================================
+INCOMING COMMIT — EXPLAINED  (read in the morning)
+commit 472d330  "Solana wallet + colony founding, redesigned anthill, control-panel UI"
+Author: HemangVora <hemangvora2@gmail.com>   Date: Thu Jun 18 15:33:49 2026 -0400
+2026-06-18
+================================================================================
+
+NOTE ON "LATEST COMMIT"
+  The literal HEAD is 40862c7 "Record trade updates, predictions, Solana watch
+  notes" — but that one is OURS (Adil), it just committed THIS session's work
+  (trades #9/#10, predictions.json, the SOLANA/ watch files, polymarket notes,
+  record_trade.py). Nothing new to you there.
+  The commit that actually CAME IN from a teammate is 472d330 (Hemang). That's
+  what this note explains. (SOLANA/notes.txt stayed gitignored — confirmed not
+  tracked; only SOLANA/README.md + watch-address.txt are committed.)
+
+--------------------------------------------------------------------------------
+TWO-SENTENCE VERSION
+--------------------------------------------------------------------------------
+Hemang's commit turns the 3D "dinasty" frontend from a single-player demo into a
+wallet-gated MULTIPLAYER world: a player connects a Phantom (Solana) wallet, then
+"founds" their own colony by clicking the map, with each colony persisted in a new
+Supabase backend (one row per wallet) and every online player's "queen" avatar
+streamed live to everyone else over a Supabase Realtime channel. It also adds a
+first-run onboarding tour, a redesigned queen-ant player avatar, a minimap, and a
+control-panel UI — and it is WHY the project now revolves around Solana wallets
+(the 31Duzn… address you had me investigate is a Solana/Phantom wallet).
+
+--------------------------------------------------------------------------------
+WHAT CHANGED (17 files, +2,578 / -164)
+--------------------------------------------------------------------------------
+NEW FILES (the heart of it):
+  frontend/public/dinasty/wallet.js      Phantom (Solana) wallet module
+  frontend/public/dinasty/supa.js        Supabase live-world bridge
+  frontend/public/dinasty/queen.js       the player's Queen-ant avatar (3D model)
+  frontend/public/dinasty/onboarding.js  first-run 3-step coachmark tour
+  frontend/public/dinasty/minimap.js     top-down minimap of the world
+  frontend/supabase/schema.sql           Postgres schema for the backend
+CHANGED:
+  main.js (+191)  wires wallet→found→supabase→queen + the frame loop
+  colony.js (+173) "found a colony" placement + render other players' colonies
+  camera.js, hud.js, styles.css (+467), ants.js, world.js, interactions.js,
+  logTerm.js, index.html, config.js  — redesigned anthill + control-panel UI
+
+--------------------------------------------------------------------------------
+HOW IT WORKS (the architecture)
+--------------------------------------------------------------------------------
+1. IDENTITY = PHANTOM SOLANA WALLET  (wallet.js)
+   - Detects Phantom (window.phantom.solana / window.solana.isPhantom).
+   - DN.wallet.connect()/disconnect(); "trusted reconnect" (onlyIfTrusted) so a
+     returning visitor is reconnected silently.
+   - Derives a STABLE ACCENT COLOR from the wallet pubkey (FNV-1a hash -> HSL),
+     so each player has a consistent colour for their colony + queen.
+   - Public contract other modules depend on: .installed/.connected/.pubkey,
+     .shortAddress(), .accentColor(), .onChange(cb).
+
+2. FOUND A COLONY  (onboarding.js -> colony.js -> supa.js)
+   - Onboarding tour: (1) welcome -> (2) "connect Phantom" -> (3) "pick the Found
+     tool on the left rail and click the map" -> colony founded. Persists a
+     done-flag in localStorage so repeat visitors aren't pestered.
+   - Founding writes a row to Supabase keyed by the wallet pubkey.
+
+3. SUPABASE BACKEND  (supa.js + schema.sql)  — this is NEW infrastructure
+   - colonies TABLE (persistent): pubkey (PK) + angle, dist (where the mound sits),
+     accent (0xRRGGBB int), name, founded_at, updated_at. Survives reloads.
+     Realtime is enabled on it -> when ANY player founds/updates a colony, all
+     connected clients get a postgres_changes event and render that mound live.
+   - queens CHANNEL (ephemeral, NOT a table): a Realtime "broadcast" channel that
+     streams each online player's live queen position/heading at ~3 Hz. Other
+     players are rendered as "ghost queens" that smoothly lerp toward their latest
+     broadcast (so motion looks fluid despite 3 Hz packets); ghosts that go silent
+     for >10 s are evicted. Nothing about live movement is written to disk.
+   - Config via window.DN_CONFIG.SUPABASE_URL / SUPABASE_ANON_KEY (frontend/public/
+     config.js). If those are empty, supa.js NO-OPS and the app falls back to
+     localStorage (single-player). So the live world only turns on once those env
+     values are set.
+
+4. THE QUEEN AVATAR  (queen.js)
+   - The player's on-map avatar is a detailed Queen ant (reddish chitin, enlarged
+     gaster, wing scars, ocelli, pheromone aura, egg-laying cadence). Spawns on
+     wallet connect wearing the wallet's accent colour as a "crown". This same
+     mesh template is reused to draw other players' ghost queens.
+
+--------------------------------------------------------------------------------
+SECURITY / CORRECTNESS CAVEATS (worth knowing before demo)
+--------------------------------------------------------------------------------
+- RLS IS WIDE OPEN (by design, hackathon-grade): schema.sql grants public
+  read + insert + update on colonies, and the pubkey is SELF-DECLARED (no
+  signature check). i.e. any client could write/overwrite any pubkey's colony
+  row. The schema comment itself flags the hardening path: add Sign-In-With-Solana
+  and gate writes on auth.jwt()->>'sub' = pubkey. Fine for the demo, not for real.
+- The SUPABASE_ANON_KEY will ship in the frontend (it's a public anon key — that's
+  expected for Supabase), but combined with open RLS it means the world is fully
+  client-writable. Don't put anything sensitive in that DB.
+- wallet.js only CONNECTS (reads pubkey); this commit does not sign or send any
+  Solana transaction. So "Solana wallet" here = identity/login, not (yet) on-chain
+  payments. (Contrast: the betting economy is still PolyGun/Polygon + Arc.)
+
+--------------------------------------------------------------------------------
+HOW IT CONNECTS TO THE SOLANA ADDRESS YOU GAVE ME
+--------------------------------------------------------------------------------
+- This commit makes Phantom/Solana the player identity layer. The address
+  31DuznH5P6FAV4qnSvaahoUndgWzEKbGRjERKTV3Qfiu is a Solana WALLET (holds 4.32 SOL
+  + ~4001 USDC, dormant since Dec 2025 — see SOLANA/README.md). Plausibly it's a
+  player/founder wallet or a funding wallet tied to this new Solana direction, but
+  the commit itself does NOT hardcode that address anywhere I saw — so its exact
+  role is still unconfirmed. (grep the repo for it in the morning if you want to be
+  sure: `git grep 31DuznH5P6FAV4qnSvaahoUndgWzEKbGRjERKTV3Qfiu`.)
+
+--------------------------------------------------------------------------------
+TO RUN / VERIFY IT
+--------------------------------------------------------------------------------
+- Set SUPABASE_URL + SUPABASE_ANON_KEY in frontend/public/config.js, run the
+  schema.sql once in the Supabase SQL editor, serve frontend/, open in a browser
+  with Phantom installed -> connect -> Found tool -> click map -> your colony
+  persists and would appear for a second browser/player in real time.
+- Without Supabase configured it still runs single-player (localStorage fallback).
+
+SEE ALSO
+  frontend/public/dinasty/{wallet,supa,queen,onboarding,minimap}.js,
+  frontend/supabase/schema.sql, frontend/public/config.js,
+  SOLANA/README.md (the 31Duzn… address writeup), notes/2026-06-13-frontend.txt
+================================================================================
