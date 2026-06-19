@@ -1,0 +1,19 @@
+{
+  "sources": [
+    "fixture",
+    {
+      "kind": "api",
+      "url": "https://txline.txodds.com/api/fixtures/snapshot",
+      "adapter": "txline_fixtures",
+      "title": "TXLINE Brazil vs Morocco fixtures snapshot",
+      "headers": {
+        "Authorization": "Bearer ${TXLINE_JWT}",
+        "X-Api-Token": "${TXLINE_API_TOKEN}"
+      },
+      "query": {
+        "startEpochDay": 20617
+      },
+      "max_rows": 50
+    }
+  ]
+}

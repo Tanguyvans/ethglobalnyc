@@ -1,0 +1,21 @@
+{
+  "sources": [
+    "fixture",
+    {
+      "kind": "cli",
+      "command": [
+        "python3",
+        "polymarket/scout_market.py",
+        "--offline",
+        "--match",
+        "Brazil vs Morocco",
+        "--home-team",
+        "Brazil",
+        "--away-team",
+        "Morocco",
+        "--limit",
+        "5"
+      ]
+    }
+  ]
+}

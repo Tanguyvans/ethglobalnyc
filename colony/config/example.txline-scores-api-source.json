@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://txline.txodds.com/api/scores/snapshot/${TXLINE_FIXTURE_ID}",
+      "adapter": "txline_scores",
+      "title": "TXLINE score events snapshot",
+      "headers": {
+        "Authorization": "Bearer ${TXLINE_JWT}",
+        "X-Api-Token": "${TXLINE_API_TOKEN}"
+      },
+      "max_rows": 50
+    }
+  ]
+}

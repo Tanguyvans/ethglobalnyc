@@ -309,7 +309,7 @@ def _append_evidence_claims(
                     entity_id=claim_type_id,
                     entity_type="claim_type",
                     name=claim_type,
-                    attributes={},
+                    attributes=_claim_type_attributes(claim_type),
                 )
             )
             relationships.append(
@@ -441,7 +441,7 @@ def _append_evidence_claims(
                         entity_id=domain_id,
                         entity_type="source_domain",
                         name=domain,
-                        attributes={},
+                        attributes=_vocabulary_attributes("source_domain", domain),
                     )
                 )
                 relationships.append(
@@ -459,7 +459,7 @@ def _append_evidence_claims(
                         entity_id=kind_id,
                         entity_type="source_kind",
                         name=source_kind,
-                        attributes={},
+                        attributes=_vocabulary_attributes("source_kind", source_kind),
                     )
                 )
                 relationships.append(
@@ -496,7 +496,7 @@ def _append_evidence_claims(
                         entity_id=recency_id,
                         entity_type="source_recency",
                         name=source_recency,
-                        attributes={},
+                        attributes=_vocabulary_attributes("source_recency", source_recency),
                     )
                 )
                 relationships.append(
@@ -568,7 +568,7 @@ def _append_match_metadata_nodes(
                 entity_id=venue_id,
                 entity_type="venue",
                 name=match.venue_name,
-                attributes={},
+                attributes=_vocabulary_attributes("venue", match.venue_name),
             )
         )
         relationships.append(
@@ -585,7 +585,7 @@ def _append_match_metadata_nodes(
                 entity_id=group_id,
                 entity_type="group",
                 name=match.group_name,
-                attributes={},
+                attributes=_vocabulary_attributes("group", match.group_name),
             )
         )
         relationships.append(
@@ -602,7 +602,7 @@ def _append_match_metadata_nodes(
                 entity_id=stage_id,
                 entity_type="stage",
                 name=match.stage_name,
-                attributes={},
+                attributes=_vocabulary_attributes("stage", match.stage_name),
             )
         )
         relationships.append(
@@ -681,11 +681,23 @@ def _claim_quality_tags(evidence: dict, *, confidence: float) -> list[str]:
         )
     ):
         tags.append("visible_market_price")
-    if claim_type in {"injury_availability", "lineup", "player_form", "tactical"} and (
+    if claim_type in {
+        "injury_availability",
+        "injury_return",
+        "lineup",
+        "player_form",
+        "key_players",
+        "player_ratings",
+        "coach_form",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical",
+        "social_signal",
+    } and (
         "fresh_source" in tags or "metric_backed" in tags or "strong_or_official_source" in tags
     ):
         tags.append("match_actionable")
-    if claim_type == "injury_availability" and metrics.get("availability_status"):
+    if claim_type in {"injury_availability", "injury_return"} and metrics.get("availability_status"):
         tags.append("availability_status")
     if claim_type == "match_history" and metrics.get("historical_result_signal") == "explicit_score":
         tags.append("explicit_score")
@@ -703,7 +715,7 @@ def _claim_quality_tags(evidence: dict, *, confidence: float) -> list[str]:
         )
     ):
         tags.append("recent_results_window")
-    if claim_type == "player_form" and any(
+    if claim_type in {"player_form", "key_players", "player_ratings", "attacking_profile"} and any(
         key in metrics
         for key in (
             "goals",
@@ -714,9 +726,23 @@ def _claim_quality_tags(evidence: dict, *, confidence: float) -> list[str]:
             "starts",
             "xg",
             "xa",
+            "average_rating",
+            "chances_created",
+            "key_passes_per_game",
+            "shots_per_game",
         )
     ):
         tags.append("season_output")
+    if claim_type == "player_ratings" and metrics.get("rating_signal"):
+        tags.append("rating_signal")
+    if claim_type == "attacking_profile" and metrics.get("attacking_signal"):
+        tags.append("attacking_signal")
+    if claim_type == "defensive_profile" and metrics.get("defensive_signal"):
+        tags.append("defensive_signal")
+    if claim_type == "coach_form" and metrics.get("coach_signal"):
+        tags.append("coach_signal")
+    if claim_type == "social_signal" and metrics.get("social_signal"):
+        tags.append("social_signal")
     if claim_type == "tactical" and metrics.get("formation"):
         tags.append("formation_signal")
     if claim_type in {"lineup", "tactical"} and metrics.get("lineup_signal"):
@@ -969,7 +995,7 @@ def _append_scouting_topic_nodes(
                     entity_id=claim_type_id,
                     entity_type="claim_type",
                     name=claim_type,
-                    attributes={},
+                    attributes=_claim_type_attributes(claim_type),
                 ),
             ]
         )
@@ -1115,7 +1141,7 @@ def _append_team_scouting_topic_nodes(
                         entity_id=claim_type_id,
                         entity_type="claim_type",
                         name=claim_type,
-                        attributes={},
+                        attributes=_claim_type_attributes(claim_type),
                     ),
                 ]
             )
@@ -2042,7 +2068,14 @@ def _append_player_context_nodes(
     club = _normal_text(metrics.get("club"))
     if club:
         club_id = f"club:{_slug(club)}"
-        entities.append(WorldEntity(entity_id=club_id, entity_type="club", name=club, attributes={}))
+        entities.append(
+            WorldEntity(
+                entity_id=club_id,
+                entity_type="club",
+                name=club,
+                attributes=_vocabulary_attributes("club", club),
+            )
+        )
         relationships.append(
             WorldRelationship(
                 source_id=player_id,
@@ -2054,7 +2087,14 @@ def _append_player_context_nodes(
     position = _normal_text(metrics.get("position"))
     if position:
         position_id = f"position:{_slug(position)}"
-        entities.append(WorldEntity(entity_id=position_id, entity_type="position", name=position, attributes={}))
+        entities.append(
+            WorldEntity(
+                entity_id=position_id,
+                entity_type="position",
+                name=position,
+                attributes=_vocabulary_attributes("position", position),
+            )
+        )
         relationships.append(
             WorldRelationship(
                 source_id=player_id,
@@ -2266,7 +2306,14 @@ def _append_availability_event_node(
         ]
     )
     status_id = f"availability_status:{_slug(status)}"
-    entities.append(WorldEntity(entity_id=status_id, entity_type="availability_status", name=status, attributes={}))
+    entities.append(
+        WorldEntity(
+            entity_id=status_id,
+            entity_type="availability_status",
+            name=status,
+            attributes=_vocabulary_attributes("availability_status", status),
+        )
+    )
     relationships.append(
         WorldRelationship(
             source_id=event_id,
@@ -2277,7 +2324,14 @@ def _append_availability_event_node(
     )
     if body_part:
         body_part_id = f"body_part:{_slug(body_part)}"
-        entities.append(WorldEntity(entity_id=body_part_id, entity_type="body_part", name=body_part, attributes={}))
+        entities.append(
+            WorldEntity(
+                entity_id=body_part_id,
+                entity_type="body_part",
+                name=body_part,
+                attributes=_vocabulary_attributes("body_part", body_part),
+            )
+        )
         relationships.append(
             WorldRelationship(
                 source_id=event_id,
@@ -2495,6 +2549,41 @@ def _source_quality_score(source_quality: str) -> float:
         "medium": 0.55,
         "weak": 0.2,
     }.get(source_quality.lower(), 0.4)
+
+
+def _vocabulary_attributes(entity_type: str, value: str) -> dict:
+    roles = {
+        "availability_status": "availability taxonomy",
+        "body_part": "injury taxonomy",
+        "claim_type": "scouting taxonomy",
+        "club": "player affiliation taxonomy",
+        "group": "tournament structure",
+        "position": "player role taxonomy",
+        "source_domain": "provenance taxonomy",
+        "source_kind": "source taxonomy",
+        "source_recency": "freshness taxonomy",
+        "stage": "tournament structure",
+        "venue": "match context",
+    }
+    return {
+        "node_role": roles.get(entity_type, "taxonomy"),
+        "value": value,
+        "is_domain_fact": entity_type in {"availability_status", "body_part", "club", "group", "position", "stage", "venue"},
+        "is_index_node": entity_type in {"claim_type", "source_domain", "source_kind", "source_recency"},
+    }
+
+
+def _claim_type_attributes(claim_type: str) -> dict:
+    recipe = SCOUTING_RESCOUT_RECIPES.get(claim_type, {})
+    return {
+        **_vocabulary_attributes("claim_type", claim_type),
+        "claim_type": claim_type,
+        "required": claim_type in SCOUTING_REQUIRED_CLAIM_TYPES,
+        "freshness_required": claim_type in SCOUTING_FRESHNESS_REQUIRED_CLAIM_TYPES,
+        "recommended_scout": str(recipe.get("recommended_scout") or f"{claim_type}_scout"),
+        "query_focus": str(recipe.get("query_focus") or claim_type.replace("_", " ")),
+        "acceptance_criteria": list(recipe.get("acceptance_criteria") or []),
+    }
 
 
 def _impact_attributes(impact: str) -> dict:

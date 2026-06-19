@@ -11,6 +11,7 @@ import json
 import os
 import re
 import hashlib
+import time
 import unicodedata
 import urllib.parse
 import urllib.request
@@ -82,6 +83,60 @@ class DeepSeekScoutRole:
     focus: str
 
 
+@dataclass(frozen=True)
+class CamelResearchRole:
+    role_id: str
+    query_template: str
+    focus: str
+    claim_types: tuple[str, ...]
+
+
+CAMEL_RESEARCH_ROLES = (
+    CamelResearchRole(
+        role_id="availability_lineup",
+        query_template="{home_team} {away_team} predicted lineups injuries team news World Cup",
+        focus="predicted lineups, injuries, suspensions, training availability, and expected starters",
+        claim_types=("injury_availability", "injury_return", "lineup"),
+    ),
+    CamelResearchRole(
+        role_id="tactical_matchup",
+        query_template="{home_team} {away_team} tactical preview attacking defensive profile key players World Cup",
+        focus="tactical preview, formations, attacking/defensive style, role usage, key matchups, and matchup weaknesses",
+        claim_types=("tactical", "attacking_profile", "defensive_profile", "key_players"),
+    ),
+    CamelResearchRole(
+        role_id="home_form_players",
+        query_template="{home_team} recent form key players season form World Cup",
+        focus="home-team recent form, key player season output, minutes, goals, assists, and role changes",
+        claim_types=("recent_form", "player_form", "key_players", "player_ratings"),
+    ),
+    CamelResearchRole(
+        role_id="away_form_players",
+        query_template="{away_team} recent form key players season form World Cup",
+        focus="away-team recent form, key player season output, minutes, goals, assists, and role changes",
+        claim_types=("recent_form", "player_form", "key_players", "player_ratings"),
+    ),
+    CamelResearchRole(
+        role_id="match_history",
+        query_template="{home_team} {away_team} head to head previous meetings recent results World Cup",
+        focus="head-to-head history, previous meetings, scorelines, and recent match history",
+        claim_types=("match_history", "recent_form"),
+    ),
+    CamelResearchRole(
+        role_id="squad_roster",
+        query_template="{home_team} {away_team} squads roster FIFA World Cup 2026 players",
+        focus="current squads, roster confirmation, call-ups, omissions, and player identifiers",
+        claim_types=("squad_roster", "lineup", "key_players"),
+    ),
+    CamelResearchRole(
+        role_id="coach_social_ratings",
+        query_template="{home_team} {away_team} coach form player ratings social sentiment injuries World Cup",
+        focus="coach streaks, player ratings, returning players, and social/network sentiment signals",
+        claim_types=("coach_form", "player_ratings", "injury_return", "social_signal"),
+    ),
+)
+
+
 DEEPSEEK_SCOUT_ROLES = (
     DeepSeekScoutRole(
         role_id="availability_lineup",
@@ -99,9 +154,9 @@ DEEPSEEK_SCOUT_ROLES = (
         scout_name="deepseek_form_player_agent",
         finding_name="deepseek_form_player_read",
         source_type="stats",
-        allowed_claim_types=("recent_form", "player_form", "match_history"),
+        allowed_claim_types=("recent_form", "player_form", "key_players", "player_ratings", "match_history"),
         focus=(
-            "recent team results, player season output, key player form, and concrete head-to-head or match-result history. "
+            "recent team results, player season output, key players, player ratings, and concrete head-to-head or match-result history. "
             "Prefer claims with scores, goals, assists, appearances, or recent fixture context."
         ),
     ),
@@ -110,9 +165,9 @@ DEEPSEEK_SCOUT_ROLES = (
         scout_name="deepseek_tactical_agent",
         finding_name="deepseek_tactical_matchup_read",
         source_type="stats",
-        allowed_claim_types=("tactical", "lineup"),
+        allowed_claim_types=("tactical", "lineup", "attacking_profile", "defensive_profile", "coach_form"),
         focus=(
-            "formations, pressing/build-up patterns, matchup details, role usage, tactical weaknesses, and shape changes. "
+            "formations, pressing/build-up patterns, attack creation, defensive solidity, coach context, matchup details, role usage, tactical weaknesses, and shape changes. "
             "Avoid generic squad descriptions unless they explain match usage."
         ),
     ),
@@ -199,10 +254,13 @@ def public_match_context_from_tournament_match(
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     include_x: bool = False,
     include_camel: bool = False,
+    include_camel_deep: bool = False,
+    camel_agent_count: int = 4,
     include_telegram: bool = False,
     include_polygun: bool = False,
     include_deepseek_scout: bool = False,
     rescout_targets: list[dict] | None = None,
+    logger: Any | None = None,
 ) -> MatchContext:
     """Create a match context from real public sources and optional research scouts."""
     attrs = match_entity["attributes"]
@@ -213,138 +271,238 @@ def public_match_context_from_tournament_match(
     cache_path = Path(cache_dir)
     cache_path.mkdir(parents=True, exist_ok=True)
 
-    home_profile = fetch_team_profile(home_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds)
-    away_profile = fetch_team_profile(away_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds)
-    squad_rosters = {
-        home_team: fetch_team_roster(home_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds),
-        away_team: fetch_team_roster(away_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds),
-    }
+    def run_stage(stage: str, func):
+        started = time.perf_counter()
+        result = func()
+        duration_seconds = round(time.perf_counter() - started, 3)
+        if logger is not None:
+            logger.event(
+                "public_stage_complete",
+                source="public",
+                stage=stage,
+                duration_seconds=duration_seconds,
+                item_count=_stage_item_count(result),
+            )
+        return result
+
+    home_profile, away_profile = run_stage(
+        "team_profiles",
+        lambda: (
+            fetch_team_profile(home_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds),
+            fetch_team_profile(away_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds),
+        ),
+    )
+    squad_rosters = run_stage(
+        "squad_rosters",
+        lambda: {
+            home_team: fetch_team_roster(home_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds),
+            away_team: fetch_team_roster(away_team, cache_path, refresh=refresh, timeout_seconds=timeout_seconds),
+        },
+    )
     known_players = _known_players_by_team(squad_rosters)
-    match_news = fetch_news_query(
-        cache_key=f"match_news_{_slug(home_team)}_{_slug(away_team)}",
-        query=f"{home_team} {away_team} World Cup football",
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
+    match_news = run_stage(
+        "match_news_search",
+        lambda: fetch_news_query(
+            cache_key=f"match_news_{_slug(home_team)}_{_slug(away_team)}",
+            query=f"{home_team} {away_team} World Cup football",
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+        ),
     )
-    match_history_items = fetch_match_history_news(
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-    )
-    tactical_items = fetch_tactical_matchup_news(
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-    )
-    recent_results_news = {
-        home_team: fetch_news_query(
-            cache_key=f"recent_results_{_slug(home_team)}",
-            query=f"{home_team} national football team recent results 2026",
-            cache_dir=cache_path,
-            refresh=refresh,
-            timeout_seconds=timeout_seconds,
-        ),
-        away_team: fetch_news_query(
-            cache_key=f"recent_results_{_slug(away_team)}",
-            query=f"{away_team} national football team recent results 2026",
-            cache_dir=cache_path,
-            refresh=refresh,
-            timeout_seconds=timeout_seconds,
-        ),
-    }
-    team_scout_news = {
-        home_team: fetch_team_scout_news(
-            home_team,
-            cache_dir=cache_path,
-            refresh=refresh,
-            timeout_seconds=timeout_seconds,
-            known_players=known_players,
-        ),
-        away_team: fetch_team_scout_news(
-            away_team,
-            cache_dir=cache_path,
-            refresh=refresh,
-            timeout_seconds=timeout_seconds,
-            known_players=known_players,
-        ),
-    }
-    official_squad_items = {
-        home_team: fetch_official_squad_news(
-            home_team,
-            cache_dir=cache_path,
-            refresh=refresh,
-            timeout_seconds=timeout_seconds,
-        ),
-        away_team: fetch_official_squad_news(
-            away_team,
-            cache_dir=cache_path,
-            refresh=refresh,
-            timeout_seconds=timeout_seconds,
-        ),
-    }
-    availability_news = fetch_news_query(
-        cache_key=f"availability_{_slug(home_team)}_{_slug(away_team)}",
-        query=f"{home_team} {away_team} World Cup squad injuries players Neymar",
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-    )
-    x_items = (
-        fetch_x_availability(
+    match_history_items = run_stage(
+        "match_history_search",
+        lambda: fetch_match_history_news(
             home_team=home_team,
             away_team=away_team,
             cache_dir=cache_path,
             refresh=refresh,
             timeout_seconds=timeout_seconds,
+        ),
+    )
+    tactical_items = run_stage(
+        "tactical_search",
+        lambda: fetch_tactical_matchup_news(
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+        ),
+    )
+    recent_results_news = run_stage(
+        "recent_results_search",
+        lambda: {
+            home_team: fetch_news_query(
+                cache_key=f"recent_results_{_slug(home_team)}",
+                query=f"{home_team} national football team recent results 2026",
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+            ),
+            away_team: fetch_news_query(
+                cache_key=f"recent_results_{_slug(away_team)}",
+                query=f"{away_team} national football team recent results 2026",
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+            ),
+        },
+    )
+    team_scout_news = run_stage(
+        "team_scout_searches",
+        lambda: {
+            home_team: fetch_team_scout_news(
+                home_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                known_players=known_players,
+            ),
+            away_team: fetch_team_scout_news(
+                away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                known_players=known_players,
+            ),
+        },
+    )
+    official_squad_items = run_stage(
+        "official_squad_searches",
+        lambda: {
+            home_team: fetch_official_squad_news(
+                home_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+            ),
+            away_team: fetch_official_squad_news(
+                away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+            ),
+        },
+    )
+    availability_news = run_stage(
+        "availability_search",
+        lambda: fetch_news_query(
+            cache_key=f"availability_{_slug(home_team)}_{_slug(away_team)}",
+            query=f"{home_team} {away_team} World Cup squad injuries players",
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+        ),
+    )
+    x_items = (
+        run_stage(
+            "scrapecreators_x_search",
+            lambda: fetch_x_availability(
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                known_players=known_players,
+            ),
         )
         if include_x
         else []
     )
     camel_items = (
-        fetch_camel_research(
+        run_stage(
+            "camel_research",
+            lambda: fetch_camel_research(
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                camel_agent_count=camel_agent_count,
+            ),
+        )
+        if include_camel
+        else []
+    )
+    availability_claims = run_stage(
+        "availability_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=availability_news,
             home_team=home_team,
             away_team=away_team,
             cache_dir=cache_path,
             refresh=refresh,
             timeout_seconds=timeout_seconds,
+            max_articles=2,
+            known_players=known_players,
+        ),
+    )
+    x_claims = (
+        run_stage(
+            "x_claim_extraction",
+            lambda: extract_evidence_claims(
+                items=x_items,
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                max_articles=4,
+                known_players=known_players,
+            ),
+        )
+        if include_x
+        else []
+    )
+    x_social_claims = (
+        run_stage(
+            "x_social_claim_mapping",
+            lambda: _topic_claims_from_items(
+                items=x_items,
+                claim_type="social_signal",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.38,
+                known_players=known_players,
+            ),
+        )
+        if include_x
+        else []
+    )
+    x_claims = _dedupe_claims(x_claims + x_social_claims)
+    camel_claims = (
+        run_stage(
+            "camel_claim_extraction",
+            lambda: extract_evidence_claims(
+                items=camel_items,
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                max_articles=4,
+                known_players=known_players,
+            ),
         )
         if include_camel
         else []
     )
-    availability_claims = extract_evidence_claims(
-        items=availability_news,
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=2,
-        known_players=known_players,
-    )
-    x_claims = extract_evidence_claims(
-        items=x_items,
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
-    )
-    camel_claims = extract_evidence_claims(
-        items=camel_items,
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
+    camel_deep_claims = (
+        run_stage(
+            "camel_deep_claims",
+            lambda: fetch_camel_deep_claims(
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_path,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                camel_agent_count=camel_agent_count,
+                known_players=known_players,
+            ),
+        )
+        if include_camel_deep
+        else []
     )
     result_archive_items = _team_scout_items(team_scout_news, "recent_form", max_per_team=3)
     tactical_lineup_items = _tactical_items_from_team_scouts(
@@ -353,64 +511,82 @@ def public_match_context_from_tournament_match(
         away_team=away_team,
     )
     all_tactical_items = _dedupe_items(tactical_items + tactical_lineup_items)
-    team_form_claims = extract_evidence_claims(
-        items=result_archive_items,
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
+    team_form_claims = run_stage(
+        "team_form_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=result_archive_items,
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_articles=4,
+            known_players=known_players,
+        ),
     )
-    player_form_claims = extract_evidence_claims(
-        items=_team_scout_items(team_scout_news, "player_form", max_per_team=3),
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
+    player_form_claims = run_stage(
+        "player_form_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=_team_scout_items(team_scout_news, "player_form", max_per_team=3),
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_articles=4,
+            known_players=known_players,
+        ),
     )
-    squad_depth_claims = extract_evidence_claims(
-        items=_team_scout_items(team_scout_news, "squad_depth", max_per_team=3),
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
+    squad_depth_claims = run_stage(
+        "squad_depth_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=_team_scout_items(team_scout_news, "squad_depth", max_per_team=3),
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_articles=4,
+            known_players=known_players,
+        ),
     )
-    match_history_claims = extract_evidence_claims(
-        items=match_history_items,
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
+    match_history_claims = run_stage(
+        "match_history_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=match_history_items,
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_articles=4,
+            known_players=known_players,
+        ),
     )
-    tactical_claims = extract_evidence_claims(
-        items=all_tactical_items,
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
-        known_players=known_players,
+    tactical_claims = run_stage(
+        "tactical_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=all_tactical_items,
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_articles=4,
+            known_players=known_players,
+        ),
     )
-    official_squad_claims = extract_evidence_claims(
-        items=_team_items(official_squad_items, max_per_team=4),
-        home_team=home_team,
-        away_team=away_team,
-        cache_dir=cache_path,
-        refresh=refresh,
-        timeout_seconds=timeout_seconds,
-        max_articles=4,
+    official_squad_claims = run_stage(
+        "official_squad_claim_extraction",
+        lambda: extract_evidence_claims(
+            items=_team_items(official_squad_items, max_per_team=4),
+            home_team=home_team,
+            away_team=away_team,
+            cache_dir=cache_path,
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_articles=4,
+        ),
     )
     official_squad_claims = _dedupe_claims(
         official_squad_claims
@@ -446,6 +622,55 @@ def public_match_context_from_tournament_match(
             known_players=known_players,
         )
     )
+    key_player_claims = _topic_claims_from_items(
+        items=_team_scout_items(team_scout_news, "player_form", max_per_team=3)
+        + _team_scout_items(team_scout_news, "squad_depth", max_per_team=2),
+        claim_type="key_players",
+        home_team=home_team,
+        away_team=away_team,
+        confidence=0.5,
+        known_players=known_players,
+    )
+    player_rating_claims = _topic_claims_from_items(
+        items=_team_scout_items(team_scout_news, "player_ratings", max_per_team=4),
+        claim_type="player_ratings",
+        home_team=home_team,
+        away_team=away_team,
+        confidence=0.5,
+        known_players=known_players,
+    )
+    injury_return_claims = _topic_claims_from_items(
+        items=availability_news + _team_scout_items(team_scout_news, "squad_depth", max_per_team=2),
+        claim_type="injury_return",
+        home_team=home_team,
+        away_team=away_team,
+        confidence=0.46,
+        known_players=known_players,
+    )
+    coach_form_claims = _topic_claims_from_items(
+        items=_team_scout_items(team_scout_news, "coach_form", max_per_team=4),
+        claim_type="coach_form",
+        home_team=home_team,
+        away_team=away_team,
+        confidence=0.48,
+        known_players=known_players,
+    )
+    attacking_profile_claims = _topic_claims_from_items(
+        items=_team_scout_items(team_scout_news, "attacking_profile", max_per_team=4) + all_tactical_items,
+        claim_type="attacking_profile",
+        home_team=home_team,
+        away_team=away_team,
+        confidence=0.5,
+        known_players=known_players,
+    )
+    defensive_profile_claims = _topic_claims_from_items(
+        items=_team_scout_items(team_scout_news, "defensive_profile", max_per_team=4) + all_tactical_items,
+        claim_type="defensive_profile",
+        home_team=home_team,
+        away_team=away_team,
+        confidence=0.5,
+        known_players=known_players,
+    )
 
     market, stats, odds, news = public_probabilities(
         home_team=home_team,
@@ -461,6 +686,7 @@ def public_match_context_from_tournament_match(
         availability_claims=availability_claims,
         x_claims=x_claims,
         camel_claims=camel_claims,
+        camel_deep_claims=camel_deep_claims,
         team_form_claims=team_form_claims,
         player_form_claims=player_form_claims,
         squad_depth_claims=squad_depth_claims,
@@ -490,6 +716,7 @@ def public_match_context_from_tournament_match(
         availability_claims=availability_claims,
         x_claims=x_claims,
         camel_claims=camel_claims,
+        camel_deep_claims=camel_deep_claims,
         team_form_claims=team_form_claims,
         player_form_claims=player_form_claims,
         squad_depth_claims=squad_depth_claims,
@@ -501,8 +728,16 @@ def public_match_context_from_tournament_match(
         tactical_claims=tactical_claims,
         official_squad_claims=official_squad_claims,
         squad_roster_claims=squad_roster_claims,
+        key_player_claims=key_player_claims,
+        player_rating_claims=player_rating_claims,
+        injury_return_claims=injury_return_claims,
+        coach_form_claims=coach_form_claims,
+        attacking_profile_claims=attacking_profile_claims,
+        defensive_profile_claims=defensive_profile_claims,
         include_x=include_x,
         include_camel=include_camel,
+        include_camel_deep=include_camel_deep,
+        camel_agent_count=camel_agent_count,
     )
     if include_telegram:
         findings.extend(
@@ -743,10 +978,45 @@ def _focused_claims_for_target(
                 known_players=known_players,
             )
         )
+    elif claim_type == "key_players":
+        claims.extend(
+            _topic_claims_from_items(
+                items=team_scout_news.get(team, {}).get("player_form", [])
+                + team_scout_news.get(team, {}).get("squad_depth", [])
+                + focused_items,
+                claim_type="key_players",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.5,
+                known_players=known_players,
+            )
+        )
+    elif claim_type == "player_ratings":
+        claims.extend(
+            _topic_claims_from_items(
+                items=team_scout_news.get(team, {}).get("player_ratings", []) + focused_items,
+                claim_type="player_ratings",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.5,
+                known_players=known_players,
+            )
+        )
     elif claim_type == "squad_roster":
         claims.extend(squad_roster_claims)
     elif claim_type == "injury_availability":
         claims.extend(availability_claims)
+    elif claim_type == "injury_return":
+        claims.extend(
+            _topic_claims_from_items(
+                items=team_scout_news.get(team, {}).get("squad_depth", []) + focused_items,
+                claim_type="injury_return",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.48,
+                known_players=known_players,
+            )
+        )
     elif claim_type == "lineup":
         claims.extend(squad_depth_claims)
         claims.extend(official_squad_claims)
@@ -772,6 +1042,39 @@ def _focused_claims_for_target(
                 known_players=known_players,
             )
         )
+    elif claim_type == "coach_form":
+        claims.extend(
+            _topic_claims_from_items(
+                items=team_scout_news.get(team, {}).get("coach_form", []) + focused_items,
+                claim_type="coach_form",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.5,
+                known_players=known_players,
+            )
+        )
+    elif claim_type == "attacking_profile":
+        claims.extend(
+            _topic_claims_from_items(
+                items=team_scout_news.get(team, {}).get("attacking_profile", []) + tactical_items + focused_items,
+                claim_type="attacking_profile",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.5,
+                known_players=known_players,
+            )
+        )
+    elif claim_type == "defensive_profile":
+        claims.extend(
+            _topic_claims_from_items(
+                items=team_scout_news.get(team, {}).get("defensive_profile", []) + tactical_items + focused_items,
+                claim_type="defensive_profile",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.5,
+                known_players=known_players,
+            )
+        )
     elif claim_type == "tactical":
         claims.extend(tactical_claims)
         claims.extend(
@@ -781,6 +1084,17 @@ def _focused_claims_for_target(
                 home_team=home_team,
                 away_team=away_team,
                 confidence=0.5,
+                known_players=known_players,
+            )
+        )
+    elif claim_type == "social_signal":
+        claims.extend(
+            _topic_claims_from_items(
+                items=focused_items,
+                claim_type="social_signal",
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.38,
                 known_players=known_players,
             )
         )
@@ -822,8 +1136,20 @@ def _fetch_focused_rescout_items(
         return _filter_topic_items(items, "recent_form", team=team, known_players=known_players)[:8]
     if claim_type == "player_form":
         return _filter_topic_items(items, "player_form", team=team, known_players=known_players)[:8]
+    if claim_type in {"key_players", "player_ratings"}:
+        return _filter_topic_items(items, "player_ratings", team=team, known_players=known_players)[:8]
     if claim_type in {"lineup", "injury_availability", "squad_roster"}:
         return _filter_topic_items(items, "squad_depth", team=team, known_players=known_players)[:8]
+    if claim_type == "injury_return":
+        return _filter_topic_items(items, "squad_depth", team=team, known_players=known_players)[:8]
+    if claim_type == "coach_form":
+        return _filter_topic_items(items, "coach_form", team=team, known_players=known_players)[:8]
+    if claim_type == "attacking_profile":
+        return _filter_topic_items(items, "attacking_profile", team=team, known_players=known_players)[:8]
+    if claim_type == "defensive_profile":
+        return _filter_topic_items(items, "defensive_profile", team=team, known_players=known_players)[:8]
+    if claim_type == "social_signal":
+        return _filter_topic_items(items, "social_signal", team=team, known_players=known_players)[:8]
     if claim_type == "tactical":
         tactical = _filter_tactical_items(items, home_team=home_team, away_team=away_team)
         squad_depth = _filter_topic_items(items, "squad_depth", team=team, known_players=known_players)
@@ -856,6 +1182,16 @@ def _focused_rescout_queries(*, team: str, claim_type: str, quality_reasons: lis
         if "needs_player_season_metric" in reasons:
             queries.insert(0, f"{team} player stats goals assists appearances 2025-26 season club form")
         return queries
+    if claim_type == "key_players":
+        return [
+            f"{team} national football team key players star players creators finishers defensive leaders 2026",
+            f"{team} key players World Cup squad roles top scorer playmaker captain 2026",
+        ]
+    if claim_type == "player_ratings":
+        return [
+            f"{team} player ratings recent matches average rating SofaScore FotMob WhoScored 2025 2026",
+            f"{team} football player match ratings best performers recent games 2026",
+        ]
     if claim_type == "injury_availability":
         queries = [
             f"{team} national football team injury report squad availability suspension 2026",
@@ -866,6 +1202,11 @@ def _focused_rescout_queries(*, team: str, claim_type: str, quality_reasons: lis
         if "needs_availability_status" in reasons:
             queries.insert(0, f"{team} ruled out doubtful injured suspended unavailable World Cup squad news")
         return queries
+    if claim_type == "injury_return":
+        return [
+            f"{team} players returning from injury back in training match fitness World Cup 2026",
+            f"{team} injury return comeback available again squad news players 2026",
+        ]
     if claim_type == "lineup":
         queries = [
             f"{team} predicted lineup starting XI squad depth World Cup 2026",
@@ -885,6 +1226,26 @@ def _focused_rescout_queries(*, team: str, claim_type: str, quality_reasons: lis
         if "needs_match_history_metric" in reasons:
             queries.insert(0, f"{team} last 10 matches results scores wins draws losses 2026 {common_suffix}")
         return queries
+    if claim_type == "coach_form":
+        return [
+            f"{team} national football team coach manager recent record wins losses unbeaten streak 2026 {common_suffix}",
+            f"{team} coach tactical changes recent form winning streak defeats national team 2026 {common_suffix}",
+        ]
+    if claim_type == "attacking_profile":
+        return [
+            f"{team} attacking stats xG shots chances created goals for final third 2025 2026 {common_suffix}",
+            f"{team} football attack profile chance creation shots per game xG 2026 {common_suffix}",
+        ]
+    if claim_type == "defensive_profile":
+        return [
+            f"{team} defensive stats clean sheets goals conceded xGA pressing low block 2025 2026 {common_suffix}",
+            f"{team} football defensive profile goals against clean sheets xGA 2026 {common_suffix}",
+        ]
+    if claim_type == "social_signal":
+        return [
+            f"{team} social sentiment fans journalist chatter training injury lineup World Cup 2026",
+            f"{team} Twitter X football fans sentiment lineup injury rumor World Cup 2026",
+        ]
     if claim_type == "tactical":
         queries = [
             f"{team} football tactics formation pressing transition set pieces 2026",
@@ -919,10 +1280,22 @@ def _match_team_name(value: str, *, home_team: str, away_team: str) -> str:
 
 
 def _focused_source_type(claim_type: str) -> SourceType:
-    if claim_type in {"recent_form", "player_form", "match_history", "tactical"}:
+    if claim_type in {
+        "recent_form",
+        "player_form",
+        "key_players",
+        "player_ratings",
+        "match_history",
+        "coach_form",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical",
+    }:
         return "stats"
-    if claim_type in {"squad_roster", "injury_availability", "lineup"}:
+    if claim_type in {"squad_roster", "injury_availability", "injury_return", "lineup"}:
         return "lineup"
+    if claim_type == "social_signal":
+        return "social"
     return "news"
 
 
@@ -941,7 +1314,15 @@ def _deepseek_source_items(
     for team_items in recent_results_news.values():
         items.extend(team_items)
     for topic_items in team_scout_news.values():
-        for topic in ("recent_form", "player_form", "squad_depth"):
+        for topic in (
+            "recent_form",
+            "player_form",
+            "squad_depth",
+            "coach_form",
+            "player_ratings",
+            "attacking_profile",
+            "defensive_profile",
+        ):
             items.extend(topic_items.get(topic, []))
     items.extend(availability_news)
     for team_items in official_squad_items.values():
@@ -1503,6 +1884,22 @@ def fetch_team_scout_news(
             "ratings FBref SofaScore Transfermarkt -prediction -odds -betting"
         ),
         "squad_depth": f"{team} World Cup squad depth predicted lineup injuries key players 2026",
+        "coach_form": (
+            f"{team} national football team coach manager recent record wins losses unbeaten streak tactics 2026 "
+            "-prediction -odds -betting"
+        ),
+        "player_ratings": (
+            f"{team} player ratings recent matches average rating SofaScore FotMob WhoScored 2025 2026 "
+            "-prediction -odds -betting"
+        ),
+        "attacking_profile": (
+            f"{team} attacking stats xG shots chances created goals for final third 2025 2026 "
+            "-prediction -odds -betting"
+        ),
+        "defensive_profile": (
+            f"{team} defensive stats clean sheets goals conceded xGA pressing low block 2025 2026 "
+            "-prediction -odds -betting"
+        ),
     }
     bundles: dict[str, list[NewsItem]] = {}
     for topic, query in queries.items():
@@ -1539,7 +1936,7 @@ def fetch_team_scout_news(
             news_items = []
         items = _dedupe_items(items + news_items)
         filtered = _filter_topic_items(items, topic, team=team, known_players=known_players)
-        if topic in {"recent_form", "player_form"}:
+        if topic in {"recent_form", "player_form", "coach_form", "player_ratings", "attacking_profile", "defensive_profile"}:
             bundles[topic] = filtered[:5]
         else:
             bundles[topic] = filtered[:5]
@@ -1796,6 +2193,57 @@ def _filter_topic_items(
                 )
             ):
                 continue
+        elif topic == "coach_form":
+            if any(noisy in text for noisy in ("prediction", "odds", "pick", "betting", "tips")):
+                continue
+            if not _item_mentions_team_or_player(text, team, known_players=known_players):
+                continue
+            if not any(marker in text for marker in ("coach", "manager", "streak", "unbeaten", "wins", "losses", "record", "tactics")):
+                continue
+        elif topic == "player_ratings":
+            if any(noisy in text for noisy in ("prediction", "odds", "pick", "betting", "tips")):
+                continue
+            if not _item_mentions_team_or_player(text, team, known_players=known_players):
+                continue
+            if not any(marker in text for marker in ("rating", "ratings", "sofascore", "fotmob", "whoscored", "player scores", "match ratings")):
+                continue
+        elif topic == "attacking_profile":
+            if any(noisy in text for noisy in ("prediction", "odds", "pick", "betting", "tips")):
+                continue
+            if not _item_mentions_team_or_player(text, team, known_players=known_players):
+                continue
+            if not any(marker in text for marker in ("attack", "attacking", "xg", "shots", "chances", "goals for", "chance creation", "final third")):
+                continue
+        elif topic == "defensive_profile":
+            if any(noisy in text for noisy in ("prediction", "odds", "pick", "betting", "tips")):
+                continue
+            if not _item_mentions_team_or_player(text, team, known_players=known_players):
+                continue
+            if not any(marker in text for marker in ("defence", "defense", "defensive", "clean sheets", "goals conceded", "xga", "low block", "pressing")):
+                continue
+        elif topic == "social_signal":
+            if any(noisy in text for noisy in ("prediction", "odds", "pick", "betting tips")):
+                continue
+            if any(noisy in text for noisy in ("wikipedia", "results and fixtures", "2000", "2001", "2002", "2003", "2004")):
+                continue
+            if not _item_mentions_team_or_player(text, team, known_players=known_players):
+                continue
+            if not any(
+                marker in text
+                for marker in (
+                    "social sentiment",
+                    "fan sentiment",
+                    "fans react",
+                    "twitter",
+                    " x ",
+                    "rumor",
+                    "rumour",
+                    "journalist",
+                    "training report",
+                    "lineup leak",
+                )
+            ):
+                continue
         filtered.append(item)
     return filtered
 
@@ -1920,8 +2368,8 @@ def _is_noisy_public_item(lowered_text: str) -> bool:
         "tiktok",
         "youtube",
         "reddit",
-        "pinterest",
         "facebook",
+        "pinterest",
         "instagram",
     )
     return any(source in lowered_text for source in noisy_sources)
@@ -1938,6 +2386,22 @@ def _item_mentions_team_or_player(
     return any(_alias_in_text(player, lowered_text) for player in _player_aliases_for_team(team, known_players=known_players))
 
 
+def _stage_item_count(value: Any) -> int:
+    if isinstance(value, list):
+        return len(value)
+    if isinstance(value, tuple):
+        return len(value)
+    if isinstance(value, dict):
+        count = 0
+        for item in value.values():
+            if isinstance(item, (list, tuple, dict, set)):
+                count += len(item)
+            elif item is not None:
+                count += 1
+        return count
+    return 1 if value is not None else 0
+
+
 def fetch_x_availability(
     *,
     home_team: str,
@@ -1945,6 +2409,7 @@ def fetch_x_availability(
     cache_dir: Path,
     refresh: bool,
     timeout_seconds: int,
+    known_players: dict[str, list[str]] | None = None,
 ) -> list[NewsItem]:
     """Fetch X-like availability signals through a configurable external endpoint.
 
@@ -1955,7 +2420,11 @@ def fetch_x_availability(
     If the URL contains "{query}", it is called as a templated GET URL. Otherwise
     it is called as POST JSON {"query": "..."}.
     """
-    query = f'{home_team} {away_team} World Cup injury squad lineup Neymar'
+    query = (
+        f'("{home_team}" OR "{away_team}") "World Cup" '
+        '(injury OR injuries OR lineup OR "line-up" OR squad OR training OR "team news" OR rumor OR journalist) '
+        "(site:x.com OR site:twitter.com)"
+    )
     endpoint = os.environ.get("SCRAPECREATORS_X_SEARCH_URL", "").strip() or os.environ.get("COLONY_X_SEARCH_URL", "").strip()
     api_key = os.environ.get("SCRAPECREATORS_API_KEY", "").strip() or os.environ.get("COLONY_X_API_KEY", "").strip()
     if not endpoint or not api_key:
@@ -1973,7 +2442,62 @@ def fetch_x_availability(
         )
     except Exception:
         return []
-    return _news_items_from_any_payload(payload, default_source="X")
+    items: list[NewsItem] = []
+    for item in _news_items_from_any_payload(payload, default_source="ScrapeCreators Google Search"):
+        if not _is_x_social_url(item.link):
+            continue
+        if not (
+            _item_mentions_team_or_player(item.title.lower(), home_team, known_players=known_players)
+            or _item_mentions_team_or_player(item.title.lower(), away_team, known_players=known_players)
+        ):
+            continue
+        if _is_indirect_opponent_context(
+            item.title,
+            home_team=home_team,
+            away_team=away_team,
+            known_players=known_players,
+        ):
+            continue
+        title = item.title
+        if "x social signal:" not in title.lower():
+            title = f"X social signal: {title}"
+        items.append(
+            NewsItem(
+                title=title,
+                source=item.source or "ScrapeCreators Google Search",
+                link=item.link,
+                published=item.published,
+            )
+        )
+    return _dedupe_items(items)
+
+
+def _is_x_social_url(url: str) -> bool:
+    parsed = urllib.parse.urlparse(url)
+    host = parsed.netloc.lower().removeprefix("www.")
+    return host in {"x.com", "twitter.com", "mobile.twitter.com"} or host.endswith(".twitter.com")
+
+
+def _is_indirect_opponent_context(
+    text: str,
+    *,
+    home_team: str,
+    away_team: str,
+    known_players: dict[str, list[str]] | None = None,
+) -> bool:
+    lowered = text.lower()
+    for team in (home_team, away_team):
+        for marker in (f"against {team.lower()}", f"vs {team.lower()}", f"v {team.lower()}"):
+            marker_index = lowered.find(marker)
+            if marker_index <= 0:
+                continue
+            before_marker = lowered[:marker_index]
+            if not (
+                _item_mentions_team_or_player(before_marker, home_team, known_players=known_players)
+                or _item_mentions_team_or_player(before_marker, away_team, known_players=known_players)
+            ):
+                return True
+    return False
 
 
 def fetch_camel_research(
@@ -1983,6 +2507,7 @@ def fetch_camel_research(
     cache_dir: Path,
     refresh: bool,
     timeout_seconds: int,
+    camel_agent_count: int = 4,
 ) -> list[NewsItem]:
     """Fetch deeper research items.
 
@@ -1990,12 +2515,15 @@ def fetch_camel_research(
     heavy dependency. Until the package is installed and configured, this uses
     the same normalized output shape with focused web/news research queries.
     """
+    agent_count = _camel_agent_count(camel_agent_count)
+    roles = _camel_research_roles(agent_count)
     native_mode = os.environ.get("COLONY_CAMEL_USE_NATIVE", "").strip() == "1"
     if native_mode and _camel_available():
         native_items = _fetch_native_camel_research(
             home_team=home_team,
             away_team=away_team,
             timeout_seconds=timeout_seconds,
+            roles=roles,
         )
         if native_items:
             return native_items
@@ -2006,18 +2534,14 @@ def fetch_camel_research(
         cache_dir=cache_dir,
         refresh=refresh,
         timeout_seconds=timeout_seconds,
+        roles=roles,
     )
     if ddgs_items:
         return ddgs_items
 
-    queries = [
-        f"{home_team} {away_team} predicted lineups World Cup injuries",
-        f"{home_team} {away_team} tactical preview World Cup",
-        f"{home_team} recent form key players season form World Cup",
-        f"{away_team} recent form key players season form World Cup",
-    ]
     items: list[NewsItem] = []
-    for index, query in enumerate(queries):
+    for index, role in enumerate(roles):
+        query = _camel_role_query(role, home_team=home_team, away_team=away_team)
         try:
             items.extend(
                 fetch_news_query(
@@ -2030,7 +2554,222 @@ def fetch_camel_research(
             )
         except Exception:
             continue
-    return _dedupe_items(items)[:8]
+    return _dedupe_items(items)[: _camel_item_limit(len(roles))]
+
+
+def fetch_camel_deep_claims(
+    *,
+    home_team: str,
+    away_team: str,
+    cache_dir: Path,
+    refresh: bool,
+    timeout_seconds: int,
+    camel_agent_count: int = 6,
+    known_players: dict[str, list[str]] | None = None,
+) -> list[EvidenceClaim]:
+    """Return source-grounded claims from native CAMEL or the deterministic role fallback."""
+    roles = _camel_research_roles(camel_agent_count)
+    claims: list[EvidenceClaim] = []
+    native_mode = os.environ.get("COLONY_CAMEL_USE_NATIVE", "").strip() == "1"
+    if native_mode and _camel_available():
+        claims.extend(
+            _fetch_native_camel_claims(
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_dir,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                roles=roles,
+                known_players=known_players,
+            )
+        )
+    if not claims:
+        claims.extend(
+            _fetch_camel_deep_fallback_claims(
+                home_team=home_team,
+                away_team=away_team,
+                cache_dir=cache_dir,
+                refresh=refresh,
+                timeout_seconds=timeout_seconds,
+                roles=roles,
+                known_players=known_players,
+            )
+        )
+    return _critic_filter_camel_claims(claims)
+
+
+def _camel_agent_count(value: int | str | None) -> int:
+    try:
+        parsed = int(value or 4)
+    except (TypeError, ValueError):
+        parsed = 4
+    return max(1, min(parsed, len(CAMEL_RESEARCH_ROLES)))
+
+
+def _camel_research_roles(agent_count: int) -> tuple[CamelResearchRole, ...]:
+    return CAMEL_RESEARCH_ROLES[: _camel_agent_count(agent_count)]
+
+
+def _camel_role_query(role: CamelResearchRole, *, home_team: str, away_team: str) -> str:
+    return role.query_template.format(home_team=home_team, away_team=away_team)
+
+
+def _camel_item_limit(agent_count: int) -> int:
+    return max(4, min(18, agent_count * 4))
+
+
+def _fetch_camel_deep_fallback_claims(
+    *,
+    home_team: str,
+    away_team: str,
+    cache_dir: Path,
+    refresh: bool,
+    timeout_seconds: int,
+    roles: tuple[CamelResearchRole, ...],
+    known_players: dict[str, list[str]] | None,
+) -> list[EvidenceClaim]:
+    claims: list[EvidenceClaim] = []
+    for role in roles:
+        query = _camel_role_query(role, home_team=home_team, away_team=away_team)
+        items = _fetch_ddgs_query(
+            query=query,
+            cache_file=cache_dir / f"camel_deep_query_{role.role_id}_{_stable_hash(query)}.json",
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_results=5,
+        )
+        for claim_type in role.claim_types[:3]:
+            typed_items = _items_supporting_camel_claim_type(items, claim_type)
+            if not typed_items:
+                continue
+            topic_claims = _topic_claims_from_items(
+                items=typed_items,
+                claim_type=claim_type,
+                home_team=home_team,
+                away_team=away_team,
+                confidence=0.48,
+                known_players=known_players,
+            )
+            claims.extend(
+                _with_camel_claim_metadata(
+                    claim,
+                    role=role,
+                    extraction_method="camel_deep_role_fallback",
+                    native=False,
+                )
+                for claim in topic_claims
+            )
+    return claims
+
+
+def _with_camel_claim_metadata(
+    claim: EvidenceClaim,
+    *,
+    role: CamelResearchRole,
+    extraction_method: str,
+    native: bool,
+) -> EvidenceClaim:
+    metrics = dict(claim.metrics or {})
+    metrics.update(
+        {
+            "camel_role": role.role_id,
+            "camel_focus": role.focus,
+            "camel_native": native,
+            "critic_status": "accepted",
+        }
+    )
+    return EvidenceClaim(
+        claim_type=claim.claim_type,
+        subject=claim.subject,
+        claim=claim.claim,
+        team=claim.team,
+        player=claim.player,
+        impact=claim.impact,
+        confidence=claim.confidence,
+        source_title=claim.source_title,
+        source_url=claim.source_url,
+        source_published=claim.source_published,
+        source_published_date=claim.source_published_date,
+        source_recency_days=claim.source_recency_days,
+        source_recency_bucket=claim.source_recency_bucket,
+        source_domain=claim.source_domain,
+        source_kind=claim.source_kind,
+        source_quality=claim.source_quality,
+        extraction_method=extraction_method,
+        metrics=metrics,
+    )
+
+
+def _items_supporting_camel_claim_type(items: list[NewsItem], claim_type: str) -> list[NewsItem]:
+    if claim_type == "injury_availability":
+        return [item for item in items if _has_negative_availability_signal(item.title.lower())]
+    if claim_type == "injury_return":
+        return [
+            item
+            for item in items
+            if any(
+                marker in item.title.lower()
+                for marker in ("returning from injury", "back from injury", "back in training", "fit again", "comeback")
+            )
+        ]
+    if claim_type == "social_signal":
+        return [
+            item
+            for item in items
+            if any(
+                marker in item.title.lower()
+                for marker in ("social sentiment", "fan sentiment", "fans react", "twitter", " x ", "rumor", "rumour", "journalist chatter")
+            )
+        ]
+    if claim_type == "player_ratings":
+        return [
+            item
+            for item in items
+            if any(marker in item.title.lower() for marker in ("player ratings", "average rating", "sofascore", "fotmob", "whoscored"))
+        ]
+    if claim_type == "key_players":
+        return [
+            item
+            for item in items
+            if any(marker in item.title.lower() for marker in ("key player", "key players", "star player", "top scorer", "captain", "focal point"))
+        ]
+    if claim_type == "attacking_profile":
+        return [
+            item
+            for item in items
+            if any(marker in item.title.lower() for marker in ("attack", "attacking", "xg", "shots", "chances", "goals for", "focal point"))
+        ]
+    if claim_type == "defensive_profile":
+        return [
+            item
+            for item in items
+            if any(
+                marker in item.title.lower()
+                for marker in ("defence", "defense", "defensive", "clean sheet", "goals conceded", "xga", "low block", "pressing")
+            )
+        ]
+    if claim_type == "tactical":
+        return [
+            item
+            for item in items
+            if any(
+                marker in item.title.lower()
+                for marker in ("tactical", "tactics", "formation", "pressing", "transition", "key matchup", "lineup", "line-up", "predicted xi")
+            )
+        ]
+    if claim_type == "recent_form":
+        return [
+            item
+            for item in items
+            if any(marker in item.title.lower() for marker in ("recent form", "last ", "results", "won", "lost", "draw", "unbeaten", "streak"))
+        ]
+    if claim_type == "player_form":
+        return [
+            item
+            for item in items
+            if any(marker in item.title.lower() for marker in ("goals", "assists", "scored", "minutes", "season", "rating", "key player"))
+        ]
+    return items
 
 
 def extract_evidence_claims(
@@ -2082,7 +2821,8 @@ def _topic_claims_from_items(
     """Create structured claims from already-filtered source titles/snippets."""
     claims: list[EvidenceClaim] = []
     for item in items[:8]:
-        text = _clean_text(item.title)
+        source_title = _clean_text(re.sub(r"\s*\.?\s*Missing:.*$", "", item.title, flags=re.IGNORECASE))
+        text = source_title
         if not text:
             continue
         subject, team, player = _claim_subject(
@@ -2112,7 +2852,7 @@ def _topic_claims_from_items(
                     ),
                     2,
                 ),
-                source_title=item.title,
+                source_title=source_title,
                 source_url=item.link,
                 **_source_metadata(
                     source_title=item.title,
@@ -2233,6 +2973,7 @@ def public_probabilities(
     availability_claims: list[EvidenceClaim],
     x_claims: list[EvidenceClaim],
     camel_claims: list[EvidenceClaim],
+    camel_deep_claims: list[EvidenceClaim],
     team_form_claims: list[EvidenceClaim],
     player_form_claims: list[EvidenceClaim],
     squad_depth_claims: list[EvidenceClaim],
@@ -2279,6 +3020,7 @@ def public_probabilities(
             availability_claims
             + x_claims
             + camel_claims
+            + camel_deep_claims
             + team_form_claims
             + player_form_claims
             + squad_depth_claims
@@ -2315,6 +3057,7 @@ def public_findings_for_match(
     availability_claims: list[EvidenceClaim],
     x_claims: list[EvidenceClaim],
     camel_claims: list[EvidenceClaim],
+    camel_deep_claims: list[EvidenceClaim],
     team_form_claims: list[EvidenceClaim],
     player_form_claims: list[EvidenceClaim],
     squad_depth_claims: list[EvidenceClaim],
@@ -2326,8 +3069,16 @@ def public_findings_for_match(
     tactical_claims: list[EvidenceClaim],
     official_squad_claims: list[EvidenceClaim],
     squad_roster_claims: list[EvidenceClaim],
+    key_player_claims: list[EvidenceClaim],
+    player_rating_claims: list[EvidenceClaim],
+    injury_return_claims: list[EvidenceClaim],
+    coach_form_claims: list[EvidenceClaim],
+    attacking_profile_claims: list[EvidenceClaim],
+    defensive_profile_claims: list[EvidenceClaim],
     include_x: bool,
     include_camel: bool,
+    include_camel_deep: bool,
+    camel_agent_count: int,
 ) -> list[Finding]:
     match_titles = _titles(match_news)
     match_citations = _citations(match_news)
@@ -2341,6 +3092,8 @@ def public_findings_for_match(
     form_items = _team_scout_items(team_scout_news, "recent_form", max_per_team=3)
     player_form_items = _team_scout_items(team_scout_news, "player_form", max_per_team=3)
     squad_depth_items = _team_scout_items(team_scout_news, "squad_depth", max_per_team=3)
+    player_intel_claims = _dedupe_claims(key_player_claims + player_rating_claims + injury_return_claims)
+    team_style_claims = _dedupe_claims(coach_form_claims + attacking_profile_claims + defensive_profile_claims)
     form_titles = (
         f"{home_team}: {_titles(team_scout_news.get(home_team, {}).get('recent_form', []), count=2)} "
         f"{away_team}: {_titles(team_scout_news.get(away_team, {}).get('recent_form', []), count=2)}"
@@ -2359,6 +3112,10 @@ def public_findings_for_match(
     match_history_citations = _claim_citations(match_history_claims) or _citations(match_history_items)
     tactical_titles = _titles(tactical_items, count=4)
     tactical_citations = _citations(tactical_items)
+    player_intel_titles = _claim_titles(player_intel_claims, count=4)
+    player_intel_citations = _claim_citations(player_intel_claims)
+    team_style_titles = _claim_titles(team_style_claims, count=4)
+    team_style_citations = _claim_citations(team_style_claims)
     official_items = _team_items(official_squad_items, max_per_team=3)
     official_titles = (
         f"{home_team}: {_titles(official_squad_items.get(home_team, []), count=2)} "
@@ -2376,6 +3133,8 @@ def public_findings_for_match(
     x_citations = _citations(x_items)
     camel_titles = _titles(camel_items, count=4)
     camel_citations = _citations(camel_items)
+    camel_deep_titles = _claim_titles(camel_deep_claims, count=4)
+    camel_deep_citations = _claim_citations(camel_deep_claims)
     profile_claims = _team_profile_claims(home_profile, away_profile)
 
     findings = [
@@ -2448,6 +3207,23 @@ def public_findings_for_match(
             ),
             citations=_citations(player_form_items),
             evidence_claims=[claim.to_dict() for claim in player_form_claims],
+        ),
+        _finding(
+            round_id=round_id,
+            key="player_intelligence",
+            scout_name="player_intelligence_scout",
+            access_level="public",
+            source_type="stats",
+            finding_name="key_players_ratings_and_returns_read",
+            home_probability=stats,
+            market=market,
+            confidence=0.5 if player_intel_claims else 0.1,
+            summary=(
+                "Fetched player intelligence: key players, player ratings, and returning-from-injury signals. "
+                f"Top items: {player_intel_titles}"
+            ),
+            citations=player_intel_citations,
+            evidence_claims=[claim.to_dict() for claim in player_intel_claims],
         ),
         _finding(
             round_id=round_id,
@@ -2534,14 +3310,33 @@ def public_findings_for_match(
             citations=tactical_citations,
             evidence_claims=[claim.to_dict() for claim in tactical_claims],
         ),
+        _finding(
+            round_id=round_id,
+            key="team_style_profiles",
+            scout_name="team_style_profile_scout",
+            access_level="public",
+            source_type="stats",
+            finding_name="coach_attack_defense_profile_read",
+            home_probability=stats,
+            market=market,
+            confidence=0.5 if team_style_claims else 0.1,
+            summary=(
+                "Fetched coach form, attacking profile, and defensive profile sources for both teams. "
+                f"Top items: {team_style_titles}"
+            ),
+            citations=team_style_citations,
+            evidence_claims=[claim.to_dict() for claim in team_style_claims],
+        ),
     ]
     findings = _drop_empty_specialized_findings(
         findings,
         {
             "official_squad_sources": bool(official_items or official_squad_claims),
             "squad_roster": bool(roster_players or squad_roster_claims),
+            "player_intelligence": bool(player_intel_claims),
             "match_history": bool(match_history_items or match_history_claims),
             "tactical_matchup": bool(tactical_items or tactical_claims),
+            "team_style_profiles": bool(team_style_claims),
         },
     )
 
@@ -2590,12 +3385,43 @@ def public_findings_for_match(
                 market=market,
                 confidence=0.5 if camel_items else 0.08,
                 summary=(
-                    f"{native_status}. Research focus: predicted lineups, key players, injuries, and tactical preview. "
+                    f"{native_status}. Research agents requested: {_camel_agent_count(camel_agent_count)}. "
+                    "Research focus: predicted lineups, key players, injuries, tactical preview, form, history, and rosters. "
                     f"Top items: {camel_titles}"
                 ),
                 citations=camel_citations,
                 cost=0.0,
                 evidence_claims=[claim.to_dict() for claim in camel_claims],
+            )
+        )
+
+    if include_camel_deep and camel_deep_claims:
+        native_claims = [claim for claim in camel_deep_claims if (claim.metrics or {}).get("camel_native")]
+        fallback_claims = [claim for claim in camel_deep_claims if not (claim.metrics or {}).get("camel_native")]
+        native_status = (
+            f"native CAMEL structured agents returned {len(native_claims)} claims"
+            if native_claims
+            else f"native CAMEL did not return usable structured claims; role-scoped DDGS/web fallback produced {len(fallback_claims)} usable claims"
+        )
+        findings.append(
+            _finding(
+                round_id=round_id,
+                key="camel_deep_research",
+                scout_name="camel_deep_research_scout",
+                access_level="shared",
+                source_type="retrieval",
+                finding_name="multi_agent_structured_claims_read",
+                home_probability=news,
+                market=market,
+                confidence=0.62 if native_claims else 0.5,
+                summary=(
+                    f"{native_status}. Research agents requested: {_camel_agent_count(camel_agent_count)}. "
+                    "Each accepted claim passed the local source/impact critic before entering the KG. "
+                    f"Top claims: {camel_deep_titles}"
+                ),
+                citations=camel_deep_citations,
+                cost=0.0,
+                evidence_claims=[claim.to_dict() for claim in camel_deep_claims],
             )
         )
 
@@ -2850,8 +3676,22 @@ def _sentence_matches_source_title(sentence: str, source_title: str) -> bool:
 
 
 def _claim_type(lowered_sentence: str) -> str | None:
+    if any(
+        marker in lowered_sentence
+        for marker in ("back from injury", "returning from injury", "back in training", "fit again", "comeback")
+    ):
+        return "injury_return"
     if _has_negative_availability_signal(lowered_sentence):
         return "injury_availability"
+    if any(
+        marker in lowered_sentence
+        for marker in ("social sentiment", "fan sentiment", "fans react", "twitter", " x ", "rumor", "rumour", "journalist chatter")
+    ):
+        return "social_signal"
+    if any(marker in lowered_sentence for marker in ("coach", "manager")) and any(
+        marker in lowered_sentence for marker in ("record", "streak", "unbeaten", "wins", "losses", "defeats", "tactics")
+    ):
+        return "coach_form"
     if any(
         word in lowered_sentence
         for word in (
@@ -2881,6 +3721,26 @@ def _claim_type(lowered_sentence: str) -> str | None:
         )
     ):
         return "recent_form"
+    if any(
+        marker in lowered_sentence
+        for marker in ("player ratings", "match ratings", "average rating", "sofascore", "fotmob", "whoscored")
+    ):
+        return "player_ratings"
+    if any(
+        marker in lowered_sentence
+        for marker in ("key player", "key players", "star player", "playmaker", "top scorer", "captain")
+    ):
+        return "key_players"
+    if any(
+        marker in lowered_sentence
+        for marker in ("xg", "shots", "chances created", "chance creation", "goals for", "attacking", "final third")
+    ):
+        return "attacking_profile"
+    if any(
+        marker in lowered_sentence
+        for marker in ("clean sheets", "goals conceded", "xga", "defensive", "defence", "defense", "low block")
+    ):
+        return "defensive_profile"
     if _has_player_form_signal(lowered_sentence):
         return "player_form"
     if any(
@@ -2904,7 +3764,7 @@ def _claim_type(lowered_sentence: str) -> str | None:
     if _has_lineup_signal(lowered_sentence):
         return "lineup"
     if any(word in lowered_sentence for word in ("prediction", "preview", "odds", "pick", "favorite", "favourite")):
-        return "market_preview"
+        return None
     return None
 
 
@@ -3058,9 +3918,16 @@ def _claim_impact(claim_type: str, *, team: str | None, home_team: str, away_tea
         "market_preview",
         "recent_form",
         "player_form",
+        "key_players",
+        "player_ratings",
         "squad_roster",
         "match_history",
         "team_profile",
+        "coach_form",
+        "attacking_profile",
+        "defensive_profile",
+        "social_signal",
+        "injury_return",
     }:
         return "context_home" if team == home_team else "context_away"
     return "unknown"
@@ -3076,7 +3943,14 @@ def _claim_metrics(claim_type: str, text: str) -> dict[str, Any]:
         body_part = _injury_body_part(lowered)
         if body_part:
             metrics["injury_body_part"] = body_part
-    if claim_type in {"player_form", "recent_form"}:
+    if claim_type in {
+        "player_form",
+        "recent_form",
+        "key_players",
+        "player_ratings",
+        "attacking_profile",
+        "defensive_profile",
+    }:
         for key, pattern in (
             ("goals", r"\b(\d+(?:\.\d+)?)\s+goals?\b"),
             ("goals", r"\bscored\s+(\d+(?:\.\d+)?)\s+(?:times|goals?)\b"),
@@ -3098,6 +3972,8 @@ def _claim_metrics(claim_type: str, text: str) -> dict[str, Any]:
             ("average_rating", r"\b(?:average rating|rating)\s*(?:of|is|=|:)?\s*(\d+(?:\.\d+)?)\b"),
             ("xg", r"\bxg\s*(?:of|output is|=|:)?\s*(\d+(?:\.\d+)?)\b"),
             ("xa", r"\bxa\s*(?:of|output is|=|:)?\s*(\d+(?:\.\d+)?)\b"),
+            ("goals_against", r"\b(\d+(?:\.\d+)?)\s+goals?\s+(?:against|conceded)\b"),
+            ("xga", r"\bxga\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)\b"),
         ):
             value = _metric_number(pattern, lowered)
             if value is not None:
@@ -3107,8 +3983,31 @@ def _claim_metrics(claim_type: str, text: str) -> dict[str, Any]:
             metrics["season_label"] = season_label
         if "top scorer" in lowered or "leading goalscorer" in lowered:
             metrics["role_signal"] = "top_scorer"
+        if any(marker in lowered for marker in ("key player", "star player", "playmaker", "captain", "leader")):
+            metrics["role_signal"] = metrics.get("role_signal") or "key_player"
+        if claim_type == "player_ratings" and any(
+            marker in lowered for marker in ("rating", "ratings", "sofascore", "fotmob", "whoscored")
+        ):
+            metrics["rating_signal"] = "player_rating"
     if claim_type == "recent_form":
         metrics.update(_recent_form_metrics(lowered))
+    if claim_type == "coach_form":
+        if "coach" in lowered or "manager" in lowered:
+            metrics["coach_signal"] = "coach_context"
+        metrics.update(_recent_form_metrics(lowered))
+    if claim_type == "attacking_profile":
+        if any(marker in lowered for marker in ("xg", "shots", "chances", "goals for", "attack", "attacking", "final third")):
+            metrics["attacking_signal"] = "chance_creation"
+    if claim_type == "defensive_profile":
+        if any(marker in lowered for marker in ("clean sheet", "goals conceded", "xga", "defence", "defense", "defensive", "low block", "pressing")):
+            metrics["defensive_signal"] = "defensive_profile"
+    if claim_type == "injury_return":
+        if any(marker in lowered for marker in ("return", "back from injury", "back in training", "fit again", "comeback")):
+            metrics["availability_status"] = "returning"
+            metrics["return_signal"] = "injury_return"
+    if claim_type == "social_signal":
+        if any(marker in lowered for marker in ("fans", "social", "twitter", " x ", "sentiment", "rumor", "rumour")):
+            metrics["social_signal"] = "network_sentiment"
     if claim_type == "match_history":
         value = _metric_number(r"\blast\s+(\d+)\b", lowered)
         if value is not None:
@@ -3509,6 +4408,7 @@ def _source_quality_adjustment(*, source_title: str, source_url: str) -> float:
         "tiktok",
         "youtube",
         "reddit",
+        "facebook",
         "pinterest",
         "prediction",
         "predictions",
@@ -3671,6 +4571,7 @@ def _source_quality_label(*, source_title: str, source_url: str, domain: str) ->
         "tiktok",
         "youtube",
         "reddit",
+        "facebook",
         "pinterest",
         "prediction",
         "predictions",
@@ -3804,22 +4705,19 @@ def _fetch_ddgs_research(
     cache_dir: Path,
     refresh: bool,
     timeout_seconds: int,
+    roles: tuple[CamelResearchRole, ...],
 ) -> list[NewsItem]:
-    cache_file = cache_dir / f"ddgs_research_{_slug(home_team)}_{_slug(away_team)}.json"
+    role_key = "_".join(role.role_id for role in roles) or "default"
+    cache_file = cache_dir / f"ddgs_research_{_slug(home_team)}_{_slug(away_team)}_{_stable_hash(role_key)}.json"
     if cache_file.exists() and not refresh:
         return _news_items_from_any_payload(json.loads(cache_file.read_text(encoding="utf-8")), default_source="DDGS")
 
-    queries = [
-        f"{home_team} {away_team} predicted lineups injuries team news World Cup",
-        f"{home_team} {away_team} tactical preview key players World Cup",
-        f"{home_team} recent form key players season form World Cup",
-        f"{away_team} recent form key players season form World Cup",
-    ]
     raw_results: list[dict] = []
-    for query in queries:
+    for role in roles:
+        query = _camel_role_query(role, home_team=home_team, away_team=away_team)
         items = _fetch_ddgs_query(
             query=query,
-            cache_file=cache_dir / f"ddgs_query_{_stable_hash(query)}.json",
+            cache_file=cache_dir / f"ddgs_query_{role.role_id}_{_stable_hash(query)}.json",
             refresh=refresh,
             timeout_seconds=timeout_seconds,
             max_results=4,
@@ -3831,11 +4729,84 @@ def _fetch_ddgs_research(
                     "source": item.source,
                     "href": item.link,
                     "published": item.published,
+                    "camel_role": role.role_id,
+                    "camel_focus": role.focus,
                 }
             )
 
     cache_file.write_text(json.dumps(raw_results, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
-    return _news_items_from_any_payload(raw_results, default_source="DDGS")[:8]
+    return _news_items_from_any_payload(raw_results, default_source="DDGS")[: _camel_item_limit(len(roles))]
+
+
+def _fetch_native_camel_claims(
+    *,
+    home_team: str,
+    away_team: str,
+    cache_dir: Path,
+    refresh: bool,
+    timeout_seconds: int,
+    roles: tuple[CamelResearchRole, ...],
+    known_players: dict[str, list[str]] | None,
+) -> list[EvidenceClaim]:
+    try:
+        from camel.agents import ChatAgent
+    except Exception:
+        return []
+
+    model = _camel_model_backend(timeout_seconds=timeout_seconds)
+    if model is None:
+        return []
+
+    claims: list[EvidenceClaim] = []
+    for role in roles:
+        query = _camel_role_query(role, home_team=home_team, away_team=away_team)
+        evidence_items = _fetch_ddgs_query(
+            query=query,
+            cache_file=cache_dir / f"camel_native_evidence_{role.role_id}_{_stable_hash(query)}.json",
+            refresh=refresh,
+            timeout_seconds=timeout_seconds,
+            max_results=6,
+        )
+        allowed_urls = {item.link for item in evidence_items if item.link}
+        if not allowed_urls:
+            continue
+        try:
+            agent = ChatAgent(
+                system_message=(
+                    "You are a senior football scouting data agent. Extract only source-grounded facts "
+                    "from the provided evidence list and return strict JSON without prose."
+                ),
+                model=model,
+                tools=None,
+                max_iteration=1,
+                step_timeout=timeout_seconds,
+            )
+            response = agent.step(
+                _camel_claim_prompt_from_evidence(
+                    home_team=home_team,
+                    away_team=away_team,
+                    role=role,
+                    evidence_items=evidence_items,
+                )
+            )
+        except Exception:
+            continue
+        for payload in _payloads_from_llm_json(_camel_response_content(response)):
+            source_url = str(
+                payload.get("source_url") or payload.get("url") or payload.get("link") or payload.get("href") or ""
+            ).strip()
+            if source_url not in allowed_urls:
+                continue
+            claim = _claim_from_camel_payload(
+                payload,
+                role=role,
+                home_team=home_team,
+                away_team=away_team,
+                known_players=known_players,
+            )
+            if claim:
+                claims.append(claim)
+    return claims
 
 
 def _fetch_native_camel_research(
@@ -3843,32 +4814,73 @@ def _fetch_native_camel_research(
     home_team: str,
     away_team: str,
     timeout_seconds: int,
+    roles: tuple[CamelResearchRole, ...],
 ) -> list[NewsItem]:
-    api_key = (
-        os.environ.get("COLONY_CAMEL_API_KEY", "").strip()
-        or os.environ.get("OPENROUTER_API_KEY", "").strip()
-        or os.environ.get("COLONY_LLM_API_KEY", "").strip()
-    )
-    if not api_key:
-        return []
-
     try:
         from camel.agents import ChatAgent
-        from camel.models import ModelFactory
         from camel.toolkits import SearchToolkit
-        from camel.types import ModelPlatformType
     except Exception:
         return []
 
-    platform_name = os.environ.get("COLONY_CAMEL_MODEL_PLATFORM", "OPENROUTER").strip().upper()
+    model = _camel_model_backend(timeout_seconds=timeout_seconds)
+    if model is None:
+        return []
+    try:
+        search_tool = SearchToolkit().search_duckduckgo
+    except Exception:
+        return []
+
+    items: list[NewsItem] = []
+    for role in roles:
+        try:
+            agent = ChatAgent(
+                system_message=(
+                    "You are a football data scout. Search the web, then return only compact JSON. "
+                    "Do not include prose outside JSON."
+                ),
+                model=model,
+                tools=[search_tool],
+                max_iteration=4,
+                step_timeout=timeout_seconds,
+            )
+            response = agent.step(
+                f"Search for current {home_team} vs {away_team} World Cup data focused on {role.focus}. "
+                "Return JSON array of up to 4 objects with keys title, source, link, published."
+            )
+        except Exception:
+            continue
+
+        content = _camel_response_content(response)
+        for item in _items_from_llm_json(content):
+            items.append(
+                NewsItem(
+                    title=item.title,
+                    source=f"CAMEL:{role.role_id}:{item.source}" if item.source else f"CAMEL:{role.role_id}",
+                    link=item.link,
+                    published=item.published,
+                )
+            )
+    return _dedupe_items(items)[: _camel_item_limit(len(roles))]
+
+
+def _camel_model_backend(*, timeout_seconds: int) -> Any | None:
+    api_key = _camel_api_key()
+    if not api_key:
+        return None
+    try:
+        from camel.models import ModelFactory
+        from camel.types import ModelPlatformType
+    except Exception:
+        return None
+
+    platform_name = _camel_platform_name()
     platform = getattr(ModelPlatformType, platform_name, platform_name.lower())
     model_type = os.environ.get("COLONY_CAMEL_MODEL", "").strip() or os.environ.get("COLONY_LLM_MODEL", "").strip()
     if not model_type:
-        model_type = "deepseek/deepseek-v4-flash"
+        model_type = "gpt-4o-mini" if platform_name in {"OPENAI", "DEFAULT"} else "deepseek/deepseek-v4-flash"
     base_url = os.environ.get("COLONY_CAMEL_BASE_URL", "").strip() or os.environ.get("COLONY_LLM_BASE_URL", "").strip()
-
     try:
-        model = ModelFactory.create(
+        return ModelFactory.create(
             model_platform=platform,
             model_type=model_type,
             model_config_dict={"temperature": 0.0},
@@ -3877,38 +4889,96 @@ def _fetch_native_camel_research(
             timeout=timeout_seconds,
             max_retries=1,
         )
-        agent = ChatAgent(
-            system_message=(
-                "You are a football data scout. Search the web, then return only compact JSON. "
-                "Do not include prose outside JSON."
-            ),
-            model=model,
-            tools=[SearchToolkit().search_duckduckgo],
-            max_iteration=4,
-            step_timeout=timeout_seconds,
-        )
-        response = agent.step(
-            f"Search for current {home_team} vs {away_team} World Cup predicted lineups, injury news, "
-            "key player availability, recent team form, player season form, and tactical preview. "
-            "Return JSON array of up to 6 objects with keys title, source, link, published."
-        )
     except Exception:
-        return []
+        return None
 
-    content = ""
-    try:
-        content = response.msgs[0].content
-    except Exception:
-        content = str(response)
-    return [
-        NewsItem(
-            title=item.title,
-            source=f"CAMEL:{item.source}" if item.source else "CAMEL",
-            link=item.link,
-            published=item.published,
-        )
-        for item in _items_from_llm_json(content)
+
+def _camel_platform_name() -> str:
+    configured = os.environ.get("COLONY_CAMEL_MODEL_PLATFORM", "").strip().upper()
+    if configured:
+        return configured
+    if os.environ.get("OPENAI_API_KEY"):
+        return "OPENAI"
+    if os.environ.get("OPENROUTER_API_KEY"):
+        return "OPENROUTER"
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return "DEEPSEEK"
+    return "OPENAI"
+
+
+def _camel_api_key() -> str:
+    platform = _camel_platform_name()
+    candidates = ["COLONY_CAMEL_API_KEY"]
+    if platform in {"OPENAI", "DEFAULT"}:
+        candidates.append("OPENAI_API_KEY")
+    elif platform == "OPENROUTER":
+        candidates.append("OPENROUTER_API_KEY")
+    elif platform == "DEEPSEEK":
+        candidates.append("DEEPSEEK_API_KEY")
+    candidates.extend(["COLONY_LLM_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY", "DEEPSEEK_API_KEY"])
+    for name in candidates:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _camel_claim_prompt(*, home_team: str, away_team: str, role: CamelResearchRole) -> str:
+    allowed = ", ".join(role.claim_types)
+    return (
+        f"Match: {home_team} vs {away_team}. Focus: {role.focus}. "
+        f"Allowed claim_type values: {allowed}. "
+        "Search for current, match-relevant information. Return a JSON array with at most 6 objects. "
+        "Each object must have: claim_type, subject, claim, team, player, confidence, source_title, "
+        "source_url, source_published, metrics. "
+        f"team must be exactly '{home_team}' or '{away_team}'. player can be empty. "
+        "Do not include predictions, betting tips, or unsourced claims. Omit any claim without a concrete source_url. "
+        "Keep claim text concise and factual."
+    )
+
+
+def _camel_claim_prompt_from_evidence(
+    *,
+    home_team: str,
+    away_team: str,
+    role: CamelResearchRole,
+    evidence_items: list[NewsItem],
+) -> str:
+    evidence = [
+        {
+            "source_id": index + 1,
+            "title": item.title,
+            "source": item.source,
+            "url": item.link,
+            "published": item.published,
+        }
+        for index, item in enumerate(evidence_items[:6])
+        if item.link
     ]
+    return (
+        _camel_claim_prompt(home_team=home_team, away_team=away_team, role=role)
+        + " Use only the evidence JSON below. source_url must be copied exactly from one evidence.url. "
+        "If the evidence is weak, stale, irrelevant, or does not support a claim, return []. "
+        "Do not invent URLs, injuries, lineups, scores, or player facts.\n\n"
+        f"Evidence JSON:\n{json.dumps(evidence, ensure_ascii=False)}"
+    )
+
+
+def _camel_response_content(response: Any) -> str:
+    for path in (("msg", "content"), ("msgs", 0, "content")):
+        try:
+            value: Any = response
+            for item in path:
+                value = value[item] if isinstance(item, int) else getattr(value, item)
+            text = str(value or "").strip()
+            if text:
+                return text
+        except Exception:
+            continue
+    try:
+        return str(response)
+    except Exception:
+        return ""
 
 
 def _items_from_llm_json(content: str) -> list[NewsItem]:
@@ -3925,6 +4995,133 @@ def _items_from_llm_json(content: str) -> list[NewsItem]:
             if line.strip()
         ][:6]
     return _news_items_from_any_payload(payload, default_source="CAMEL")
+
+
+def _payloads_from_llm_json(content: str) -> list[dict[str, Any]]:
+    text = content.strip()
+    match = re.search(r"\[[\s\S]*\]", text)
+    if match:
+        text = match.group(0)
+    try:
+        payload = json.loads(text)
+    except Exception:
+        return []
+    if isinstance(payload, dict):
+        for key in ("claims", "items", "results"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+        return [payload]
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    return []
+
+
+def _claim_from_camel_payload(
+    payload: dict[str, Any],
+    *,
+    role: CamelResearchRole,
+    home_team: str,
+    away_team: str,
+    known_players: dict[str, list[str]] | None,
+) -> EvidenceClaim | None:
+    claim_type = str(payload.get("claim_type") or "").strip()
+    if claim_type not in role.claim_types:
+        return None
+    claim_text = _clean_text(str(payload.get("claim") or ""))
+    if len(claim_text) < 35:
+        return None
+    source_url = str(payload.get("source_url") or payload.get("url") or payload.get("link") or payload.get("href") or "").strip()
+    if not source_url:
+        return None
+    source_title = _clean_text(str(payload.get("source_title") or payload.get("title") or source_url))
+    team = _normalize_claim_team(str(payload.get("team") or ""), home_team=home_team, away_team=away_team)
+    player = _clean_optional_text(payload.get("player"))
+    subject = _clean_text(str(payload.get("subject") or player or team or ""))
+    if not team:
+        subject, inferred_team, inferred_player = _claim_subject(
+            claim_text,
+            home_team=home_team,
+            away_team=away_team,
+            known_players=known_players,
+        )
+        team = inferred_team
+        player = player or inferred_player
+    if not team and not player:
+        return None
+    source_published = str(payload.get("source_published") or payload.get("published") or "")
+    raw_metrics = payload.get("metrics") if isinstance(payload.get("metrics"), dict) else {}
+    metrics = {
+        key: value
+        for key, value in dict(raw_metrics).items()
+        if isinstance(key, str) and isinstance(value, (str, int, float, bool, type(None)))
+    }
+    metrics.update(_claim_metrics_for_match(claim_type, claim_text, home_team=home_team, away_team=away_team))
+    metrics.update(
+        {
+            "camel_role": role.role_id,
+            "camel_focus": role.focus,
+            "camel_native": True,
+            "critic_status": "accepted",
+        }
+    )
+    return EvidenceClaim(
+        claim_type=claim_type,
+        subject=subject or player or team or claim_type,
+        claim=_shorten(claim_text, limit=320),
+        team=team,
+        player=player,
+        impact=_claim_impact(claim_type, team=team, home_team=home_team, away_team=away_team),
+        confidence=_coerce_confidence(payload.get("confidence"), default=0.58),
+        source_title=source_title,
+        source_url=source_url,
+        **_source_metadata(
+            source_title=source_title,
+            source_url=source_url,
+            source_published=source_published,
+            extraction_method="camel_native_structured_claim",
+        ),
+        metrics=metrics,
+    )
+
+
+def _normalize_claim_team(value: str, *, home_team: str, away_team: str) -> str | None:
+    folded = _fold_text(value)
+    if folded == _fold_text(home_team):
+        return home_team
+    if folded == _fold_text(away_team):
+        return away_team
+    return None
+
+
+def _clean_optional_text(value: Any) -> str | None:
+    text = _clean_text(str(value or ""))
+    if not text or text.lower() in {"none", "null", "n/a", "na", "-"}:
+        return None
+    return text
+
+
+def _coerce_confidence(value: Any, *, default: float) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        parsed = default
+    if parsed > 1:
+        parsed = parsed / 100
+    return round(max(min(parsed, 0.88), 0.12), 2)
+
+
+def _critic_filter_camel_claims(claims: list[EvidenceClaim]) -> list[EvidenceClaim]:
+    filtered: list[EvidenceClaim] = []
+    for claim in _dedupe_claims(claims):
+        if len(claim.claim) < 35:
+            continue
+        if claim.claim_type == "social_signal" and not claim.source_recency_bucket:
+            continue
+        if not _admissible_evidence_claims([claim.to_dict()]):
+            continue
+        filtered.append(claim)
+    return filtered[:36]
 
 
 def _camel_available() -> bool:

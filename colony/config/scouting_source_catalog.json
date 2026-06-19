@@ -1,0 +1,894 @@
+{
+  "version": 1,
+  "modules": {
+    "fixture": {
+      "display_name": "Fixture schedule",
+      "description": "Local OpenFootball fixture context already bundled in the tournament KG.",
+      "status": "implemented",
+      "ui_order": 10,
+      "source_family": "openfootball",
+      "claim_types": [
+        "match_schedule",
+        "team_profile"
+      ],
+      "sources": [
+        "fixture"
+      ]
+    },
+    "deep_fixture": {
+      "description": "Deterministic local fixture stress-test source for graph-shape tests.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "source_family": "local_test",
+      "claim_types": [
+        "match_schedule",
+        "team_profile",
+        "recent_form"
+      ],
+      "sources": [
+        "deep-fixture"
+      ]
+    },
+    "existing_kg": {
+      "display_name": "Existing KG enrichment",
+      "description": "Reuse the selected tournament KG as context input for the local scouting run.",
+      "status": "implemented",
+      "ui_order": 80,
+      "source_family": "existing_kg",
+      "existing_kg": true,
+      "claim_types": [
+        "match_schedule",
+        "team_profile",
+        "context"
+      ]
+    },
+    "polymarket_api": {
+      "description": "Backward-compatible alias for Polymarket Gamma market discovery.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "alias_for": "polymarket_gamma",
+      "source_family": "polymarket_gamma",
+      "claim_types": [
+        "market_snapshot"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://gamma-api.polymarket.com/public-search",
+          "adapter": "polymarket_gamma",
+          "title": "Polymarket Gamma market discovery: {match_name}",
+          "query": {
+            "q": "{team1} {team2}",
+            "limit_per_type": 10,
+            "search_profiles": false,
+            "keep_closed_markets": 0
+          },
+          "max_rows": 10,
+          "scout_name": "polymarket_gamma_scout"
+        }
+      ]
+    },
+    "public": {
+      "display_name": "Public web scouting",
+      "description": "Existing public-data scout for web/news/search-derived scouting claims.",
+      "status": "implemented",
+      "ui_order": 30,
+      "source_family": "public_web",
+      "claim_types": [
+        "recent_form",
+        "player_form",
+        "key_players",
+        "squad_roster",
+        "injury_availability",
+        "injury_return",
+        "lineup",
+        "match_history",
+        "coach_form",
+        "player_ratings",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical"
+      ],
+      "sources": [
+        "public"
+      ]
+    },
+    "public_x": {
+      "display_name": "ScrapeCreators X search",
+      "description": "Public scout plus ScrapeCreators Google Search filtered to X/Twitter for low-confidence social, injury, and lineup leads.",
+      "status": "implemented",
+      "ui_order": 60,
+      "source_family": "social_x",
+      "docs_url": "https://app.scrapecreators.com/billing",
+      "setup_url": "https://app.scrapecreators.com/billing",
+      "setup_hint": "Create a ScrapeCreators API key, then set SCRAPECREATORS_API_KEY and SCRAPECREATORS_X_SEARCH_URL in colony/.env. Recommended URL: https://api.scrapecreators.com/v1/google/search?query={query}.",
+      "requires_any_env": [
+        [
+          "SCRAPECREATORS_X_SEARCH_URL",
+          "COLONY_X_SEARCH_URL"
+        ],
+        [
+          "SCRAPECREATORS_API_KEY",
+          "COLONY_X_API_KEY"
+        ]
+      ],
+      "pipeline_flags": {
+        "include_x": true
+      },
+      "claim_types": [
+        "social_signal",
+        "injury_availability",
+        "injury_return",
+        "lineup"
+      ],
+      "sources": [
+        "public"
+      ]
+    },
+    "public_camel": {
+      "description": "Public scout with deeper CAMEL-style/DDGS research queries enabled.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "superseded_by": "camel_deep_research",
+      "source_family": "search_research",
+      "pipeline_flags": {
+        "include_camel": true,
+        "camel_agent_count": 4
+      },
+      "claim_types": [
+        "recent_form",
+        "player_form",
+        "key_players",
+        "squad_roster",
+        "injury_availability",
+        "injury_return",
+        "lineup",
+        "match_history",
+        "coach_form",
+        "player_ratings",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical"
+      ],
+      "sources": [
+        "public"
+      ]
+    },
+    "camel_deep_research": {
+      "display_name": "CAMEL deep research",
+      "description": "Deep scouting orchestrator using CAMEL native structured agents when enabled, with role-scoped DDGS fallback and local claim critic.",
+      "status": "implemented",
+      "ui_order": 40,
+      "source_family": "camel_deep_research",
+      "pipeline_flags": {
+        "include_camel_deep": true,
+        "camel_agent_count": 6
+      },
+      "optional_env": [
+        "COLONY_CAMEL_USE_NATIVE",
+        "COLONY_CAMEL_API_KEY",
+        "OPENAI_API_KEY",
+        "OPENROUTER_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "COLONY_CAMEL_MODEL_PLATFORM",
+        "COLONY_CAMEL_MODEL"
+      ],
+      "claim_types": [
+        "recent_form",
+        "player_form",
+        "key_players",
+        "squad_roster",
+        "injury_availability",
+        "injury_return",
+        "lineup",
+        "match_history",
+        "coach_form",
+        "player_ratings",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical",
+        "social_signal"
+      ],
+      "sources": [
+        "public"
+      ]
+    },
+    "wikidata_profiles": {
+      "display_name": "Wikidata profiles",
+      "description": "No-key Wikidata SPARQL profile resolver for match teams and linked football players.",
+      "status": "implemented",
+      "ui_order": 50,
+      "source_family": "wikidata",
+      "claim_types": [
+        "team_profile",
+        "player_profile"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://www.wikidata.org/w/api.php",
+          "adapter": "wikidata_entity_search",
+          "title": "Wikidata entity search: {team1}",
+          "team": "{team1}",
+          "query": {
+            "action": "wbsearchentities",
+            "search": "{team1} national football team",
+            "language": "en",
+            "format": "json",
+            "limit": 3
+          },
+          "max_rows": 1,
+          "scout_name": "wikidata_entity_search_api_scout"
+        },
+        {
+          "kind": "api",
+          "url": "https://www.wikidata.org/w/api.php",
+          "adapter": "wikidata_entity_search",
+          "title": "Wikidata entity search: {team2}",
+          "team": "{team2}",
+          "query": {
+            "action": "wbsearchentities",
+            "search": "{team2} national football team",
+            "language": "en",
+            "format": "json",
+            "limit": 3
+          },
+          "max_rows": 1,
+          "scout_name": "wikidata_entity_search_api_scout"
+        },
+        {
+          "kind": "api",
+          "url": "https://query.wikidata.org/sparql",
+          "adapter": "wikidata_profiles",
+          "title": "Wikidata football profiles: {match_name}",
+          "headers": {
+            "Accept": "application/sparql-results+json"
+          },
+          "query": {
+            "format": "json",
+            "query": "PREFIX wd: <http://www.wikidata.org/entity/> PREFIX wdt: <http://www.wikidata.org/prop/direct/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX schema: <http://schema.org/> PREFIX wikibase: <http://wikiba.se/ontology#> PREFIX bd: <http://www.bigdata.com/rdf#> SELECT ?kind ?team ?teamLabel ?teamDescription ?country ?countryLabel ?coach ?coachLabel ?player ?playerLabel ?playerDescription ?position ?positionLabel ?club ?clubLabel WHERE { VALUES ?wantedTeamLabel { \"{team1} national football team\"@en \"{team2} national football team\"@en } ?team rdfs:label ?wantedTeamLabel. { BIND(\"team\" AS ?kind) OPTIONAL { ?team schema:description ?teamDescription FILTER(LANG(?teamDescription) = \"en\") } OPTIONAL { ?team wdt:P1532 ?country. } OPTIONAL { ?team wdt:P286 ?coach. } } UNION { BIND(\"player\" AS ?kind) ?player wdt:P54 ?team. ?player wdt:P106/wdt:P279* wd:Q937857. FILTER NOT EXISTS { ?player wdt:P570 ?deathDate. } OPTIONAL { ?player schema:description ?playerDescription FILTER(LANG(?playerDescription) = \"en\") } OPTIONAL { ?player wdt:P413 ?position. } OPTIONAL { ?player wdt:P54 ?club. FILTER(?club != ?team) } } SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". } } LIMIT 80"
+          },
+          "max_players_per_team": 8,
+          "scout_name": "wikidata_profile_api_scout"
+        }
+      ]
+    },
+    "txline_fixture": {
+      "description": "TXLINE World Cup fixture snapshot, used to resolve provider fixture IDs.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "source_family": "txline",
+      "requires_env": [
+        "TXLINE_JWT",
+        "TXLINE_API_TOKEN"
+      ],
+      "claim_types": [
+        "match_schedule",
+        "team_profile"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://txline.txodds.com/api/fixtures/snapshot",
+          "adapter": "txline_fixtures",
+          "title": "TXLINE fixture snapshot: {match_name}",
+          "headers": {
+            "Authorization": "Bearer ${TXLINE_JWT}",
+            "X-Api-Token": "${TXLINE_API_TOKEN}"
+          },
+          "query": {
+            "startEpochDay": "{epoch_day}"
+          },
+          "max_rows": 100
+        }
+      ]
+    },
+    "txline_scores": {
+      "description": "TXLINE score/status snapshot after txline_fixture resolves the fixture ID.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "source_family": "txline",
+      "requires_env": [
+        "TXLINE_JWT",
+        "TXLINE_API_TOKEN"
+      ],
+      "requires_context": [
+        "txline_fixture"
+      ],
+      "claim_types": [
+        "live_score_event",
+        "coverage_status"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://txline.txodds.com/api/scores/snapshot/{txline_fixture_id}",
+          "adapter": "txline_scores",
+          "title": "TXLINE scores snapshot: {txline_fixture_id}",
+          "headers": {
+            "Authorization": "Bearer ${TXLINE_JWT}",
+            "X-Api-Token": "${TXLINE_API_TOKEN}"
+          },
+          "max_rows": 50
+        }
+      ]
+    },
+    "txline_odds_historical": {
+      "description": "TXLINE odds snapshot at match start, after txline_fixture resolves the fixture ID and timestamp.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "source_family": "txline",
+      "requires_env": [
+        "TXLINE_JWT",
+        "TXLINE_API_TOKEN"
+      ],
+      "requires_context": [
+        "txline_fixture"
+      ],
+      "claim_types": [
+        "market_snapshot"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://txline.txodds.com/api/odds/snapshot/{txline_fixture_id}",
+          "adapter": "txline_odds",
+          "title": "TXLINE historical odds snapshot: {txline_fixture_id}",
+          "headers": {
+            "Authorization": "Bearer ${TXLINE_JWT}",
+            "X-Api-Token": "${TXLINE_API_TOKEN}"
+          },
+          "query": {
+            "asOf": "{txline_start_time}"
+          },
+          "max_rows": 30
+        }
+      ]
+    },
+    "txline_full": {
+      "display_name": "TXLINE match feed",
+      "description": "Convenience bundle for TXLINE fixture, score/status, and historical odds snapshots.",
+      "status": "implemented",
+      "ui_order": 70,
+      "source_family": "txline",
+      "claim_types": [
+        "match_schedule",
+        "team_profile",
+        "market_snapshot",
+        "coverage_status",
+        "live_score_event"
+      ],
+      "includes": [
+        "txline_fixture",
+        "txline_scores",
+        "txline_odds_historical"
+      ]
+    },
+    "polymarket_gamma": {
+      "description": "Polymarket Gamma public-search resolver for validated football match markets/events.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "source_family": "polymarket_gamma",
+      "claim_types": [
+        "market_snapshot"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://gamma-api.polymarket.com/public-search",
+          "adapter": "polymarket_gamma",
+          "title": "Polymarket Gamma market discovery: {match_name}",
+          "query": {
+            "q": "{team1} {team2}",
+            "limit_per_type": 10,
+            "search_profiles": false,
+            "keep_closed_markets": 0
+          },
+          "max_rows": 10,
+          "scout_name": "polymarket_gamma_scout"
+        }
+      ]
+    },
+    "polymarket_clob": {
+      "description": "Polymarket Gamma discovery enriched with public CLOB midpoint/orderbook for validated football markets.",
+      "status": "implemented",
+      "ui_hidden": true,
+      "source_family": "polymarket_clob",
+      "claim_types": [
+        "market_snapshot",
+        "market_liquidity",
+        "market_price"
+      ],
+      "sources": [
+        {
+          "kind": "api",
+          "url": "https://gamma-api.polymarket.com/public-search",
+          "adapter": "polymarket_clob",
+          "title": "Polymarket CLOB market context: {match_name}",
+          "query": {
+            "q": "{team1} {team2}",
+            "limit_per_type": 10,
+            "search_profiles": false,
+            "keep_closed_markets": 0
+          },
+          "max_rows": 10,
+          "enrich_clob": true,
+          "clob_book": true,
+          "max_clob_requests": 12,
+          "scout_name": "polymarket_clob_scout"
+        }
+      ]
+    },
+    "polymarket_market_context": {
+      "display_name": "Polymarket market context",
+      "description": "Convenience bundle for Polymarket market context using Gamma discovery plus CLOB price/orderbook enrichment.",
+      "status": "implemented",
+      "ui_order": 20,
+      "source_family": "polymarket",
+      "claim_types": [
+        "market_snapshot",
+        "market_price",
+        "market_liquidity"
+      ],
+      "includes": [
+        "polymarket_clob"
+      ]
+    }
+  },
+  "datasources": [
+    {
+      "id": "openfootball_worldcup",
+      "name": "OpenFootball World Cup",
+      "status": "implemented",
+      "priority": "core",
+      "integration_kind": [
+        "local_json",
+        "dataset"
+      ],
+      "docs_url": "https://github.com/openfootball/worldcup",
+      "auth": "none",
+      "coverage": "World Cup schedules, groups, venues, historical tournament files.",
+      "claim_types": [
+        "match_schedule",
+        "team_profile"
+      ],
+      "kg_categories": [
+        "games",
+        "teams",
+        "context"
+      ],
+      "module": "fixture",
+      "notes": "Good base layer; not enough for live scouting or player-level KG."
+    },
+    {
+      "id": "txline",
+      "name": "TXLINE World Cup API",
+      "status": "implemented",
+      "priority": "core",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://txline-docs.txodds.com/documentation/worldcup",
+      "auth": "guest JWT plus activated read-only API token",
+      "coverage": "World Cup fixtures, odds, score/status rows, historical replay, player/stat endpoints per docs.",
+      "claim_types": [
+        "match_schedule",
+        "team_profile",
+        "market_snapshot",
+        "coverage_status",
+        "live_score_event"
+      ],
+      "kg_categories": [
+        "games",
+        "teams",
+        "context"
+      ],
+      "module": "txline_full",
+      "notes": "Best live match backbone we have tested. Keep wallet signing outside KG/scouting manifests."
+    },
+    {
+      "id": "polymarket",
+      "name": "Polymarket Gamma/CLOB APIs",
+      "status": "implemented",
+      "priority": "core",
+      "integration_kind": [
+        "api",
+        "cli",
+        "mcp_stdio"
+      ],
+      "docs_url": "https://docs.polymarket.com/llms.txt",
+      "auth": "none for public Gamma/search; auth only for trading endpoints, which scouting must not use",
+      "coverage": "Gamma market/event discovery plus public CLOB midpoint, bid/ask spread, orderbook depth, liquidity and market price context.",
+      "claim_types": [
+        "market_snapshot",
+        "market_price",
+        "market_liquidity"
+      ],
+      "kg_categories": [
+        "context",
+        "provenance",
+        "raw_data"
+      ],
+      "module": "polymarket_market_context",
+      "notes": "Useful market sentiment/liquidity source. Gamma resolves valid football markets; CLOB enriches token outcomes with midpoint, spread, and depth. Keep this as market_context, not player/tactical scouting."
+    },
+    {
+      "id": "existing_kg",
+      "name": "Existing KG enrichment",
+      "status": "implemented",
+      "priority": "core",
+      "integration_kind": [
+        "local_json"
+      ],
+      "docs_url": "colony/docs/scouting-source-contract.md",
+      "auth": "none",
+      "coverage": "Any prior KG entities, relationships, findings, and evidence claims.",
+      "claim_types": [
+        "context"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "games",
+        "context"
+      ],
+      "module": "existing_kg",
+      "notes": "Lets later runs reuse older graph context without rerunning every scout."
+    },
+    {
+      "id": "public_web_url",
+      "name": "Public web/news/URL sources",
+      "status": "implemented",
+      "priority": "core",
+      "integration_kind": [
+        "url",
+        "public_scout"
+      ],
+      "docs_url": "colony/docs/scouting-source-contract.md",
+      "auth": "none or source-specific",
+      "coverage": "Team news, squads, injuries/returns, lineups, recent form, coach form, player ratings, attacking/defensive profiles, tactical notes.",
+      "claim_types": [
+        "recent_form",
+        "player_form",
+        "key_players",
+        "squad_roster",
+        "injury_availability",
+        "injury_return",
+        "lineup",
+        "match_history",
+        "coach_form",
+        "player_ratings",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "context"
+      ],
+      "module": "public",
+      "notes": "High coverage but noisy; should prefer official federation, FIFA, league, or reputable news pages."
+    },
+    {
+      "id": "camel_deep_research",
+      "name": "CAMEL deep research agents",
+      "status": "implemented",
+      "priority": "high",
+      "integration_kind": [
+        "agentic_research",
+        "api_optional",
+        "search_fallback"
+      ],
+      "docs_url": "https://github.com/camel-ai/camel",
+      "auth": "optional LLM key for native CAMEL; no key required for DDGS fallback",
+      "coverage": "Role-specialized deep scouting for injuries, predicted lineups, tactical matchup, recent form, player ratings, coach form, rosters, match history, and social-signal candidates.",
+      "claim_types": [
+        "recent_form",
+        "player_form",
+        "key_players",
+        "squad_roster",
+        "injury_availability",
+        "injury_return",
+        "lineup",
+        "match_history",
+        "coach_form",
+        "player_ratings",
+        "attacking_profile",
+        "defensive_profile",
+        "tactical",
+        "social_signal"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "context"
+      ],
+      "module": "camel_deep_research",
+      "notes": "Use for deep mode or KG gaps. Native mode requires COLONY_CAMEL_USE_NATIVE=1 plus an LLM key; every accepted claim is source-grounded and passes the local critic before entering the KG."
+    },
+    {
+      "id": "scrapecreators_x_search",
+      "name": "ScrapeCreators X Search API",
+      "status": "implemented_connector_needed",
+      "priority": "high",
+      "integration_kind": [
+        "api",
+        "scraper_service"
+      ],
+      "docs_url": "https://app.scrapecreators.com/billing",
+      "auth": "ScrapeCreators API key plus a valid X/Twitter search endpoint URL.",
+      "coverage": "Real-time posts, sentiment, injury rumors, lineup leaks, training notes, journalist/team chatter.",
+      "claim_types": [
+        "social_signal",
+        "injury_availability",
+        "injury_return",
+        "lineup"
+      ],
+      "kg_categories": [
+        "context",
+        "players",
+        "teams"
+      ],
+      "module": "public_x",
+      "notes": "Dashboard plugin label: ScrapeCreators X search. Set SCRAPECREATORS_API_KEY and SCRAPECREATORS_X_SEARCH_URL in colony/.env; the recommended endpoint is https://api.scrapecreators.com/v1/google/search?query={query}. Do not treat social posts as factual claims unless corroborated; keep them as low-confidence social signals or availability leads."
+    },
+    {
+      "id": "the_odds_api",
+      "name": "The Odds API",
+      "status": "candidate",
+      "priority": "high",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://the-odds-api.com/liveapi/guides/v4/",
+      "auth": "API key",
+      "coverage": "Upcoming/live events, bookmaker odds, scores, historical odds and event odds depending plan.",
+      "claim_types": [
+        "market_snapshot",
+        "match_schedule",
+        "live_score_event"
+      ],
+      "kg_categories": [
+        "games",
+        "context"
+      ],
+      "notes": "Good multi-bookmaker odds aggregation candidate. Payload is nested by event/bookmaker/market/outcome, so a small adapter is cleaner than row_claims."
+    },
+    {
+      "id": "betfair_exchange",
+      "name": "Betfair Exchange API",
+      "status": "candidate",
+      "priority": "high",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://docs.developer.betfair.com/",
+      "auth": "Betfair developer app key and account auth",
+      "coverage": "Exchange market catalogues, back/lay prices, liquidity, in-play exchange movement.",
+      "claim_types": [
+        "market_snapshot",
+        "liquidity_signal"
+      ],
+      "kg_categories": [
+        "context"
+      ],
+      "notes": "Useful for sharper exchange pricing/liquidity. Needs account/API access and responsible gambling/geography checks."
+    },
+    {
+      "id": "pinnacle_api",
+      "name": "Pinnacle API",
+      "status": "candidate",
+      "priority": "medium",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://api.pinnacle.com/",
+      "auth": "Pinnacle API credentials",
+      "coverage": "Sportsbook lines, prices, limits, market movement depending access.",
+      "claim_types": [
+        "market_snapshot",
+        "line_movement"
+      ],
+      "kg_categories": [
+        "context"
+      ],
+      "notes": "Potential sharp-book reference source, but access and regional restrictions need verification before use."
+    },
+    {
+      "id": "oddsjam",
+      "name": "OddsJam API",
+      "status": "candidate",
+      "priority": "high",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://developer.oddsjam.com/",
+      "auth": "API key",
+      "coverage": "Sports odds aggregation, line movement, bookmaker comparison, arbitrage-style metadata depending plan.",
+      "claim_types": [
+        "market_snapshot",
+        "line_movement",
+        "market_consensus"
+      ],
+      "kg_categories": [
+        "context"
+      ],
+      "notes": "Good candidate if we want market consensus across many books without scraping individual betting sites."
+    },
+    {
+      "id": "wikidata",
+      "name": "Wikidata Query Service",
+      "status": "implemented",
+      "priority": "medium",
+      "integration_kind": [
+        "api",
+        "sparql"
+      ],
+      "docs_url": "https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/Wikidata_Query_Help",
+      "auth": "none",
+      "coverage": "Entities, teams, players, clubs, countries, identifiers, biographical context.",
+      "claim_types": [
+        "team_profile",
+        "player_profile"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "context"
+      ],
+      "module": "wikidata_profiles",
+      "notes": "Good entity-resolution layer; not a live squad, injury, or lineup source."
+    },
+    {
+      "id": "statsbomb_open_data",
+      "name": "StatsBomb Open Data",
+      "status": "candidate",
+      "priority": "medium",
+      "integration_kind": [
+        "json_dataset",
+        "api_like_files"
+      ],
+      "docs_url": "https://github.com/statsbomb/open-data",
+      "auth": "none, subject to StatsBomb attribution terms",
+      "coverage": "Free event, lineup, match, and selected 360 data for covered competitions.",
+      "claim_types": [
+        "player_form",
+        "lineup",
+        "tactical",
+        "match_history"
+      ],
+      "kg_categories": [
+        "players",
+        "games",
+        "context"
+      ],
+      "notes": "Excellent for historical analytics and tactical/player profiles, not necessarily current World Cup live data."
+    },
+    {
+      "id": "sportmonks",
+      "name": "Sportmonks Football API",
+      "status": "candidate",
+      "priority": "high",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://docs.sportmonks.com/v3",
+      "auth": "API token",
+      "coverage": "Fixtures, livescores, events, teams, players, standings, odds, World Cup guides.",
+      "claim_types": [
+        "match_schedule",
+        "team_profile",
+        "squad_roster",
+        "lineup",
+        "live_score_event",
+        "market_snapshot"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "games",
+        "context"
+      ],
+      "notes": "Broad commercial football API; good candidate for a provider-specific adapter or row_claims manifests."
+    },
+    {
+      "id": "api_football",
+      "name": "API-FOOTBALL",
+      "status": "candidate",
+      "priority": "high",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://www.api-football.com/documentation-v3",
+      "auth": "API key",
+      "coverage": "Fixtures, teams, players, standings, statistics, odds depending on plan.",
+      "claim_types": [
+        "match_schedule",
+        "team_profile",
+        "squad_roster",
+        "player_form",
+        "live_score_event",
+        "market_snapshot"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "games",
+        "context"
+      ],
+      "notes": "Likely useful if World Cup endpoints/plan coverage are available."
+    },
+    {
+      "id": "thesportsdb",
+      "name": "TheSportsDB",
+      "status": "candidate",
+      "priority": "low",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://www.thesportsdb.com/api.php",
+      "auth": "free key or paid key depending endpoint/limits",
+      "coverage": "Teams, players, events, artwork, highlights, basic sports metadata.",
+      "claim_types": [
+        "team_profile",
+        "player_profile",
+        "match_schedule"
+      ],
+      "kg_categories": [
+        "players",
+        "teams",
+        "games",
+        "context"
+      ],
+      "notes": "Good enrichment source for display/media metadata; verify football coverage and rate limits per endpoint."
+    },
+    {
+      "id": "open_meteo",
+      "name": "Open-Meteo",
+      "status": "low_priority_candidate",
+      "priority": "low",
+      "integration_kind": [
+        "api"
+      ],
+      "docs_url": "https://open-meteo.com/en/docs",
+      "auth": "none for common usage; observe license/limits",
+      "coverage": "Venue weather forecasts and historical weather context.",
+      "claim_types": [
+        "weather_context"
+      ],
+      "kg_categories": [
+        "context",
+        "games"
+      ],
+      "notes": "Optional edge/context only. Do not prioritize until core player, lineup, injury, tactical, and market modules are working."
+    }
+  ],
+  "keyword_packs": {
+    "betting_odds": [
+      "{team1} {team2} odds",
+      "{team1} vs {team2} betting odds",
+      "{team1} {team2} bookmaker odds",
+      "{team1} {team2} line movement",
+      "{team1} {team2} implied probability"
+    ],
+    "sports_news": [
+      "{team1} {team2} team news",
+      "{team1} {team2} predicted lineup",
+      "{team1} {team2} injury news",
+      "{team1} national team squad news",
+      "{team2} national team squad news"
+    ],
+    "x_social": [
+      "\"{team1}\" \"{team2}\" (lineup OR injury OR squad OR training)",
+      "\"{team1}\" (injury OR lineup OR unavailable OR doubtful)",
+      "\"{team2}\" (injury OR lineup OR unavailable OR doubtful)",
+      "\"{team1}\" \"{team2}\" \"World Cup\""
+    ],
+    "official_sources": [
+      "site:fifa.com {team1} {team2}",
+      "site:{team1_slug}.football {team1} squad",
+      "site:{team2_slug}.football {team2} squad"
+    ]
+  }
+}

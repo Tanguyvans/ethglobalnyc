@@ -1,0 +1,16 @@
+{
+  "sources": [
+    "fixture",
+    {
+      "kind": "api",
+      "url": "https://txline.txodds.com/api/fixtures/snapshot",
+      "adapter": "txline_fixtures",
+      "title": "TXLINE World Cup fixtures snapshot",
+      "headers": {
+        "Authorization": "Bearer ${TXLINE_JWT}",
+        "X-Api-Token": "${TXLINE_API_TOKEN}"
+      },
+      "max_rows": 50
+    }
+  ]
+}

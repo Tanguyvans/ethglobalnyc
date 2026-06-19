@@ -1,0 +1,19 @@
+{
+  "sources": [
+    "fixture",
+    {
+      "kind": "api",
+      "url": "https://gamma-api.polymarket.com/public-search",
+      "adapter": "polymarket_market",
+      "title": "Polymarket public search: {match_name}",
+      "query": {
+        "q": "{team1} {team2}",
+        "limit_per_type": 10,
+        "search_profiles": false,
+        "keep_closed_markets": 0
+      },
+      "max_rows": 10,
+      "scout_name": "polymarket_api_scout"
+    }
+  ]
+}

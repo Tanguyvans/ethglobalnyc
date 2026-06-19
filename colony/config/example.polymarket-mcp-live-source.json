@@ -1,0 +1,18 @@
+{
+  "sources": [
+    "fixture",
+    {
+      "kind": "mcp_stdio",
+      "command": ["python3", "polymarket/mcp_server.py"],
+      "tool": "scout_match_market",
+      "arguments": {
+        "match": "Brazil vs Morocco",
+        "home_team": "Brazil",
+        "away_team": "Morocco",
+        "query": "Brazil Morocco",
+        "limit": 10,
+        "allow_offline_fallback": false
+      }
+    }
+  ]
+}

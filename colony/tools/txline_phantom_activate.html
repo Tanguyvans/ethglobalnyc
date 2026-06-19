@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TxLINE Phantom Activation Helper</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --panel: #ffffff;
+        --text: #172033;
+        --muted: #5b6578;
+        --border: #d9deea;
+        --accent: #1468d4;
+        --accent-dark: #0f56b0;
+        --danger: #a5332b;
+        --ok: #116b3f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+
+      main {
+        width: min(960px, calc(100vw - 32px));
+        margin: 32px auto;
+      }
+
+      header {
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+
+      section {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 650;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        color: var(--text);
+        font: inherit;
+        background: white;
+      }
+
+      textarea {
+        min-height: 94px;
+        resize: vertical;
+      }
+
+      code,
+      pre {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+
+      pre {
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        background: #f3f5f9;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      button {
+        border: 0;
+        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--accent);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--accent-dark);
+      }
+
+      button.secondary {
+        background: #e9edf5;
+        color: var(--text);
+      }
+
+      button.secondary:hover {
+        background: #dce3ef;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .two-column {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      @media (max-width: 720px) {
+        .two-column {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .status {
+        margin-top: 10px;
+        font-weight: 650;
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .small {
+        font-size: 13px;
+      }
+
+      .mono {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>TxLINE Phantom Activation Helper</h1>
+        <p>
+          Connect Phantom, sign the TxLINE activation message, then activate the
+          read-only API token. This page never asks for or exports your private
+          key.
+        </p>
+      </header>
+
+      <section>
+        <h2>Before This Page</h2>
+        <p>
+          The first on-chain step is a TxLINE <code>subscribe</code>
+          transaction. The helper below can create that transaction with
+          Phantom, then use the returned transaction signature as
+          <code>txSig</code>.
+        </p>
+        <p class="small">
+          Free tiers from the TxLINE docs: service level 1 for World Cup and
+          international friendlies with 60-second delay, or service level 12
+          for real time. The free tier charges no TxL tokens, but the Solana
+          transaction still needs a tiny amount of SOL for network fees.
+        </p>
+      </section>
+
+      <section>
+        <h2>1. Connect Phantom</h2>
+        <p id="wallet-status">Wallet not connected.</p>
+        <div class="actions">
+          <button id="connect-wallet" type="button">Connect Phantom</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <h2>2. Create Subscription txSig</h2>
+        <div class="two-column">
+          <div>
+            <label for="service-level">Service level</label>
+            <select id="service-level">
+              <option value="12">12 - World Cup real time</option>
+              <option value="1">1 - World Cup 60-second delay</option>
+            </select>
+          </div>
+          <div>
+            <label for="duration-weeks">Duration weeks</label>
+            <input id="duration-weeks" type="number" min="4" step="4" value="4" />
+          </div>
+        </div>
+        <div class="two-column">
+          <div>
+            <label for="rpc-url">Solana RPC URL</label>
+            <input
+              id="rpc-url"
+              autocomplete="off"
+              spellcheck="false"
+              value="https://solana-rpc.publicnode.com"
+            />
+          </div>
+          <div>
+            <label for="program-id">TxLINE program ID</label>
+            <input
+              id="program-id"
+              autocomplete="off"
+              spellcheck="false"
+              value="9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA"
+            />
+          </div>
+        </div>
+        <div>
+          <label for="token-mint">TxLINE token mint</label>
+          <input
+            id="token-mint"
+            autocomplete="off"
+            spellcheck="false"
+            value="Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL"
+          />
+          <p class="small">
+            Default comes from TxLINE's current IDL constant
+            <code>TXLINE_MINT</code>. If TxLINE support gives you a different
+            mint, update it here before subscribing.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="subscribe" type="button">Create Subscribe txSig</button>
+        </div>
+        <p id="subscribe-status" class="status"></p>
+        <pre id="subscribe-debug"></pre>
+      </section>
+
+      <section class="grid">
+        <h2>3. Fill Activation Inputs</h2>
+        <div>
+          <label for="jwt">TXLINE guest JWT</label>
+          <textarea id="jwt" autocomplete="off" spellcheck="false"></textarea>
+          <div class="actions">
+            <button id="fetch-jwt" type="button" class="secondary">
+              Get Fresh JWT
+            </button>
+            <button id="copy-jwt-command" type="button" class="secondary">
+              Copy JWT terminal command
+            </button>
+          </div>
+          <p class="small">
+            If the browser blocks this request, create the JWT in your terminal
+            and paste it here.
+          </p>
+          <pre id="jwt-command-preview"></pre>
+        </div>
+
+        <div>
+          <label for="txsig">Subscription txSig</label>
+          <input id="txsig" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div>
+          <label for="leagues">League IDs</label>
+          <input
+            id="leagues"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Leave empty for the standard World Cup bundle"
+          />
+          <p class="small">
+            For the standard free World Cup bundle, leave this empty. The
+            message becomes <code>txSig::jwt</code>.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. Sign Activation Message</h2>
+        <p>Message to sign:</p>
+        <pre id="message-preview"></pre>
+        <div class="actions">
+          <button id="sign-message" type="button">Sign With Phantom</button>
+          <button id="copy-signature" type="button" class="secondary">
+            Copy Signature
+          </button>
+        </div>
+        <p id="sign-status" class="status"></p>
+        <label for="signature">walletSignature base64</label>
+        <textarea
+          id="signature"
+          autocomplete="off"
+          spellcheck="false"
+        ></textarea>
+      </section>
+
+      <section>
+        <h2>5. Activate API Token</h2>
+        <div class="actions">
+          <button id="activate" type="button">Call TxLINE Activate</button>
+          <button id="copy-curl" type="button" class="secondary">
+            Copy curl
+          </button>
+        </div>
+        <p id="activate-status" class="status"></p>
+        <p class="small">
+          Browser activation can fail because of CORS. The curl command below is
+          the reliable fallback.
+        </p>
+        <pre id="curl-preview"></pre>
+        <label for="api-token">TXLINE API token response</label>
+        <textarea id="api-token" autocomplete="off" spellcheck="false"></textarea>
+      </section>
+    </main>
+
+    <script type="module">
+      import {
+        Connection,
+        PublicKey,
+        SystemProgram,
+        Transaction,
+        TransactionInstruction,
+      } from "https://esm.sh/@solana/web3.js@1.98.2";
+
+      const walletStatus = document.querySelector("#wallet-status");
+      const jwtInput = document.querySelector("#jwt");
+      const txSigInput = document.querySelector("#txsig");
+      const leaguesInput = document.querySelector("#leagues");
+      const signatureInput = document.querySelector("#signature");
+      const apiTokenInput = document.querySelector("#api-token");
+      const serviceLevelInput = document.querySelector("#service-level");
+      const durationWeeksInput = document.querySelector("#duration-weeks");
+      const rpcUrlInput = document.querySelector("#rpc-url");
+      const programIdInput = document.querySelector("#program-id");
+      const tokenMintInput = document.querySelector("#token-mint");
+      const messagePreview = document.querySelector("#message-preview");
+      const curlPreview = document.querySelector("#curl-preview");
+      const jwtCommandPreview = document.querySelector("#jwt-command-preview");
+      const subscribeDebug = document.querySelector("#subscribe-debug");
+      const signStatus = document.querySelector("#sign-status");
+      const subscribeStatus = document.querySelector("#subscribe-status");
+      const activateStatus = document.querySelector("#activate-status");
+
+      let publicKey = "";
+      const TOKEN_2022_PROGRAM_ID = new PublicKey(
+        "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      );
+      const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
+        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+      );
+      const SUBSCRIBE_DISCRIMINATOR = new Uint8Array([
+        254, 28, 191, 138, 156, 179, 183, 53,
+      ]);
+
+      function phantomProvider() {
+        if ("solana" in window && window.solana && window.solana.isPhantom) {
+          return window.solana;
+        }
+        return null;
+      }
+
+      function leagueList() {
+        return leaguesInput.value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function activationMessage() {
+        return `${txSigInput.value.trim()}:${leagueList().join(",")}:${jwtInput.value.trim()}`;
+      }
+
+      function txSigValidationError() {
+        const value = txSigInput.value.trim();
+        if (!value) {
+          return "Add the Solana subscription transaction signature first.";
+        }
+        if (value === "1" || value === "12") {
+          return `${value} is a TxLINE service level id, not a Solana txSig. Approve the subscribe transaction in Phantom and paste the returned transaction signature.`;
+        }
+        if (!/^[1-9A-HJ-NP-Za-km-z]{64,100}$/.test(value)) {
+          return "txSig should look like a Solana transaction signature: a long base58 string, usually around 87-88 characters.";
+        }
+        return "";
+      }
+
+      function solanaSignatureFromText(text) {
+        const match = String(text).match(
+          /\b[1-9A-HJ-NP-Za-km-z]{80,100}\b/,
+        );
+        return match ? match[0] : "";
+      }
+
+      function activationBody() {
+        return {
+          txSig: txSigInput.value.trim(),
+          walletSignature: signatureInput.value.trim(),
+          leagues: leagueList().map((item) => Number(item)),
+        };
+      }
+
+      function rpcCandidates() {
+        return [
+          rpcUrlInput.value.trim(),
+          "https://solana-rpc.publicnode.com",
+          "https://api.mainnet-beta.solana.com",
+        ].filter((url, index, all) => url && all.indexOf(url) === index);
+      }
+
+      async function connectionWithLatestBlockhash() {
+        const failures = [];
+        for (const url of rpcCandidates()) {
+          try {
+            const connection = new Connection(url, "confirmed");
+            const latest = await connection.getLatestBlockhash("confirmed");
+            rpcUrlInput.value = url;
+            return { connection, latest, url };
+          } catch (error) {
+            failures.push(`${url}: ${error.message}`);
+          }
+        }
+        throw new Error(`All configured RPC URLs failed. ${failures.join(" | ")}`);
+      }
+
+      function associatedTokenAddress(owner, mint) {
+        return PublicKey.findProgramAddressSync(
+          [owner.toBytes(), TOKEN_2022_PROGRAM_ID.toBytes(), mint.toBytes()],
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+        )[0];
+      }
+
+      function createAssociatedTokenAccountIdempotentInstruction(
+        payer,
+        associatedToken,
+        owner,
+        mint,
+      ) {
+        return new TransactionInstruction({
+          programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+          keys: [
+            { pubkey: payer, isSigner: true, isWritable: true },
+            { pubkey: associatedToken, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: false, isWritable: false },
+            { pubkey: mint, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+          ],
+          data: new Uint8Array([1]),
+        });
+      }
+
+      function subscribeInstruction({
+        user,
+        programId,
+        tokenMint,
+        pricingMatrix,
+        userTokenAccount,
+        tokenTreasuryVault,
+        tokenTreasuryPda,
+        serviceLevel,
+        weeks,
+      }) {
+        const data = new Uint8Array(11);
+        data.set(SUBSCRIBE_DISCRIMINATOR, 0);
+        new DataView(data.buffer).setUint16(8, serviceLevel, true);
+        data[10] = weeks;
+        return new TransactionInstruction({
+          programId,
+          keys: [
+            { pubkey: user, isSigner: true, isWritable: true },
+            { pubkey: pricingMatrix, isSigner: false, isWritable: false },
+            { pubkey: tokenMint, isSigner: false, isWritable: false },
+            { pubkey: userTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: tokenTreasuryVault, isSigner: false, isWritable: true },
+            { pubkey: tokenTreasuryPda, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            {
+              pubkey: ASSOCIATED_TOKEN_PROGRAM_ID,
+              isSigner: false,
+              isWritable: false,
+            },
+          ],
+          data,
+        });
+      }
+
+      function shellQuote(value) {
+        return String(value).replace(/'/g, "'\"'\"'");
+      }
+
+      function curlCommand() {
+        const body = JSON.stringify(activationBody(), null, 2);
+        return [
+          "curl --request POST https://txline.txodds.com/api/token/activate \\",
+          `  --header 'Authorization: Bearer ${shellQuote(jwtInput.value.trim())}' \\`,
+          "  --header 'Content-Type: application/json' \\",
+          `  --data '${shellQuote(body)}'`,
+        ].join("\n");
+      }
+
+      function jwtTerminalCommand() {
+        return [
+          "curl -s --request POST https://txline.txodds.com/auth/guest/start \\",
+          "  | python3 -c 'import sys,json; print(json.load(sys.stdin)[\"token\"])' \\",
+          "  | pbcopy",
+        ].join("\n");
+      }
+
+      function bytesToBase64(bytes) {
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let index = 0; index < bytes.length; index += chunkSize) {
+          binary += String.fromCharCode(
+            ...bytes.subarray(index, index + chunkSize),
+          );
+        }
+        return btoa(binary);
+      }
+
+      function setStatus(node, text, ok) {
+        node.textContent = text;
+        node.classList.toggle("ok", Boolean(ok));
+        node.classList.toggle("error", ok === false);
+      }
+
+      function refreshPreviews() {
+        messagePreview.textContent = activationMessage();
+        curlPreview.textContent = curlCommand();
+        jwtCommandPreview.textContent = jwtTerminalCommand();
+        const txSigError = txSigValidationError();
+        if (txSigError && txSigInput.value.trim()) {
+          setStatus(signStatus, txSigError, false);
+        } else if (!signatureInput.value.trim()) {
+          setStatus(signStatus, "", undefined);
+        }
+      }
+
+      async function copyText(text) {
+        await navigator.clipboard.writeText(text);
+      }
+
+      document.querySelector("#connect-wallet").addEventListener("click", async () => {
+        const provider = phantomProvider();
+        if (!provider) {
+          walletStatus.textContent = "Phantom was not found in this browser.";
+          return;
+        }
+        const response = await provider.connect();
+        publicKey = response.publicKey.toString();
+        walletStatus.innerHTML = `Connected: <span class="mono">${publicKey}</span>`;
+      });
+
+      document
+        .querySelector("#copy-jwt-command")
+        .addEventListener("click", async () => {
+          await copyText(jwtTerminalCommand());
+        });
+
+      document.querySelector("#fetch-jwt").addEventListener("click", async () => {
+        try {
+          const response = await fetch("https://txline.txodds.com/auth/guest/start", {
+            method: "POST",
+          });
+          const data = await response.json();
+          jwtInput.value = data.token || "";
+          refreshPreviews();
+        } catch (error) {
+          setStatus(
+            activateStatus,
+            `JWT fetch failed in browser: ${error.message}`,
+            false,
+          );
+        }
+      });
+
+      document.querySelector("#subscribe").addEventListener("click", async () => {
+        const provider = phantomProvider();
+        if (!provider) {
+          setStatus(subscribeStatus, "Phantom was not found in this browser.", false);
+          return;
+        }
+        let pendingSignature = "";
+        try {
+          setStatus(subscribeStatus, "Preparing TxLINE subscribe transaction...", undefined);
+          if (!publicKey) {
+            const response = await provider.connect();
+            publicKey = response.publicKey.toString();
+            walletStatus.innerHTML = `Connected: <span class="mono">${publicKey}</span>`;
+          }
+          const user = new PublicKey(publicKey);
+          const programId = new PublicKey(programIdInput.value.trim());
+          const tokenMint = new PublicKey(tokenMintInput.value.trim());
+          const serviceLevel = Number(serviceLevelInput.value);
+          const weeks = Number(durationWeeksInput.value);
+          if (!Number.isInteger(serviceLevel) || serviceLevel < 0 || serviceLevel > 65535) {
+            throw new Error("Service level must be a u16 integer.");
+          }
+          if (!Number.isInteger(weeks) || weeks < 1 || weeks > 255) {
+            throw new Error("Duration weeks must be between 1 and 255.");
+          }
+
+          const [pricingMatrix] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode("pricing_matrix")],
+            programId,
+          );
+          const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+            [new TextEncoder().encode("token_treasury_v2")],
+            programId,
+          );
+          const userTokenAccount = associatedTokenAddress(user, tokenMint);
+          const tokenTreasuryVault = associatedTokenAddress(tokenTreasuryPda, tokenMint);
+
+          subscribeDebug.textContent = [
+            `user=${user.toBase58()}`,
+            `programId=${programId.toBase58()}`,
+            `tokenMint=${tokenMint.toBase58()}`,
+            `pricingMatrix=${pricingMatrix.toBase58()}`,
+            `userTokenAccount=${userTokenAccount.toBase58()}`,
+            `tokenTreasuryPda=${tokenTreasuryPda.toBase58()}`,
+            `tokenTreasuryVault=${tokenTreasuryVault.toBase58()}`,
+            `serviceLevel=${serviceLevel}`,
+            `weeks=${weeks}`,
+          ].join("\n");
+
+          const transaction = new Transaction().add(
+            createAssociatedTokenAccountIdempotentInstruction(
+              user,
+              userTokenAccount,
+              user,
+              tokenMint,
+            ),
+            subscribeInstruction({
+              user,
+              programId,
+              tokenMint,
+              pricingMatrix,
+              userTokenAccount,
+              tokenTreasuryVault,
+              tokenTreasuryPda,
+              serviceLevel,
+              weeks,
+            }),
+          );
+          const { connection, latest, url: selectedRpcUrl } =
+            await connectionWithLatestBlockhash();
+          transaction.feePayer = user;
+          transaction.recentBlockhash = latest.blockhash;
+
+          setStatus(
+            subscribeStatus,
+            `Approve the transaction in Phantom. RPC: ${selectedRpcUrl}`,
+            undefined,
+          );
+          let signature = "";
+          if (provider.signAndSendTransaction) {
+            const result = await provider.signAndSendTransaction(transaction);
+            signature = typeof result === "string" ? result : result.signature;
+          } else {
+            const signed = await provider.signTransaction(transaction);
+            signature = await connection.sendRawTransaction(signed.serialize());
+          }
+          pendingSignature = signature;
+          txSigInput.value = signature;
+          signatureInput.value = "";
+          refreshPreviews();
+          try {
+            await connection.confirmTransaction(
+              {
+                signature,
+                blockhash: latest.blockhash,
+                lastValidBlockHeight: latest.lastValidBlockHeight,
+              },
+              "confirmed",
+            );
+          } catch (confirmError) {
+            const statuses = await connection.getSignatureStatuses([signature], {
+              searchTransactionHistory: true,
+            });
+            const status = statuses.value[0];
+            if (!status || status.err) {
+              throw confirmError;
+            }
+          }
+          setStatus(
+            subscribeStatus,
+            `Subscribe confirmed. txSig filled: ${signature}`,
+            true,
+          );
+          refreshPreviews();
+        } catch (error) {
+          const errorSignature = solanaSignatureFromText(error.message);
+          if (errorSignature) {
+            txSigInput.value = errorSignature;
+            signatureInput.value = "";
+            refreshPreviews();
+            setStatus(
+              subscribeStatus,
+              `Subscribe returned a txSig despite the confirmation error. txSig filled: ${errorSignature}`,
+              true,
+            );
+          } else if (pendingSignature) {
+            setStatus(
+              subscribeStatus,
+              `Subscribe status uncertain, but txSig is filled. Check Explorer or try signing activation: ${error.message}`,
+              false,
+            );
+          } else {
+            setStatus(subscribeStatus, `Subscribe failed: ${error.message}`, false);
+          }
+        }
+      });
+
+      document.querySelector("#sign-message").addEventListener("click", async () => {
+        const provider = phantomProvider();
+        if (!provider) {
+          setStatus(signStatus, "Phantom was not found in this browser.", false);
+          return;
+        }
+        const txSigError = txSigValidationError();
+        if (txSigError) {
+          setStatus(signStatus, txSigError, false);
+          return;
+        }
+        if (!jwtInput.value.trim()) {
+          setStatus(signStatus, "Add JWT before signing.", false);
+          return;
+        }
+        if (!publicKey) {
+          const response = await provider.connect();
+          publicKey = response.publicKey.toString();
+          walletStatus.innerHTML = `Connected: <span class="mono">${publicKey}</span>`;
+        }
+        const messageBytes = new TextEncoder().encode(activationMessage());
+        const signed = await provider.signMessage(messageBytes, "utf8");
+        signatureInput.value = bytesToBase64(signed.signature);
+        setStatus(signStatus, "Message signed. Private key stayed in Phantom.", true);
+        refreshPreviews();
+      });
+
+      document.querySelector("#activate").addEventListener("click", async () => {
+        if (!jwtInput.value.trim() || !signatureInput.value.trim()) {
+          setStatus(activateStatus, "Add JWT and walletSignature first.", false);
+          return;
+        }
+        try {
+          const response = await fetch(
+            "https://txline.txodds.com/api/token/activate",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${jwtInput.value.trim()}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(activationBody()),
+            },
+          );
+          const text = await response.text();
+          apiTokenInput.value = text;
+          setStatus(activateStatus, `Activate returned HTTP ${response.status}.`, response.ok);
+        } catch (error) {
+          setStatus(
+            activateStatus,
+            `Browser activation failed: ${error.message}. Use the curl fallback.`,
+            false,
+          );
+        }
+      });
+
+      document.querySelector("#copy-signature").addEventListener("click", async () => {
+        await copyText(signatureInput.value);
+      });
+
+      document.querySelector("#copy-curl").addEventListener("click", async () => {
+        refreshPreviews();
+        await copyText(curlCommand());
+      });
+
+      [jwtInput, txSigInput, leaguesInput, signatureInput].forEach((node) => {
+        node.addEventListener("input", refreshPreviews);
+      });
+
+      refreshPreviews();
+    </script>
+  </body>
+</html>

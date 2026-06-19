@@ -103,6 +103,28 @@ With a custom population:
 python3 colony/run_demo.py --agents 80 --rooms 8 --seed 9
 ```
 
+Run the first-stage local agent lab without ENS or wallets:
+
+```bash
+python3 colony/agent_lab.py --host 127.0.0.1 --port 8787
+```
+
+Open `http://127.0.0.1:8787`, choose a match, set the number of agents and rooms, then run
+the pipeline. By default agents query the selected match KG through `existing_kg`. Optional
+layers such as `fixture`, `public`, `camel_deep_research`, `polymarket_market_context`,
+`txline_full`, or `wikidata_profiles` are KG refresh/enrichment connectors, not direct agent
+prompts. Legacy/debug modules such as `public_camel`, `polymarket_api`, `polymarket_gamma`,
+and `polymarket_clob` remain callable from the CLI, but the dashboard exposes the cleaner
+top-level plugins.
+
+Each lab run writes a clean local analysis bundle under `colony/runs/agent_lab/<job_id>/`:
+
+- `agent_manifest.json`: model species, persona, source weights, strategy, KG view, pick, and memory for every agent.
+- `interaction_log.jsonl`: chronological scouting, KG query, room message, social action, forecast, and decision events.
+- `run_summary.json`: compact counts, model mix, decision, memory, and artifact paths.
+- `debate/conversation_memory.json`: queryable per-agent debate memory and dispute edges.
+- `scouting/world_graph.json`: the match subgraph generated from the selected datasources.
+
 Create or reuse a persistent population:
 
 ```bash
@@ -534,7 +556,7 @@ python3 colony/run_match.py \
   --debug
 ```
 
-The X scout is isolated as `x_availability_scout` and is `shared` access by default. To wire ScrapeCreators or another X provider, set `SCRAPECREATORS_API_KEY` and `SCRAPECREATORS_X_SEARCH_URL` in `colony/.env`. The URL may either contain `{query}` for a templated GET request, or accept POST JSON shaped as `{"query": "..."}`.
+The X scout is isolated as `x_availability_scout` and is `shared` access by default. To wire ScrapeCreators, set `SCRAPECREATORS_API_KEY` and `SCRAPECREATORS_X_SEARCH_URL=https://api.scrapecreators.com/v1/google/search?query={query}` in `colony/.env`. The current connector uses ScrapeCreators Google Search with `site:x.com` / `site:twitter.com` filters, then stores low-confidence `social_signal` claims with citations. `public_x` also runs the normal public web scout, so a cold run can take 1-3 minutes; inspect `public_stage_complete` logs or `source_summaries[].stage_metrics` to see where the time went.
 
 Add the optional Telegram scout:
 
@@ -608,6 +630,7 @@ Each automatic run directory contains:
 - `world_graph.json` - lightweight round subgraph for the selected match, findings, genomes, predictions, and claims.
 - `kg_manifest.json` - KG schema version, ingestion entrypoints, entity/relationship counts, and integrity status for external KG loaders.
 - `kg_readiness` inside `scouting_audit.json` and `kg_manifest.json` separates `kg_load_ready` from `scouting_complete`, so a loader can ingest a structurally valid graph while keeping freshness or coverage backlog visible.
+- `scouting_log.jsonl` - source progress events, including `public_stage_complete` timings for public web, ScrapeCreators X, CAMEL, and claim extraction stages when enabled.
 - `events.compact.jsonl` - compact event stream with summary, findings, claims, and forecasts.
 - `debug.md` - optional, written only with `--debug`.
 

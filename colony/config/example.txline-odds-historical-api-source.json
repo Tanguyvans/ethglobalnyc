@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "kind": "api",
+      "url": "https://txline.txodds.com/api/odds/snapshot/${TXLINE_FIXTURE_ID}",
+      "adapter": "txline_odds",
+      "title": "TXLINE historical odds snapshot",
+      "headers": {
+        "Authorization": "Bearer ${TXLINE_JWT}",
+        "X-Api-Token": "${TXLINE_API_TOKEN}"
+      },
+      "query": {
+        "asOf": "${TXLINE_AS_OF}"
+      },
+      "max_rows": 30
+    }
+  ]
+}
