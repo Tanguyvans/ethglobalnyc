@@ -405,6 +405,28 @@ look with Adil until it's right. **Only then** start the `/worldcup` page.
 - **Favicon added** (was missing): `frontend/public/favicon.ico` (16/32/48/64, from the
   soccer ball via inkscape→magick) + SVG fallback `<link>`s in `<head>`.
 
+## 8. BUILD STATUS — full page DONE (2026-06-20)
+Implemented as an in-overlay app (`public/worldcup/worldcup.js` + `worldcup.css`), rendered
+into `#wc-content`. Sections live:
+- ✅ Hero (title, blurb, ENS link)
+- ✅ Trading Identity card (ENS `worldcolony.eth`, address, treasury, pUSD; PolygonScan /
+  Polymarket / ENS / Etherscan buttons; two-chain explainer)
+- ✅ Match Schedule & Colony Picks — next match card + colony picks + upcoming grid, flags
+  via flagcdn, prediction badges; upcoming/past split on `REF_DATE = 2026-06-20`
+- ✅ Outright / Futures — France-to-win cards (#1 manual, #2 auto)
+- ✅ On-chain Ledger — 11 real trades table (match/date/pick/by/size/status/tx)
+- ✅ Counterfactual Ledger — 3 simulated trades + lessons
+- ✅ How the Edge Works — arbitrage / UMA / ClickHouse blurbs w/ links
+- ✅ Footer
+
+### Remaining / open
+- **Panama bet not yet on its fixture:** trades #9–#11 are bare market ids → shown in the
+  ledger as "Market #…" + unmapped footnote, and Panama vs Croatia (Jun 23) reads "No
+  position". Fill `MARKET_OVERRIDES` in `worldcup.js` once Adil confirms which id
+  (`1897246` / `1897121`) is Panama (+ the other two ids).
+- Past colony picks have no results (KG scores only cover early matches) → badges show the
+  pick/price but not win/loss for those.
+
 ## File change summary
 
 | File | Change |

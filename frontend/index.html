@@ -6,6 +6,8 @@
 <title>WorldColony — Living AI Ant Civilization</title>
 <link rel="icon" href="/favicon.ico" sizes="any" />
 <link rel="icon" type="image/svg+xml" href="/worldcup/soccerball.svg" />
+<!-- WORLD CUP TEMP — predictions overlay content styles (remove after the tournament) -->
+<link rel="stylesheet" href="/worldcup/worldcup.css?v=20260620-1" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
@@ -138,19 +140,7 @@
   <div id="wc-content"></div>
 </div>
 
-<script>
-  (function () {
-    var body = document.body;
-    var cta = document.getElementById('wc-cta');
-    var back = document.getElementById('wc-back');
-    var overlay = document.getElementById('wc-overlay');
-    function open(e) { if (e) e.preventDefault(); body.classList.add('wc-open'); overlay.setAttribute('aria-hidden', 'false'); }
-    function close(e) { if (e) e.preventDefault(); body.classList.remove('wc-open'); overlay.setAttribute('aria-hidden', 'true'); }
-    if (cta) cta.addEventListener('click', open);
-    if (back) back.addEventListener('click', close);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && body.classList.contains('wc-open')) close(e); });
-  })();
-</script>
+<script src="/worldcup/worldcup.js?v=20260620-1"></script>
 <!-- ============ /WORLD CUP TEMP ============ -->
 
 <!-- dive fade -->
