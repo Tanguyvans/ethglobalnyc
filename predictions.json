@@ -177,7 +177,7 @@
       "status": "filled",
       "block": 88470140,
       "tx_hash": "0xaf2fb94c9ec720771cbb6bac4ada5ccdc2456a854a0bf94e5e9c2fad5637d717",
-      "note": "Ants/consensus pick. PolyGun showed only 'Transaction Submitted' (no confirmation) but it FILLED on-chain — verified before NOT retrying (avoided a Scotland-style double-bet)."
+      "note": "Ants/consensus pick. PolyGun showed only 'Transaction Submitted' (no confirmation) but it FILLED on-chain \u2014 verified before NOT retrying (avoided a Scotland-style double-bet)."
     },
     {
       "id": 8,
@@ -201,7 +201,7 @@
       "status": "filled",
       "block": 88518355,
       "tx_hash": "0xc692c2b69f6a937f4ca363a4b081b9b24e134e230edc88fcef6cd83b6a3b94d5",
-      "note": "User pick. LIVE in-play bet @ ~31c (draw was favorite 44c). Filled fine — mid-game two-sided liquidity (contrast: 99c winners were unbuyable). PolyGun showed only 'Submitted'; verified filled on-chain."
+      "note": "User pick. LIVE in-play bet @ ~31c (draw was favorite 44c). Filled fine \u2014 mid-game two-sided liquidity (contrast: 99c winners were unbuyable). PolyGun showed only 'Submitted'; verified filled on-chain."
     },
     {
       "id": 9,
@@ -240,6 +240,25 @@
       "status": "filled",
       "block": 88725453,
       "tx_hash": "0x99452a3c7a0a8bf8f1dc86cbc3e672c35d8b8b3253a5373d88b9eda6a0d6dabc"
+    },
+    {
+      "id": 11,
+      "ts_utc": "2026-06-19T21:26:37Z",
+      "action": "buy",
+      "placed_by": "claude",
+      "method": "auto",
+      "execution_layer": "polygun",
+      "side": "yes",
+      "polygun_market_id": 1897121,
+      "outcome_token_id": "101256141817216466245038151589296191044974050560393587426784474074655264282404",
+      "shares": 12.5,
+      "avg_price": 0.1656,
+      "pusd_to_maker": 2.0704,
+      "pusd_fee": null,
+      "pusd_total": 2.0704,
+      "status": "filled",
+      "block": 88799601,
+      "tx_hash": "0x647a030f53e5b5d37baec41a770e0cfc25fdfe8e8c131d4d0a20ddaadf863ca6"
     }
   ]
 }
