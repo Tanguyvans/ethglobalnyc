@@ -67,6 +67,10 @@ DN.hud = (function () {
     root.innerHTML =
       '<div class="backend-copy"><div class="backend-k">Backend</div><div class="backend-s" id="backend-status">Railway linked</div></div>' +
       '<div class="backend-actions">' +
+        '<select class="forecast-select" id="forecast-game-scope" aria-label="Game scope">' +
+          '<option value="upcoming">Upcoming</option>' +
+          '<option value="previous">Previous test</option>' +
+        '</select>' +
         '<select class="forecast-game-select" id="forecast-game" aria-label="Game">' +
           '<option value="match:world_cup_2026:013:2026_06_13_brazil_morocco">Brazil vs Morocco</option>' +
         '</select>' +
@@ -141,6 +145,7 @@ DN.hud = (function () {
     const forecastSetupBtn = $('forecast-setup');
     const forecastSettleBtn = $('forecast-settle');
     const forecastWinner = $('forecast-winner');
+    const forecastGameScope = $('forecast-game-scope');
     const forecastGame = $('forecast-game');
     const status = $('backend-status');
     const kgPluginList = $('kg-plugin-list');
@@ -179,6 +184,73 @@ DN.hud = (function () {
       away_team: forecastCfg.AWAY_TEAM || 'Morocco',
       name: (forecastCfg.HOME_TEAM || 'Brazil') + ' vs ' + (forecastCfg.AWAY_TEAM || 'Morocco'),
     };
+
+    function todayIsoDate() {
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+      } catch (err) {
+        return '2026-06-23';
+      }
+    }
+
+    function gameKey(game) {
+      return String((game && (game.market_key || game.match_id || game.id || game.name)) || '');
+    }
+
+    function isGroupStageGame(game) {
+      return Boolean(game && game.group && game.date);
+    }
+
+    function isPreviousTestGame(game) {
+      return isGroupStageGame(game) && game.date < todayIsoDate();
+    }
+
+    function sortGamesForScope(games, scope) {
+      return games.slice().sort((a, b) => {
+        const ak = [a.date || '', a.time || '', a.name || ''].join(' ');
+        const bk = [b.date || '', b.time || '', b.name || ''].join(' ');
+        return scope === 'previous' ? bk.localeCompare(ak) : ak.localeCompare(bk);
+      });
+    }
+
+    function forecastGameLabel(game, scope) {
+      const parts = [game.date, game.time, game.name].filter(Boolean);
+      if (game.score) parts.push('score ' + game.score);
+      else if (scope === 'previous') parts.push('previous');
+      return parts.join(' - ');
+    }
+
+    function gamesForScope(games, scope) {
+      const filtered = scope === 'previous'
+        ? games.filter(isPreviousTestGame)
+        : games.filter(isUpcomingGroupStage);
+      return sortGamesForScope(filtered.length ? filtered : games, scope);
+    }
+
+    function renderForecastGames(scope, preferred) {
+      if (!forecastGame) return;
+      const games = (DN.databridge && DN.databridge.forecastGames) || [];
+      const visibleGames = gamesForScope(games, scope || 'upcoming');
+      if (!visibleGames.length && !preferred) return;
+      forecastGame.innerHTML = visibleGames.slice(0, 104).map((game) =>
+        '<option value="' + esc(gameKey(game)) + '">' + esc(forecastGameLabel(game, scope || 'upcoming')) + '</option>'
+      ).join('');
+      const currentKey = gameKey(selectedGame);
+      const preferredKey = gameKey(preferred);
+      const chosen = visibleGames.find((game) => gameKey(game) === currentKey) ||
+        visibleGames.find((game) => gameKey(game) === preferredKey) ||
+        (scope === 'previous' ? visibleGames.find((game) => /France vs Iraq/i.test(game.name || '')) : null) ||
+        visibleGames[0] ||
+        preferred;
+      if (!chosen) return;
+      selectedGame = chosen;
+      forecastGame.value = gameKey(selectedGame);
+      updateWinnerOptions();
+    }
 
     function fallbackKgModules() {
       const modules = configuredKgRun.modules || ['fixture', 'public_x', 'polymarket_market_context', 'wikidata_profiles'];
@@ -1234,7 +1306,7 @@ DN.hud = (function () {
     };
 
     function isUpcomingGroupStage(game) {
-      return game && game.group && game.date && game.date >= '2026-06-14' && !game.score;
+      return isGroupStageGame(game) && game.date >= todayIsoDate() && !game.score;
     }
 
     updateWinnerOptions();
@@ -1253,26 +1325,27 @@ DN.hud = (function () {
           const games = payload.games || [];
           const preferred = games.find((game) => /Brazil vs Morocco/i.test(game.name || '')) || games[0];
           if (!preferred) return;
-          const selectableGames = games.filter(isUpcomingGroupStage);
-          const visibleGames = selectableGames.length ? selectableGames : games;
-          forecastGame.innerHTML = visibleGames.slice(0, 104).map((game) =>
-            '<option value="' + game.market_key + '">' + [game.date, game.time, game.name].filter(Boolean).join(' - ') + '</option>'
-          ).join('');
-          selectedGame = visibleGames.find((game) => /Brazil vs Morocco/i.test(game.name || '')) || visibleGames[0] || preferred;
-          forecastGame.value = selectedGame.market_key;
-          updateWinnerOptions();
+          renderForecastGames(forecastGameScope ? forecastGameScope.value : 'upcoming', preferred);
         })
         .catch(() => {});
+      if (forecastGameScope) {
+        forecastGameScope.addEventListener('change', () => {
+          renderForecastGames(forecastGameScope.value, selectedGame);
+          const suffix = forecastGameScope.value === 'previous' ? ' · previous test' : '';
+          status.textContent = (selectedGame.name || 'Selected game') + suffix;
+        });
+      }
       forecastGame.addEventListener('change', () => {
         const optionText = forecastGame.options[forecastGame.selectedIndex] ? forecastGame.options[forecastGame.selectedIndex].textContent : 'Selected game';
+        const cached = (DN.databridge.forecastGames || []).find((game) => gameKey(game) === forecastGame.value);
         selectedGame = {
           market_key: forecastGame.value,
+          match_id: forecastGame.value,
           market_type: forecastGame.value.includes('group') ? 'three_way' : selectedGame.market_type,
           home_team: optionText.split(' vs ')[0] || selectedGame.home_team,
           away_team: optionText.split(' vs ')[1] || selectedGame.away_team,
           name: optionText,
         };
-        const cached = (DN.databridge.forecastGames || []).find((game) => game.market_key === forecastGame.value);
         if (cached) selectedGame = cached;
         forecastMarketKey = '';
         forecastStakes = [];
