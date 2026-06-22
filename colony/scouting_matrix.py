@@ -7,20 +7,32 @@ import argparse
 import json
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from colony_harness.env import load_env_file
-from colony_harness.scouting_pipeline import (
-    DEFAULT_LOCAL_RUNS_DIR,
-    ScoutingRunLogger,
-    SourceSpec,
-    build_local_scouting_result,
-    load_graph_for_local_scouting,
-    parse_source_spec,
-    write_local_scouting_artifacts,
-)
+try:  # Script mode: PYTHONPATH=colony python3 scouting_matrix.py
+    from colony_harness.env import load_env_file
+    from colony_harness.scouting_pipeline import (
+        DEFAULT_LOCAL_RUNS_DIR,
+        ScoutingRunLogger,
+        SourceSpec,
+        build_local_scouting_result,
+        load_graph_for_local_scouting,
+        parse_source_spec,
+        write_local_scouting_artifacts,
+    )
+except ImportError:  # Package mode: import colony.scouting_matrix
+    from colony.colony_harness.env import load_env_file
+    from colony.colony_harness.scouting_pipeline import (
+        DEFAULT_LOCAL_RUNS_DIR,
+        ScoutingRunLogger,
+        SourceSpec,
+        build_local_scouting_result,
+        load_graph_for_local_scouting,
+        parse_source_spec,
+        write_local_scouting_artifacts,
+    )
 
 
 DEFAULT_KG = Path(__file__).parent / "data" / "world_cup_kg.json"
@@ -51,6 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--list-datasources", action="store_true", help="Print datasource candidates from the catalog and exit.")
     parser.add_argument("--mode", choices=["fast", "deep"], default="fast")
     parser.add_argument("--timeout", type=int, default=20)
+    parser.add_argument("--cutoff-hours", type=float, default=6.0, help="Prediction cutoff before kickoff for as-of source templates.")
     parser.add_argument(
         "--camel-agents",
         type=int,
@@ -86,7 +99,7 @@ def main() -> None:
         logger = ScoutingRunLogger(verbose=not args.quiet)
         existing_kg_paths = [args.kg] if _uses_existing_kg(modules, catalog) else []
         pipeline_flags = _pipeline_flags_for_modules(modules, catalog, camel_agent_count_override=args.camel_agents)
-        sources = _sources_for_match(match_entity, modules, catalog=catalog, logger=logger)
+        sources = _sources_for_match(match_entity, modules, catalog=catalog, cutoff_hours=args.cutoff_hours, logger=logger)
         result = build_local_scouting_result(
             match_entity=match_entity,
             mode=args.mode,
@@ -118,6 +131,7 @@ def main() -> None:
                     modules,
                     catalog=catalog,
                     txline_fixture=fixture,
+                    cutoff_hours=args.cutoff_hours,
                     logger=logger,
                 )
                 result = build_local_scouting_result(
@@ -209,11 +223,12 @@ def _sources_for_match(
     *,
     catalog: dict[str, Any],
     txline_fixture: dict[str, Any] | None = None,
+    cutoff_hours: float = 6.0,
     logger: ScoutingRunLogger | None = None,
 ) -> list[SourceSpec]:
     sources: list[SourceSpec] = []
     seen_sources: set[tuple[str, str, str]] = set()
-    context = _match_template_context(match_entity, txline_fixture=txline_fixture)
+    context = _match_template_context(match_entity, txline_fixture=txline_fixture, cutoff_hours=cutoff_hours)
     for module_name in modules:
         module = _catalog_module(catalog, module_name)
         missing_env = _missing_module_env(module)
@@ -336,12 +351,15 @@ def _match_template_context(
     match_entity: dict[str, Any],
     *,
     txline_fixture: dict[str, Any] | None,
+    cutoff_hours: float = 6.0,
 ) -> dict[str, Any]:
     attrs = match_entity.get("attributes", {})
     team1 = str(attrs.get("team1") or "").strip()
     team2 = str(attrs.get("team2") or "").strip()
     match_name = str(match_entity.get("name") or f"{team1} vs {team2}")
     match_date = str(attrs.get("date") or "")
+    kickoff_utc = _match_kickoff_utc(match_date=match_date, match_time=str(attrs.get("time") or ""))
+    prediction_cutoff_utc = kickoff_utc - timedelta(hours=cutoff_hours) if kickoff_utc else None
     context: dict[str, Any] = {
         "match_id": str(match_entity.get("entity_id") or ""),
         "match_name": match_name,
@@ -352,12 +370,18 @@ def _match_template_context(
         "away_team": team2,
         "match_date": match_date,
         "epoch_day": _epoch_day(match_date) if match_date else "",
+        "kickoff_utc": _iso_utc(kickoff_utc) if kickoff_utc else "",
+        "prediction_cutoff_utc": _iso_utc(prediction_cutoff_utc) if prediction_cutoff_utc else "",
     }
     if txline_fixture:
+        txline_start_utc = _timestamp_to_utc(txline_fixture.get("start_time"))
+        txline_cutoff_utc = txline_start_utc - timedelta(hours=cutoff_hours) if txline_start_utc else prediction_cutoff_utc
         context.update(
             {
                 "txline_fixture_id": txline_fixture.get("fixture_id") or "",
                 "txline_start_time": txline_fixture.get("start_time") or "",
+                "txline_start_time_utc": _iso_utc(txline_start_utc) if txline_start_utc else "",
+                "txline_prediction_cutoff_utc": _iso_utc(txline_cutoff_utc) if txline_cutoff_utc else "",
             }
         )
     return context
@@ -396,6 +420,45 @@ def _txline_fixture_from_findings(findings: list[Any]) -> dict[str, Any] | None:
 def _epoch_day(match_date: str) -> int:
     parsed = datetime.strptime(match_date, "%Y-%m-%d").date()
     return (parsed - date(1970, 1, 1)).days
+
+
+def _match_kickoff_utc(*, match_date: str, match_time: str) -> datetime | None:
+    if not match_date or not match_time:
+        return None
+    match = re.match(r"^(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2})$", match_time.strip())
+    if not match:
+        return None
+    hour, minute, offset = match.groups()
+    tz = timezone(timedelta(hours=int(offset)))
+    local = datetime.fromisoformat(f"{match_date}T{int(hour):02d}:{minute}:00").replace(tzinfo=tz)
+    return local.astimezone(timezone.utc)
+
+
+def _timestamp_to_utc(value: Any) -> datetime | None:
+    if value in {None, ""}:
+        return None
+    try:
+        timestamp = float(value)
+    except (TypeError, ValueError):
+        text = str(value).strip()
+        try:
+            if text.endswith("Z"):
+                text = text[:-1] + "+00:00"
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    if timestamp > 10_000_000_000:
+        timestamp /= 1000.0
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc)
+
+
+def _iso_utc(value: datetime | None) -> str:
+    if value is None:
+        return ""
+    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _safe_slug(value: str) -> str:

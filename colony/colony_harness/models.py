@@ -362,6 +362,10 @@ class Forecast:
     model: str = ""
     datafeed_interests: list[str] = field(default_factory=list)
     source_weights: dict = field(default_factory=dict)
+    archetype: str = ""
+    social_class: str = ""
+    mind_summary: str = ""
+    memory_recall_count: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -415,6 +419,11 @@ class RoundResult:
     balance_updates: list[BalanceUpdate] = field(default_factory=list)
     internal_stakes: list[InternalStake] = field(default_factory=list)
     settlement_summary: dict = field(default_factory=dict)
+    agent_minds: list[dict] = field(default_factory=list)
+    memory_recall: list[dict] = field(default_factory=list)
+    memory_writes: list[dict] = field(default_factory=list)
+    class_transitions: list[dict] = field(default_factory=list)
+    evolution_trace: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -433,5 +442,10 @@ class RoundResult:
             "balance_updates": [update.to_dict() for update in self.balance_updates],
             "internal_stakes": [stake.to_dict() for stake in self.internal_stakes],
             "settlement_summary": self.settlement_summary,
+            "agent_minds": self.agent_minds,
+            "memory_recall": self.memory_recall,
+            "memory_writes": self.memory_writes,
+            "class_transitions": self.class_transitions,
+            "evolution_trace": self.evolution_trace,
             "summary": self.summary,
         }

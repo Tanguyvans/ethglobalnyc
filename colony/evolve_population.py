@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import json
 import random
 from pathlib import Path
@@ -92,6 +93,7 @@ def evolve_population(
                 evolution_role="child",
                 parent_genome_id=parent.genome_id,
                 previous_genome_id=slot.genome_id,
+                mind=_child_mind(parent, slot.agent_id),
             ),
         )
         child_index += 1
@@ -147,6 +149,22 @@ def evolve_population(
         "transitions": transitions,
     }
     return next_agents, summary
+
+
+def _child_mind(parent: AntAgent, child_agent_id: str) -> dict:
+    mind = deepcopy(parent.mind or {})
+    if not mind:
+        return {}
+    mind["agent_id"] = child_agent_id
+    mind["social_class"] = "newborn"
+    mind["life_status"] = "alive"
+    mind["memory_summary"] = {
+        "inherited_from": parent.agent_id,
+        "parent_archetype": mind.get("archetype", ""),
+        "inheritance_note": "Child inherited the parent's qualitative strategy card; numeric genome traits still mutate separately.",
+    }
+    mind.setdefault("class_history", []).append({"from": parent.mind.get("social_class", "unknown"), "to": "newborn"})
+    return mind
 
 
 def _population_payload(agents: list[AntAgent], *, seed: int, summary: dict[str, Any]) -> dict[str, Any]:

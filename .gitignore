@@ -2,6 +2,7 @@
 frontend/dist/
 arc/receipts/
 colony/runs/
+colony/secrets/
 __pycache__/
 *.pyc
 cache/

@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.request
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from types import SimpleNamespace
@@ -376,6 +376,7 @@ def build_local_scouting_result(
     include_polygun: bool = False,
     include_deepseek_scout: bool = False,
     rescout_targets: list[dict[str, Any]] | None = None,
+    as_of_utc: str = "",
     logger: ScoutingRunLogger | None = None,
 ) -> LocalScoutingResult:
     """Run source plugins and return a generated KG result."""
@@ -439,6 +440,16 @@ def build_local_scouting_result(
         gate_result = _apply_claim_quality_gate(produced, match=match)
         _log_claim_quality_gate(log, gate_result, source=source.label)
         produced = gate_result.findings
+        if as_of_utc:
+            before_count = _claim_count(produced)
+            produced = _filter_findings_as_of(produced, as_of_utc=as_of_utc)
+            log.event(
+                "temporal_gate_complete",
+                source=source.label,
+                as_of_utc=as_of_utc,
+                input_claims=before_count,
+                kept_claims=_claim_count(produced),
+            )
         findings.extend(produced)
         claim_count = sum(len(finding.evidence_claims) for finding in produced)
         summary = {
@@ -464,6 +475,16 @@ def build_local_scouting_result(
         gate_result = _apply_claim_quality_gate(produced, match=match)
         _log_claim_quality_gate(log, gate_result, source=f"existing-kg:{path}")
         produced = gate_result.findings
+        if as_of_utc:
+            before_count = _claim_count(produced)
+            produced = _filter_findings_as_of(produced, as_of_utc=as_of_utc)
+            log.event(
+                "temporal_gate_complete",
+                source=f"existing-kg:{path}",
+                as_of_utc=as_of_utc,
+                input_claims=before_count,
+                kept_claims=_claim_count(produced),
+            )
         findings.extend(produced)
         claim_count = sum(len(finding.evidence_claims) for finding in produced)
         summary = {
@@ -792,6 +813,114 @@ def _log_claim_quality_gate(log: ScoutingRunLogger, result: ClaimQualityGateResu
         rejection_reasons=json.dumps(result.rejection_reasons, sort_keys=True),
         sample_rejections=json.dumps(result.rejection_samples, ensure_ascii=False, sort_keys=True),
     )
+
+
+def _claim_count(findings: list[Finding]) -> int:
+    return sum(len(finding.evidence_claims) for finding in findings)
+
+
+def _filter_findings_as_of(findings: list[Finding], *, as_of_utc: str) -> list[Finding]:
+    cutoff = _parse_temporal_gate_datetime(as_of_utc)
+    filtered: list[Finding] = []
+    for finding in findings:
+        kept_claims = [
+            claim
+            for claim in finding.evidence_claims
+            if _claim_is_available_as_of(claim, cutoff=cutoff)
+        ]
+        if not kept_claims:
+            continue
+        filtered.append(
+            replace(
+                finding,
+                citations=sorted({claim["source_url"] for claim in kept_claims if claim.get("source_url")})
+                or finding.citations,
+                evidence_claims=kept_claims,
+                summary=_temporal_gate_summary(finding.summary, len(finding.evidence_claims), len(kept_claims)),
+            )
+        )
+    return filtered
+
+
+def _temporal_gate_summary(summary: str, input_count: int, kept_count: int) -> str:
+    if input_count == kept_count:
+        return summary
+    suffix = f" Temporal gate kept {kept_count}/{input_count} pre-cutoff claim(s)."
+    return (summary.rstrip() + suffix).strip() if summary else suffix.strip()
+
+
+def _claim_is_available_as_of(claim: dict[str, Any], *, cutoff: datetime) -> bool:
+    claim_type = str(claim.get("claim_type") or "")
+    if claim_type in {"live_score_event", "match_result"}:
+        return False
+    timestamp = _claim_available_datetime(claim)
+    if timestamp is not None:
+        return timestamp <= cutoff
+    return _is_durable_undated_claim(claim)
+
+
+def _claim_available_datetime(claim: dict[str, Any]) -> datetime | None:
+    for key in (
+        "available_at_utc",
+        "available_at",
+        "published_at_utc",
+        "source_published_at",
+        "source_published",
+        "published",
+        "source_published_date",
+        "date",
+    ):
+        parsed = _try_parse_temporal_value(claim.get(key))
+        if parsed is not None:
+            return parsed
+    metrics = claim.get("metrics") or {}
+    if isinstance(metrics, dict):
+        for key in ("txline_timestamp", "ts", "timestamp", "source_timestamp"):
+            parsed = _try_parse_temporal_value(metrics.get(key))
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def _is_durable_undated_claim(claim: dict[str, Any]) -> bool:
+    source_kind = str(claim.get("source_kind") or "")
+    claim_type = str(claim.get("claim_type") or "")
+    if claim_type in {"match_schedule", "team_profile", "player_profile"}:
+        return source_kind in {"reference", "api", "mcp", "existing_kg"}
+    return False
+
+
+def _try_parse_temporal_value(value: Any) -> datetime | None:
+    if value in {None, ""}:
+        return None
+    if isinstance(value, (int, float)):
+        return _epoch_to_utc(float(value))
+    text = str(value).strip()
+    if not text:
+        return None
+    if re.fullmatch(r"\d{10,16}", text):
+        return _epoch_to_utc(float(text))
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return datetime.fromisoformat(text).replace(tzinfo=timezone.utc)
+    try:
+        return _parse_temporal_gate_datetime(text)
+    except ValueError:
+        return None
+
+
+def _parse_temporal_gate_datetime(value: str) -> datetime:
+    text = str(value or "").strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    parsed = datetime.fromisoformat(text)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _epoch_to_utc(value: float) -> datetime:
+    timestamp = value / 1000.0 if value > 10_000_000_000 else value
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc)
 
 
 def _claim_rejection_reasons(claim: dict[str, Any], *, match: MatchContext) -> list[str]:

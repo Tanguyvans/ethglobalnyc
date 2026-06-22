@@ -34,6 +34,15 @@ def ant_to_supabase_row(
         "query_budget": genome.query_budget,
         "herd_bias": genome.herd_bias,
         "source_weights": weights,
+        "archetype": agent.mind.get("archetype", ""),
+        "social_class": agent.mind.get("social_class", ""),
+        "mind_summary": {
+            "label": agent.mind.get("label", ""),
+            "belief": agent.mind.get("belief", ""),
+            "risk_style": agent.mind.get("risk_style", ""),
+            "data_style": agent.mind.get("data_style", ""),
+            "debate_style": agent.mind.get("debate_style", ""),
+        },
     }
 
     return {
@@ -57,6 +66,7 @@ def ant_to_supabase_row(
         "wallet_address": agent.wallet_address,
         "ens_name": agent.ens_name,
         "metadata": {
+            "mind": dict(agent.mind or {}),
             "world_status": agent.world_status,
             "world_access_tier": agent.world_access_tier,
             "world_verified": agent.world_verified,
@@ -115,6 +125,7 @@ def supabase_row_to_agent(row: dict[str, Any]) -> AntAgent:
         "evolution_role": str(metadata.get("evolution_role") or ""),
         "parent_genome_id": str(metadata.get("parent_genome_id") or ""),
         "previous_genome_id": str(metadata.get("previous_genome_id") or ""),
+        "mind": dict(metadata.get("mind") or {}),
         "genome": genome.to_dict(),
     }
     return agent_from_state(state)

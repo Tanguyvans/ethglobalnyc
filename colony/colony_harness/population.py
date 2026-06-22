@@ -10,7 +10,7 @@ from .agent import AntAgent
 from .genes import Genome
 
 
-POPULATION_SCHEMA_VERSION = 1
+POPULATION_SCHEMA_VERSION = 2
 
 
 def agent_to_state(agent: AntAgent) -> dict[str, Any]:
@@ -30,6 +30,7 @@ def agent_to_state(agent: AntAgent) -> dict[str, Any]:
         "world_verified": agent.world_verified,
         "world_human_id": agent.world_human_id,
         "genome": agent.genome.to_dict(),
+        "mind": dict(agent.mind or {}),
     }
     if agent.evolution_role:
         state["evolution_role"] = agent.evolution_role
@@ -69,6 +70,7 @@ def agent_from_state(data: dict[str, Any]) -> AntAgent:
         parent_genome_id=str(data.get("parent_genome_id") or ""),
         previous_genome_id=str(data.get("previous_genome_id") or ""),
         last_settlement=dict(data.get("last_settlement") or {}),
+        mind=dict(data.get("mind") or {}),
     )
 
 
@@ -104,7 +106,8 @@ def save_population_state(
 def load_population_state(path: str | Path) -> list[AntAgent]:
     source = Path(path)
     payload = json.loads(source.read_text(encoding="utf-8"))
-    if int(payload.get("schema_version") or 0) != POPULATION_SCHEMA_VERSION:
+    schema_version = int(payload.get("schema_version") or 0)
+    if schema_version not in {1, POPULATION_SCHEMA_VERSION}:
         raise ValueError(f"Unsupported population schema_version in {source}")
     agents = [agent_from_state(record) for record in payload.get("agents") or []]
     if not agents:

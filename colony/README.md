@@ -50,6 +50,7 @@ What works today:
 - Aggregate room outputs into one final-chamber synthesis with structured `diagnostics`: consensus, main evidence thread, minority report, source dispute, room range, and dispute counts.
 - Save readable logs and queryable memory in `summary.md`, `debate.md`, `rooms.json`, `conversation_memory.json`, `forecasts.csv`, `findings.json`, `knowledge_views.json`, and `events.compact.jsonl`.
 - Analyze recent `conversation_memory.json` files into a compact debater/archetype report for debugging debate quality.
+- Evaluate the current algorithm on deterministic synthetic scenarios with debate/no-debate ablations and memory-hit metrics.
 
 Known rough edges:
 
@@ -698,6 +699,88 @@ The report summarizes:
 - top single-run debaters for debugging specific room behavior.
 
 This is a debugging heuristic, not a truth label. `speaker_id` is still run-local; use `genome_id` for a stable genome identity and archetypes for broader behavior patterns. To make `genome_id` recur across matches, run with `--population-state`.
+
+## Evaluate Forecast Behavior
+
+Run deterministic synthetic scenarios with a debate/no-debate ablation:
+
+```bash
+python3 colony/evaluate_colony.py \
+  --agents 40 \
+  --rooms 6 \
+  --seed 42 \
+  --repeats 2
+```
+
+The evaluator writes `evaluation_report.md` and `evaluation_results.json` under
+`colony/runs/evaluations/<timestamp>/`. It compares `no_debate`,
+`debate_memory_log`, and `debate_memory_injected`. It measures Brier score, side
+accuracy, toy ROI, collective accuracy, debate-driven side changes, total memory
+hits, match-relevant memory hits, irrelevant memory hits, memory-driven side
+changes, and memory-driven probability shift. Use this report to check whether
+memory injection improves truth-facing metrics rather than only making the run
+logs look richer.
+
+To evaluate multiple population sizes, room budgets, and seeds in one run:
+
+```bash
+python3 colony/evaluate_colony.py \
+  --agent-counts 12,32,64 \
+  --room-counts 4,6 \
+  --seeds 5,77 \
+  --repeats 2
+```
+
+Matrix mode writes `matrix_report.md` and `matrix_results.json`, including
+aggregate metrics and win counts per variant.
+
+## Run A Resolved-Event Benchmark
+
+The first benchmark dataset format lives in
+`colony/data/benchmarks/worldcup_pilot.json`. It is a small World Cup-style
+pilot with multiple source families per event: fixture context, market/odds,
+team form, and news/sentiment. It is meant to validate the benchmark loop, not
+to prove model quality yet. The schema and collection workflow are documented
+in [`docs/benchmark-dataset.md`](docs/benchmark-dataset.md).
+
+```bash
+python3 colony/run_benchmark.py \
+  --dataset colony/data/benchmarks/worldcup_pilot.json \
+  --agents 24 \
+  --rooms 5 \
+  --seed 42
+```
+
+The runner writes `benchmark_report.md` and `benchmark_results.json` under
+`colony/runs/benchmarks/<timestamp>/`. Each event is converted into a
+prediction-only `MatchContext`, the ants debate and forecast, then the runner
+scores those frozen predictions against the event resolution.
+
+The temporal contract is strict:
+
+- every `evidence_item.available_at_utc` must be before or equal to
+  `prediction_cutoff_utc`;
+- every `resolution.available_at_utc` must be after `prediction_cutoff_utc`;
+- `MatchContext.score` is blank during prediction, so result facts are not
+  available to the ants before they forecast.
+
+Collect raw source snapshots with timestamps and hashes before building a real
+benchmark dataset:
+
+```bash
+python3 colony/collect_benchmark_data.py \
+  --worldcup-openfootball colony/data/openfootball/worldcup_2026.json \
+  --football-data 2425/E0
+```
+
+Build a focused World Cup 2026 dataset from the latest resolved OpenFootball
+matches:
+
+```bash
+python3 colony/build_worldcup_benchmark.py \
+  --collection-dir colony/runs/benchmark_collection/first_real_snapshot \
+  --out colony/data/benchmarks/worldcup_2026_latest_resolved.json
+```
 
 ## Evolve A Population
 

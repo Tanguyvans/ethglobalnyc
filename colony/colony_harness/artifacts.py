@@ -66,6 +66,11 @@ def write_compact_run_artifacts(
     _write_social_actions(path / "social_feed.json", result)
     _write_social_actions_jsonl(path / "actions.jsonl", result)
     _write_social_profiles(path / "social_profiles.json", result)
+    _write_agent_minds(path / "agent_minds.json", result)
+    _write_memory_recall(path / "memory_recall.json", result)
+    _write_memory_writes(path / "memory_writes.json", result)
+    _write_class_transitions(path / "class_transitions.json", result)
+    _write_evolution_trace(path / "evolution_trace.json", result)
     _write_social_space(path / "social_space.json", result)
     _write_social_activity_config(path / "social_activity_config.json", result)
     _write_rooms(path / "rooms.json", result)
@@ -111,6 +116,9 @@ def _write_summary(path: Path, match: MatchContext, result: RoundResult) -> None
         f"- Findings: {summary['findings']} public={summary['public_findings']} shared={summary['shared_findings']} private={summary['private_findings']}",
         f"- Knowledge views: public={summary['public_views']} shared={summary['shared_views']} private={summary['private_views']}",
         f"- Risk profiles: {_risk_profile_summary(summary.get('risk_profiles', {}))}",
+        f"- Archetypes: {_counter_text(summary.get('archetypes', {}))}",
+        f"- Social classes: {_counter_text(summary.get('social_classes', {}))}",
+        f"- Memory: backend={summary.get('memory_backend', 'n/a')} recalls={summary.get('memory_recalls', 0)} writes={summary.get('memory_writes', 0)}",
         "",
         "## Probability Lean Distribution",
         "",
@@ -151,6 +159,11 @@ def _write_summary(path: Path, match: MatchContext, result: RoundResult) -> None
         "- `social_feed.json`: structured social actions with evidence cards.",
         "- `actions.jsonl`: replayable social action stream.",
         "- `social_profiles.json`: per-ant persona, risk, stance, activity, influence, and timing profile.",
+        "- `agent_minds.json`: readable ant persona cards, social classes, beliefs, and memory summaries.",
+        "- `memory_recall.json`: per-ant memory lookups performed before forecasting.",
+        "- `memory_writes.json`: per-ant memories written after the forecast attempt.",
+        "- `class_transitions.json`: social class movement during this round.",
+        "- `evolution_trace.json`: compact archetype/class distribution for evolution debugging.",
         "- `social_space.json`: room/action graph describing the simulated social space.",
         "- `social_activity_config.json`: OASIS-inspired activation, feed ranking, and action-space config.",
         "- `rooms.json`: structured room membership, representatives, and syntheses.",
@@ -352,12 +365,63 @@ def _write_social_profiles(path: Path, result: RoundResult) -> None:
             "active_windows": forecast.active_windows.split(",") if forecast.active_windows else [],
             "access_tier": forecast.access_tier,
             "visible_findings": forecast.visible_findings,
+            "archetype": forecast.archetype,
+            "social_class": forecast.social_class,
+            "mind_summary": forecast.mind_summary,
+            "memory_recall_count": forecast.memory_recall_count,
             "pick": forecast.side,
             "stake": forecast.stake,
         }
         for forecast in result.forecasts
     ]
     path.write_text(json.dumps(profiles, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_agent_minds(path: Path, result: RoundResult) -> None:
+    payload = {
+        "round_id": result.round_id,
+        "count": len(result.agent_minds),
+        "archetypes": dict(Counter(item.get("archetype") for item in result.agent_minds)),
+        "social_classes": dict(Counter(item.get("social_class") for item in result.agent_minds)),
+        "minds": result.agent_minds,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_memory_recall(path: Path, result: RoundResult) -> None:
+    payload = {
+        "round_id": result.round_id,
+        "count": len(result.memory_recall),
+        "rows": result.memory_recall,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_memory_writes(path: Path, result: RoundResult) -> None:
+    payload = {
+        "round_id": result.round_id,
+        "count": len(result.memory_writes),
+        "rows": result.memory_writes,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_class_transitions(path: Path, result: RoundResult) -> None:
+    payload = {
+        "round_id": result.round_id,
+        "count": len(result.class_transitions),
+        "changed": sum(1 for item in result.class_transitions if item.get("changed")),
+        "rows": result.class_transitions,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_evolution_trace(path: Path, result: RoundResult) -> None:
+    payload = {
+        "round_id": result.round_id,
+        **(result.evolution_trace or {}),
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _write_social_space(path: Path, result: RoundResult) -> None:
@@ -764,6 +828,10 @@ def _write_forecasts(path: Path, result: RoundResult) -> None:
                 "persona",
                 "datafeed_interests",
                 "source_weights",
+                "archetype",
+                "social_class",
+                "mind_summary",
+                "memory_recall_count",
                 "risk_profile",
                 "social_stance",
                 "activity_level",
@@ -857,6 +925,10 @@ def _write_participants(path: Path, result: RoundResult) -> None:
                 "genome_id": forecast.genome_id,
                 "model": forecast.model or model_by_agent.get(forecast.agent_id, ""),
                 "persona": forecast.persona,
+                "archetype": forecast.archetype,
+                "social_class": forecast.social_class,
+                "mind_summary": forecast.mind_summary,
+                "memory_recall_count": forecast.memory_recall_count,
                 "risk_profile": forecast.risk_profile,
                 "status": "alive_for_run",
                 "access_tier": forecast.access_tier,
@@ -2073,6 +2145,11 @@ def _write_compact_events(path: Path, result: RoundResult) -> None:
     entity_counts = _entity_type_counts(result)
     events = [{"event_type": "round_summary", **result.summary}]
     events.append({"event_type": "market_spec", **result.market_spec.to_dict()})
+    events.extend({"event_type": "agent_mind", **mind} for mind in result.agent_minds)
+    events.extend({"event_type": "memory_recall", **row} for row in result.memory_recall)
+    events.extend({"event_type": "memory_write", **row} for row in result.memory_writes)
+    events.extend({"event_type": "class_transition", **row} for row in result.class_transitions)
+    events.append({"event_type": "evolution_trace", **(result.evolution_trace or {})})
     events.extend({"event_type": "payment_receipt", **receipt.to_dict()} for receipt in result.payment_receipts)
     events.extend({"event_type": "balance_update", **update.to_dict()} for update in result.balance_updates)
     events.extend({"event_type": "finding", **finding.to_dict()} for finding in result.findings)

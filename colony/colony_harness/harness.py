@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import random
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .agent import AntAgent
@@ -21,7 +21,16 @@ from .economy import (
     settle_room_payments,
 )
 from .genes import random_genome
+from .memory import build_ant_memory_store, forecast_memory_signal, forecast_memory_text, recall_query_for_match
 from .models import DebateClaim, DebateRoom, KnowledgeView, MatchContext, RoundResult
+from .mind import (
+    apply_mind_to_genome,
+    build_agent_mind,
+    class_transition,
+    memory_recall_depth,
+    mind_public_card,
+    refresh_mind_after_round,
+)
 from .population import normalize_agent_lineages
 from .social import build_social_actions
 from .voice import TemplateVoiceModel, VoiceModel
@@ -62,6 +71,7 @@ class ColonyHarness:
         dynamic_env_path: str | Path | None = None,
         agents: list[AntAgent] | None = None,
         colony_config: dict | None = None,
+        memory_influence: bool = False,
     ) -> None:
         if agents is not None:
             population_size = len(agents)
@@ -76,13 +86,16 @@ class ColonyHarness:
         self.rng = random.Random(seed)
         self.starting_bankroll = starting_bankroll
         self.voice_model = voice_model or TemplateVoiceModel()
+        self.memory_influence = memory_influence
         self.colony_config = normalize_colony_config(colony_config) if colony_config else None
         self.wallet_store = (
             WalletStore(wallet_store_path, provider=wallet_provider, dynamic_env_path=dynamic_env_path)
             if create_agent_wallets or wallet_store_path
             else None
         )
+        self.memory_store = build_ant_memory_store()
         self.agents = agents if agents is not None else self._spawn_agents()
+        self._ensure_agent_minds(apply_policy=agents is None)
         if agents is not None and self.wallet_store is not None:
             self._attach_wallets()
         normalize_agent_lineages(self.agents)
@@ -96,6 +109,16 @@ class ColonyHarness:
                 wallet_address = self.wallet_store.get_or_create(agent_id).address
             genome = random_genome(self.rng)
             genome = apply_colony_config_to_genome(genome, self.colony_config, self.rng, index=index)
+            mind = build_agent_mind(
+                agent_id=agent_id,
+                genome=genome,
+                bankroll=round(self.starting_bankroll, 4),
+                accuracy=0.5,
+                generation=0,
+                rng=self.rng,
+                index=index,
+            )
+            genome = apply_mind_to_genome(genome, mind)
             agent = AntAgent(
                 agent_id=agent_id,
                 name=f"ant-{index:04d}",
@@ -106,9 +129,26 @@ class ColonyHarness:
                 wallet_address=wallet_address,
                 lineage_id=f"lineage_{agent_id}",
                 lineage_root_agent_id=agent_id,
+                mind=mind,
             )
             agents.append(agent)
         return agents
+
+    def _ensure_agent_minds(self, *, apply_policy: bool = False) -> None:
+        for index, agent in enumerate(self.agents):
+            mind = build_agent_mind(
+                agent_id=agent.agent_id,
+                genome=agent.genome,
+                bankroll=agent.bankroll,
+                accuracy=agent.accuracy,
+                generation=agent.generation,
+                rng=self.rng,
+                index=index,
+                existing=agent.mind,
+            )
+            agent.mind = mind
+            if apply_policy:
+                agent.genome = apply_mind_to_genome(agent.genome, mind)
 
     def _attach_wallets(self) -> None:
         if self.wallet_store is None:
@@ -139,6 +179,13 @@ class ColonyHarness:
         return [agent for agent, _reason in self.select_debaters()]
 
     def run_round(self, match: MatchContext) -> RoundResult:
+        self._ensure_agent_minds(apply_policy=False)
+        agent_minds_before = {agent.agent_id: dict(agent.mind or {}) for agent in self.agents}
+        memory_recall = self._recall_agent_memories(match)
+        memory_signals = {
+            str(item.get("agent_id")): item.get("memory_signal") or {}
+            for item in memory_recall
+        }
         market_spec = market_spec_for_match(match)
         ledger = EconomyLedger(match.round_id)
         knowledge_views_by_agent = build_paid_knowledge_views(match, self.agents, ledger)
@@ -154,6 +201,8 @@ class ColonyHarness:
         for agent in self.agents:
             view = knowledge_views_by_agent[agent.agent_id]
             visible_match = view.to_match_context(match)
+            signal = memory_signals.get(agent.agent_id) or {}
+            use_memory = self.memory_influence and bool(signal.get("available"))
             forecasts.append(
                 agent.forecast(
                     visible_match,
@@ -161,8 +210,18 @@ class ColonyHarness:
                     view.access_tier,
                     len(view.visible_findings),
                     allow_draw=allow_draw,
+                    memory_home_probability=signal.get("home_probability") if use_memory else None,
+                    memory_confidence=float(signal.get("confidence") or 0.0) if use_memory else 0.0,
                 )
             )
+        recall_counts = {
+            str(item.get("agent_id")): len((item.get("recall") or {}).get("results") or [])
+            for item in memory_recall
+        }
+        forecasts = [
+            replace(forecast, memory_recall_count=recall_counts.get(forecast.agent_id, 0))
+            for forecast in forecasts
+        ]
         forecasts = debit_internal_stakes(agents=self.agents, forecasts=forecasts, ledger=ledger)
         forecasts_by_agent = {forecast.agent_id: forecast for forecast in forecasts}
         social_actions = build_social_actions(
@@ -194,6 +253,12 @@ class ColonyHarness:
             market_spec=market_spec,
             agents=self.agents,
             ledger=ledger,
+        )
+        class_transitions = self._refresh_agent_classes(agent_minds_before)
+        memory_writes = self._write_agent_memories(
+            match=match,
+            forecasts=forecasts,
+            result_side=market_spec.result_side,
         )
         summary = {
             "population": self.population_size,
@@ -234,6 +299,12 @@ class ColonyHarness:
             "treasury_balance": settlement_summary.get("treasury_balance", 0.0),
             "losing_pool": settlement_summary.get("losing_pool", 0.0),
             "contributor_pool": settlement_summary.get("contributor_pool", 0.0),
+            "memory_backend": self.memory_store.healthcheck().get("backend"),
+            "memory_influence": self.memory_influence,
+            "memory_recalls": len(memory_recall),
+            "memory_writes": len(memory_writes),
+            "archetypes": dict(Counter(str(agent.mind.get("archetype") or "unknown") for agent in self.agents)),
+            "social_classes": dict(Counter(str(agent.mind.get("social_class") or "unknown") for agent in self.agents)),
         }
         all_debate_claims = [claim for room in rooms for claim in room.claims] + feed.claims
         world_graph = build_world_graph(match, claims=all_debate_claims, forecasts=forecasts)
@@ -255,7 +326,90 @@ class ColonyHarness:
             balance_updates=ledger.balance_updates,
             internal_stakes=ledger.internal_stakes,
             settlement_summary=settlement_summary,
+            agent_minds=[mind_public_card(agent.mind) for agent in self.agents],
+            memory_recall=memory_recall,
+            memory_writes=memory_writes,
+            class_transitions=class_transitions,
+            evolution_trace={
+                "mode": "round_observation",
+                "note": "Full reproduction still runs through evolve_population.py; this trace records class and memory movement for the round.",
+                "archetypes": summary["archetypes"],
+                "social_classes": summary["social_classes"],
+            },
         )
+
+    def _recall_agent_memories(self, match: MatchContext) -> list[dict]:
+        rows = []
+        for agent in self.agents:
+            query = recall_query_for_match(
+                home_team=match.home_team,
+                away_team=match.away_team,
+                archetype=str(agent.mind.get("archetype") or ""),
+            )
+            recall = self.memory_store.recall(
+                agent_id=agent.agent_id,
+                query=query,
+                limit=memory_recall_depth(agent.mind),
+                metadata={"round_id": match.round_id, "home_team": match.home_team, "away_team": match.away_team},
+            )
+            signal = forecast_memory_signal(recall)
+            rows.append(
+                {
+                    "agent_id": agent.agent_id,
+                    "archetype": agent.mind.get("archetype", ""),
+                    "social_class": agent.mind.get("social_class", ""),
+                    "query": query,
+                    "recall": recall,
+                    "memory_signal": signal,
+                }
+            )
+        return rows
+
+    def _write_agent_memories(
+        self,
+        *,
+        match: MatchContext,
+        forecasts: list,
+        result_side: str,
+    ) -> list[dict]:
+        agents_by_id = {agent.agent_id: agent for agent in self.agents}
+        writes = []
+        for forecast in forecasts:
+            agent = agents_by_id.get(forecast.agent_id)
+            if agent is None:
+                continue
+            text = forecast_memory_text(
+                forecast={"round_id": match.round_id, **forecast.to_dict()},
+                mind=agent.mind,
+                result_side=result_side,
+            )
+            metadata = {
+                "round_id": match.round_id,
+                "home_team": match.home_team,
+                "away_team": match.away_team,
+                "memory_type": "forecast_attempt",
+                "archetype": agent.mind.get("archetype", ""),
+                "social_class": agent.mind.get("social_class", ""),
+                "side": forecast.side,
+                "result_side": result_side,
+            }
+            record = self.memory_store.remember(agent_id=agent.agent_id, text=text, metadata=metadata)
+            writes.append({"agent_id": agent.agent_id, "text": text, "record": record})
+        return writes
+
+    def _refresh_agent_classes(self, before_by_agent: dict[str, dict]) -> list[dict]:
+        transitions = []
+        for agent in self.agents:
+            before = before_by_agent.get(agent.agent_id, {})
+            after = refresh_mind_after_round(
+                agent.mind,
+                bankroll=agent.bankroll,
+                accuracy=agent.accuracy,
+                generation=agent.generation,
+            )
+            agent.mind = after
+            transitions.append(class_transition(agent.agent_id, before, after))
+        return transitions
 
     def write_jsonl(self, result: RoundResult, output_path: str | Path) -> None:
         path = Path(output_path)
@@ -268,6 +422,11 @@ class ColonyHarness:
         events.extend(
             {"event_type": "agent_record", **record} for record in self.public_roster()
         )
+        events.extend({"event_type": "agent_mind", **mind} for mind in result.agent_minds)
+        events.extend({"event_type": "memory_recall", **row} for row in result.memory_recall)
+        events.extend({"event_type": "memory_write", **row} for row in result.memory_writes)
+        events.extend({"event_type": "class_transition", **row} for row in result.class_transitions)
+        events.append({"event_type": "evolution_trace", **result.evolution_trace})
         events.extend({"event_type": "payment_receipt", **receipt.to_dict()} for receipt in result.payment_receipts)
         events.extend({"event_type": "balance_update", **update.to_dict()} for update in result.balance_updates)
         events.extend({"event_type": "finding", **finding.to_dict()} for finding in result.findings)

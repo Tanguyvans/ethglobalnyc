@@ -61,6 +61,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runs-dir", default="colony/runs", help="Directory for automatic compact run logs.")
     parser.add_argument("--no-run-log", action="store_true", help="Disable automatic compact run logs.")
     parser.add_argument("--debug", action="store_true", help="Write an additional human-readable debug.md report.")
+    parser.add_argument(
+        "--memory-influence",
+        action="store_true",
+        help="Let settled same-match ant memories influence forecasts instead of only logging recalls.",
+    )
     parser.add_argument("--show-roster", action="store_true", help="Print public predictor records.")
     parser.add_argument(
         "--agent-wallets",
@@ -237,6 +242,7 @@ def main() -> None:
         dynamic_env_path=args.dynamic_env,
         agents=loaded_agents,
         colony_config=colony_config,
+        memory_influence=args.memory_influence,
     )
     _apply_world_agents(args, harness)
     ens_parent = _resolve_ens_parent(args)

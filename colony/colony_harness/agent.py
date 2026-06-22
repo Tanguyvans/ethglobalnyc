@@ -9,6 +9,7 @@ import secrets
 from dataclasses import dataclass, field
 
 from .genes import Genome
+from .mind import debate_multiplier, memory_influence_weight, mind_one_line, stake_multiplier
 from .models import AccessTier, BetCommitment, DebateClaim, Forecast, MatchContext, Side
 from .voice import TemplateVoiceModel, VoiceModel
 
@@ -513,6 +514,7 @@ class AntAgent:
     parent_genome_id: str = ""
     previous_genome_id: str = ""
     last_settlement: dict = field(default_factory=dict)
+    mind: dict = field(default_factory=dict)
 
     @property
     def genome_id(self) -> str:
@@ -547,6 +549,15 @@ class AntAgent:
             "accuracy": round(self.accuracy, 4),
             "status": "alive",
             "genome_hash": self.genome.public_hash(),
+            "archetype": self.mind.get("archetype", ""),
+            "social_class": self.mind.get("social_class", ""),
+            "mind": {
+                "label": self.mind.get("label", ""),
+                "belief": self.mind.get("belief", ""),
+                "risk_style": self.mind.get("risk_style", ""),
+                "data_style": self.mind.get("data_style", ""),
+                "debate_style": self.mind.get("debate_style", ""),
+            },
         }
 
     def private_baseline_probability(self, match: MatchContext) -> float:
@@ -571,15 +582,28 @@ class AntAgent:
 
         return _clamp_probability(probability)
 
-    def listen(self, match: MatchContext, debate_home_probability: float | None) -> float:
+    def listen(
+        self,
+        match: MatchContext,
+        debate_home_probability: float | None,
+        memory_home_probability: float | None = None,
+        memory_confidence: float = 0.0,
+    ) -> float:
         base = self.private_baseline_probability(match)
+        probability = base
         if debate_home_probability is None:
-            return base
+            probability = base
+        else:
+            debate_weight = self.genome.source_weights.normalized().debate
+            signed_herd = self.genome.herd_bias * debate_multiplier(self.mind)
+            adjustment = debate_weight * signed_herd * (debate_home_probability - match.market_home_probability)
+            probability = base + adjustment
 
-        debate_weight = self.genome.source_weights.normalized().debate
-        signed_herd = self.genome.herd_bias
-        adjustment = debate_weight * signed_herd * (debate_home_probability - match.market_home_probability)
-        return _clamp_probability(base + adjustment)
+        if memory_home_probability is not None and memory_confidence > 0.0:
+            confidence = min(max(memory_confidence, 0.0), 1.0)
+            weight = memory_influence_weight(self.mind) * confidence
+            probability += weight * (memory_home_probability - probability)
+        return _clamp_probability(probability)
 
     def speak(
         self,
@@ -682,12 +706,21 @@ class AntAgent:
         access_tier: AccessTier = "public",
         visible_findings: int = 0,
         allow_draw: bool = True,
+        memory_home_probability: float | None = None,
+        memory_confidence: float = 0.0,
     ) -> Forecast:
         baseline_probability = self.private_baseline_probability(match)
-        probability = self.listen(match, debate_home_probability)
+        post_debate_probability = self.listen(match, debate_home_probability)
+        probability = self.listen(
+            match,
+            debate_home_probability,
+            memory_home_probability=memory_home_probability,
+            memory_confidence=memory_confidence,
+        )
         home_edge = probability - match.market_home_probability
         away_edge = (1.0 - probability) - (1.0 - match.market_home_probability)
-        debate_shift = probability - baseline_probability
+        debate_shift = post_debate_probability - baseline_probability
+        memory_shift = probability - post_debate_probability
 
         pick_side = _forced_three_way_side(probability, self.genome) if allow_draw else ("home" if probability > 0.5 else "away")
         if pick_side == "home":
@@ -699,11 +732,14 @@ class AntAgent:
         side = pick_side
         risk_profile = _risk_profile(self.genome)
         market_label = "group-stage" if allow_draw else "knockout qualification"
+        memory_used = memory_home_probability is not None and memory_confidence > 0.0
+        memory_clause = f"memory moved the read {_qualitative_shift(memory_shift)}; " if memory_used else ""
         if edge < self.genome.edge_threshold:
             decision_reason = (
                 f"{risk_profile} {market_label} low-conviction bet: {_side_label(side, match)} edge "
                 f"{edge:.4f} below threshold {self.genome.edge_threshold:.4f}; "
                 f"debate moved the read {_qualitative_shift(debate_shift)}; "
+                f"{memory_clause}"
                 f"top inputs {_top_weight_labels(self.genome)}"
             )
         else:
@@ -711,11 +747,16 @@ class AntAgent:
                 f"{risk_profile} {market_label} bet: {_side_label(side, match)} edge "
                 f"{edge:.4f} clears threshold {self.genome.edge_threshold:.4f}; "
                 f"debate moved the read {_qualitative_shift(debate_shift)}; "
+                f"{memory_clause}"
                 f"top inputs {_top_weight_labels(self.genome)}"
             )
 
         stake = round(max(0.0001, self.bankroll * _stake_fraction(self.genome)), 4)
         source_weights = self.genome.source_weights.normalized().to_dict()
+        stake = round(max(0.0001, stake * stake_multiplier(self.mind)), 4)
+        mind_summary = mind_one_line(self.mind) if self.mind else ""
+        if mind_summary:
+            decision_reason = f"{decision_reason}; mind {mind_summary}"
         return Forecast(
             agent_id=self.agent_id,
             wallet_address=self.wallet_address,
@@ -741,6 +782,9 @@ class AntAgent:
             model=self.genome.model,
             datafeed_interests=[label for label, value in source_weights.items() if value >= 0.18],
             source_weights=source_weights,
+            archetype=str(self.mind.get("archetype") or ""),
+            social_class=str(self.mind.get("social_class") or ""),
+            mind_summary=mind_summary,
         )
 
     def commit_bet(self, forecast: Forecast, round_id: str) -> BetCommitment:

@@ -57,6 +57,73 @@ class ScoutingPipelineTests(unittest.TestCase):
         self.assertEqual(source.kind, "mcp-stdio")
         self.assertEqual(source.config["tool"], "scout_match")
 
+    def test_as_of_gate_keeps_only_pre_cutoff_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            payload_path = Path(tmp) / "dated_claims.json"
+            payload_path.write_text(
+                json.dumps(
+                    {
+                        "findings": [
+                            {
+                                "finding_id": "dated_market",
+                                "scout_name": "dated_market_scout",
+                                "source_type": "odds",
+                                "finding_name": "dated_market_claims",
+                                "evidence_claims": [
+                                    {
+                                        "claim_type": "market_snapshot",
+                                        "subject": "Brazil market",
+                                        "team": "Brazil",
+                                        "claim": "Pre-cutoff odds signal favours Brazil.",
+                                        "impact": "context_home",
+                                        "source_title": "Historical odds",
+                                        "source_url": "https://example.test/pre",
+                                        "source_kind": "api",
+                                        "source_quality": "strong",
+                                        "available_at_utc": "2026-06-13T18:00:00Z",
+                                    },
+                                    {
+                                        "claim_type": "market_snapshot",
+                                        "subject": "Brazil market",
+                                        "team": "Brazil",
+                                        "claim": "Post-cutoff odds signal should be hidden.",
+                                        "impact": "context_home",
+                                        "source_title": "Historical odds",
+                                        "source_url": "https://example.test/post",
+                                        "source_kind": "api",
+                                        "source_quality": "strong",
+                                        "available_at_utc": "2026-06-13T20:00:00Z",
+                                    },
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = build_local_scouting_result(
+                match_entity=MATCH_ENTITY,
+                mode="fast",
+                sources=[parse_source_spec({"kind": "json", "path": str(payload_path)})],
+                as_of_utc="2026-06-13T19:00:00Z",
+            )
+
+        claims = [claim for finding in result.findings for claim in finding.evidence_claims]
+        self.assertEqual(len(claims), 1)
+        self.assertIn("Pre-cutoff", claims[0]["claim"])
+
+    def test_as_of_gate_keeps_durable_fixture_context(self) -> None:
+        result = build_local_scouting_result(
+            match_entity=MATCH_ENTITY,
+            mode="fast",
+            sources=[SourceSpec("fixture", raw="fixture")],
+            as_of_utc="2026-06-13T16:00:00Z",
+        )
+
+        claims = [claim for finding in result.findings for claim in finding.evidence_claims]
+        self.assertGreaterEqual(len(claims), 2)
+        self.assertTrue(all(claim["claim_type"] in {"match_schedule", "team_profile"} for claim in claims))
+
     def test_mcp_document_payload_is_extracted_into_kg_claims(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             payload_path = Path(tmp) / "mcp_export.json"

@@ -314,7 +314,7 @@
       ]
     },
     "txline_odds_historical": {
-      "description": "TXLINE odds snapshot at match start, after txline_fixture resolves the fixture ID and timestamp.",
+      "description": "TXLINE odds snapshot before kickoff, after txline_fixture resolves the fixture ID and timestamp.",
       "status": "implemented",
       "ui_hidden": true,
       "source_family": "txline",
@@ -323,7 +323,8 @@
         "TXLINE_API_TOKEN"
       ],
       "requires_context": [
-        "txline_fixture"
+        "txline_fixture",
+        "txline_prediction_cutoff_utc"
       ],
       "claim_types": [
         "market_snapshot"
@@ -339,7 +340,7 @@
             "X-Api-Token": "${TXLINE_API_TOKEN}"
           },
           "query": {
-            "asOf": "{txline_start_time}"
+            "asOf": "{txline_prediction_cutoff_utc}"
           },
           "max_rows": 30
         }
