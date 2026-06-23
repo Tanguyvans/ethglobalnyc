@@ -210,6 +210,9 @@
       "placed_by": "claude",
       "method": "auto",
       "execution_layer": "polygun",
+      "event": "Czech Republic vs. South Africa (Jun 18)",
+      "market_question": "Will South Africa win on 2026-06-18?",
+      "outcome": "Yes (South Africa)",
       "side": "yes",
       "polygun_market_id": 1897108,
       "outcome_token_id": "29904085738634800807850286108673899231278214025131538572228243310371586316124",
@@ -220,7 +223,8 @@
       "pusd_total": 2.067379,
       "status": "filled",
       "block": 88723000,
-      "tx_hash": "0x3beb31a2ae131cb95c1fd4aae9a051b0fccc91eee7dd036a04a3bf9753367364"
+      "tx_hash": "0x3beb31a2ae131cb95c1fd4aae9a051b0fccc91eee7dd036a04a3bf9753367364",
+      "note": "Metadata backfilled via ClickHouse markets catalog (matched outcome_token_id -> question/outcome). Market resolved NO (South Africa did not win) -> bet lost."
     },
     {
       "id": 10,
@@ -229,6 +233,9 @@
       "placed_by": "claude",
       "method": "auto",
       "execution_layer": "polygun",
+      "event": "Panama vs. Croatia (Jun 23)",
+      "market_question": "Will Panama win on 2026-06-23?",
+      "outcome": "Yes (Panama)",
       "side": "yes",
       "polygun_market_id": 1897246,
       "outcome_token_id": "24996055382005658349790471423878721697831808533961896596758588230034679203014",
@@ -239,7 +246,8 @@
       "pusd_total": 2.071579,
       "status": "filled",
       "block": 88725453,
-      "tx_hash": "0x99452a3c7a0a8bf8f1dc86cbc3e672c35d8b8b3253a5373d88b9eda6a0d6dabc"
+      "tx_hash": "0x99452a3c7a0a8bf8f1dc86cbc3e672c35d8b8b3253a5373d88b9eda6a0d6dabc",
+      "note": "Metadata backfilled via ClickHouse markets catalog (matched outcome_token_id -> question/outcome). OPEN position - Panama vs Croatia kicks off 2026-06-23 (Group L)."
     },
     {
       "id": 11,
@@ -248,6 +256,9 @@
       "placed_by": "claude",
       "method": "auto",
       "execution_layer": "polygun",
+      "event": "Scotland vs. Morocco (Jun 19)",
+      "market_question": "Will Scotland win on 2026-06-19?",
+      "outcome": "Yes (Scotland)",
       "side": "yes",
       "polygun_market_id": 1897121,
       "outcome_token_id": "101256141817216466245038151589296191044974050560393587426784474074655264282404",
@@ -258,7 +269,31 @@
       "pusd_total": 2.0704,
       "status": "filled",
       "block": 88799601,
-      "tx_hash": "0x647a030f53e5b5d37baec41a770e0cfc25fdfe8e8c131d4d0a20ddaadf863ca6"
+      "tx_hash": "0x647a030f53e5b5d37baec41a770e0cfc25fdfe8e8c131d4d0a20ddaadf863ca6",
+      "note": "Metadata backfilled via ClickHouse markets catalog (matched outcome_token_id -> question/outcome). Market resolved NO (Scotland did not win) -> bet lost."
+    },
+    {
+      "id": 12,
+      "ts_utc": "2026-06-21T20:58:20Z",
+      "action": "buy",
+      "placed_by": "adil",
+      "method": "manual",
+      "execution_layer": "polygun",
+      "event": "Belgium vs. Iran (Jun 21)",
+      "market_question": "Will Belgium vs. IR Iran end in a draw?",
+      "outcome": "Yes (Draw)",
+      "side": "yes",
+      "polygun_market_id": 1897171,
+      "outcome_token_id": "65206879169809471684171181962606426355936771076631263853333189016369249957120",
+      "shares": 2.197801,
+      "avg_price": 0.91,
+      "pusd_to_maker": 1.999998,
+      "pusd_fee": 0.02539,
+      "pusd_total": 2.025388,
+      "status": "filled",
+      "block": 88913670,
+      "tx_hash": "0x85548bea17620b094277aec084a1fcea945c77bc33c2f0d691195451ad76e202",
+      "note": "Metadata backfilled via ClickHouse markets catalog (matched outcome_token_id -> question/outcome). DRAW market (not a team-win): Belgium vs Iran. Market resolved YES (match ended in a draw) -> bet won."
     }
   ]
 }
