@@ -1337,23 +1337,38 @@ DN.hud = (function () {
       return prediction.winner || recommendation.winner || recommendation.side || 'pending';
     }
 
-    function benchmarkConfidenceLabel(record) {
-      const value = record && (record.confidence || (record.prediction || {}).confidence);
-      if (value == null || value === '') return 'pending';
-      if (typeof value === 'number') return Math.round(value * 100) + '%';
-      return String(value);
-    }
-
-    function benchmarkProbabilityLabel(record) {
-      const value = record && record.probability;
-      if (value == null || value === '') return '-';
-      const n = Number(value);
-      return Number.isFinite(n) ? Math.round(n * 100) + '%' : String(value);
-    }
-
     function benchmarkSettlementLabel(record) {
       if (!record || (!record.actual_result && !record.hit_miss)) return 'unsettled';
       return [record.actual_result || '', record.hit_miss || ''].filter(Boolean).join(' · ');
+    }
+
+    function benchmarkVoteCounts(record) {
+      const votes = (record && record.vote_breakdown) || {};
+      const raw = votes.raw_forecast_sides || votes.counts || votes.vote_counts || votes.side_counts || {};
+      return {
+        home: Number(raw.home || 0),
+        draw: Number(raw.draw || 0),
+        away: Number(raw.away || 0),
+      };
+    }
+
+    function benchmarkVotesLabel(record) {
+      const counts = benchmarkVoteCounts(record);
+      const total = counts.home + counts.draw + counts.away;
+      if (!total) return 'pending';
+      return ['home', 'draw', 'away'].map((side) => {
+        return marketSideLabel(side, record) + ' ' + counts[side];
+      }).join(' · ');
+    }
+
+    function benchmarkWeightedVotesLabel(record) {
+      const votes = (record && record.vote_breakdown) || {};
+      const weighted = votes.weighted_side_support || {};
+      if (weighted.home == null && weighted.draw == null && weighted.away == null) return '';
+      return 'weighted ' + ['home', 'draw', 'away'].map((side) => {
+        const value = weighted[side] == null ? 0 : Number(weighted[side]);
+        return marketSideLabel(side, record) + ' ' + (Number.isFinite(value) ? Math.round(value * 100) : 0) + '%';
+      }).join(' · ');
     }
 
     function renderBenchmarkRunsPage(payload, error) {
@@ -1369,8 +1384,8 @@ DN.hud = (function () {
         const pubkey = String(record.pubkey || '');
         const mine = myPubkey && pubkey === myPubkey;
         const prediction = benchmarkPredictionLabel(record);
-        const probability = benchmarkProbabilityLabel(record);
-        const confidence = benchmarkConfidenceLabel(record);
+        const votes = benchmarkVotesLabel(record);
+        const weightedVotes = benchmarkWeightedVotesLabel(record);
         const docs = Number(record.document_count || 0);
         const claims = Number(record.claim_count || 0);
         const agents = record.agent_count == null ? '-' : record.agent_count;
@@ -1381,7 +1396,7 @@ DN.hud = (function () {
           '<td><b>' + esc(matchLabel(record)) + '</b><span>' + esc(record.prematch_snapshot_id || snapshotId || 'snapshot') + '</span></td>' +
           '<td><button class="benchmark-wallet-copy" data-wallet="' + esc(pubkey) + '" title="' + esc(pubkey) + '">' + esc(shortPubkey(pubkey)) + '</button>' + (mine ? '<span class="benchmark-mine">mine</span>' : '') + '</td>' +
           '<td><b>' + esc(prediction) + '</b><span>' + esc(scoreLabel(record)) + '</span></td>' +
-          '<td><b>' + esc(probability) + '</b><span>' + esc(confidence) + '</span></td>' +
+          '<td><b>' + esc(votes) + '</b>' + (weightedVotes ? '<span>' + esc(weightedVotes) + '</span>' : '') + '</td>' +
           '<td>' + esc(agents) + '</td>' +
           '<td><b>' + esc(docs) + '</b><span>' + esc(claims) + ' claims</span></td>' +
           '<td>' + esc(settlement) + '</td>' +
@@ -1401,7 +1416,7 @@ DN.hud = (function () {
         detailHtml +
         '<div class="benchmark-table-wrap">' +
           '<table class="benchmark-table">' +
-            '<thead><tr><th>Time</th><th>Match</th><th>Colony</th><th>Prediction</th><th>Prob.</th><th>Agents</th><th>Data</th><th>Actual</th><th></th></tr></thead>' +
+            '<thead><tr><th>Time</th><th>Match</th><th>Colony</th><th>Prediction</th><th>Votes</th><th>Agents</th><th>Data</th><th>Actual</th><th></th></tr></thead>' +
             '<tbody>' + (rows || '<tr><td colspan="9">No benchmark runs yet for this saved match.</td></tr>') + '</tbody>' +
           '</table>' +
         '</div>';
