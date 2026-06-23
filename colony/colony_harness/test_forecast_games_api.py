@@ -12,7 +12,7 @@ from colony_api import main as api
 
 
 class ForecastGamesApiTest(unittest.TestCase):
-    def test_marks_only_games_with_prematch_snapshots_as_previous_testable(self) -> None:
+    def test_local_prematch_scrape_without_snapshot_id_is_not_previous_runnable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             kg_path = root / "world_cup_kg.json"
@@ -102,13 +102,14 @@ class ForecastGamesApiTest(unittest.TestCase):
         self.assertFalse(light_by_name["France vs Iraq"]["has_previous_test_data"])
         self.assertIsNone(light_by_name["France vs Iraq"]["previous_test_data"])
         by_name = {game["name"]: game for game in games}
-        self.assertTrue(by_name["France vs Iraq"]["has_previous_test_data"])
-        self.assertEqual(by_name["France vs Iraq"]["previous_test_data"]["usable_document_count"], 2)
-        self.assertEqual(by_name["France vs Iraq"]["previous_test_data"]["evidence_claim_count"], 2)
+        self.assertFalse(by_name["France vs Iraq"]["has_previous_test_data"])
+        self.assertIsNone(by_name["France vs Iraq"]["previous_test_data"])
+        self.assertEqual(by_name["France vs Iraq"]["prematch_fallback_data"]["usable_document_count"], 2)
+        self.assertEqual(by_name["France vs Iraq"]["prematch_fallback_data"]["evidence_claim_count"], 2)
         self.assertFalse(by_name["Norway vs Senegal"]["has_previous_test_data"])
         self.assertIsNone(by_name["Norway vs Senegal"]["previous_test_data"])
 
-    def test_can_use_tracked_manifest_when_raw_prematch_runs_are_absent(self) -> None:
+    def test_tracked_manifest_without_snapshot_id_is_not_previous_runnable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             kg_path = root / "world_cup_kg.json"
@@ -163,9 +164,10 @@ class ForecastGamesApiTest(unittest.TestCase):
             ):
                 games = api._forecast_games_from_kg(include_previous_test_data=True)
 
-        self.assertTrue(games[0]["has_previous_test_data"])
-        self.assertEqual(games[0]["previous_test_data"]["usable_document_count"], 168)
-        self.assertEqual(games[0]["previous_test_data"]["kind"], "prematch_scrape_manifest")
+        self.assertFalse(games[0]["has_previous_test_data"])
+        self.assertIsNone(games[0]["previous_test_data"])
+        self.assertEqual(games[0]["prematch_fallback_data"]["usable_document_count"], 168)
+        self.assertEqual(games[0]["prematch_fallback_data"]["kind"], "prematch_scrape_manifest")
 
     def test_prefers_supabase_snapshot_over_fallback_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -2963,6 +2963,13 @@ def _prematch_test_data_index() -> dict[str, dict]:
     return index
 
 
+def _run_ready_prematch_test_data(test_data: dict | None) -> dict | None:
+    if not isinstance(test_data, dict):
+        return None
+    snapshot_id = str(test_data.get("snapshot_id") or "").strip()
+    return test_data if snapshot_id else None
+
+
 def _forecast_games_from_kg(limit: int = 104, *, include_previous_test_data: bool = True) -> list[dict]:
     if not WORLD_CUP_KG.exists():
         return []
@@ -2983,6 +2990,7 @@ def _forecast_games_from_kg(limit: int = 104, *, include_previous_test_data: boo
         group = str(attrs.get("group") or "").strip()
         market_type = "three_way" if group else "binary"
         test_data = previous_test_data.get(_match_pair_slug(home, away))
+        run_ready_test_data = _run_ready_prematch_test_data(test_data)
         games.append(
             {
                 "match_id": entity.get("entity_id"),
@@ -2998,8 +3006,9 @@ def _forecast_games_from_kg(limit: int = 104, *, include_previous_test_data: boo
                 "group": group,
                 "venue": attrs.get("ground"),
                 "score": score,
-                "has_previous_test_data": bool(test_data),
-                "previous_test_data": test_data,
+                "has_previous_test_data": bool(run_ready_test_data),
+                "previous_test_data": run_ready_test_data,
+                "prematch_fallback_data": test_data if test_data and not run_ready_test_data else None,
             }
         )
     games.sort(key=lambda item: (str(item.get("date") or ""), str(item.get("time") or ""), str(item.get("name") or "")))
