@@ -566,6 +566,49 @@ DN.hud = (function () {
       updatePreviousModeChrome();
     }
 
+    function rosterPopulationFromPayload(payload) {
+      const colony = payload && payload.colony;
+      const summary = (payload && payload.ant_summary) || {};
+      const statuses = summary.statuses || {};
+      const config = (colony && colony.config) || {};
+      const total = Number(summary.total);
+      const alive = Number(statuses.alive);
+      const target = Number(config.ant_count);
+      const hasTotal = Number.isFinite(total) && total >= 0;
+      const hasAlive = Number.isFinite(alive) && alive >= 0;
+      const hasTarget = Number.isFinite(target) && target > 0;
+      if (hasTotal || hasAlive || hasTarget) {
+        const totalValue = hasTotal ? total : (hasAlive ? alive : null);
+        const aliveValue = hasAlive ? alive : (hasTotal ? totalValue : null);
+        return {
+          total: totalValue,
+          alive: aliveValue,
+          target: hasTarget ? target : null,
+          display: aliveValue,
+        };
+      }
+      return null;
+    }
+
+    function syncWalletColonyRosterStats(col, payload) {
+      const roster = rosterPopulationFromPayload(payload);
+      if (!col || !roster) return col;
+      const colony = (payload && payload.colony) || {};
+      const summary = (payload && payload.ant_summary) || {};
+      const hasDisplayPopulation = Number.isFinite(Number(roster.display));
+      col._rosterLockedPopulation = true;
+      col._rosterTotal = roster.total;
+      col._rosterAlive = roster.alive;
+      col._rosterTarget = roster.target;
+      col._rosterPopulationKnown = hasDisplayPopulation;
+      col._rosterPopulation = hasDisplayPopulation ? roster.display : 0;
+      col._colonyConfig = colony.config || {};
+      col._antSummary = summary;
+      col.stats.population = col._rosterPopulation;
+      if (H._updateColony) H._updateColony(col);
+      return col;
+    }
+
     function renderColonyAntList(ants) {
       if (!colonyAntList) return;
       const rows = (ants || []).map((ant) => {
@@ -739,7 +782,9 @@ DN.hud = (function () {
       return DN.databridge.fetchUserColony(pubkey)
         .then((payload) => {
           renderColonySummary(payload);
-          if (payload && payload.colony) materializeWalletColony(payload.colony);
+          if (payload && payload.colony) {
+            syncWalletColonyRosterStats(materializeWalletColony(payload.colony), payload);
+          }
           return payload;
         })
         .catch((err) => {
@@ -1627,7 +1672,7 @@ DN.hud = (function () {
         .then((result) => {
           renderColonySummary(result);
           if (result && result.colony) {
-            materializeWalletColony(result.colony);
+            syncWalletColonyRosterStats(materializeWalletColony(result.colony), result);
             try {
               localStorage.setItem('dn:my-colony:' + pubkey, JSON.stringify({
                 angle: result.colony.angle,
@@ -1650,6 +1695,9 @@ DN.hud = (function () {
           }).then((roster) => {
             const merged = Object.assign({}, result, { ant_summary: roster.ant_summary });
             renderColonySummary(merged);
+            if (merged && merged.colony) {
+              syncWalletColonyRosterStats(materializeWalletColony(merged.colony), merged);
+            }
             renderColonyAntList(roster.ants || []);
             if (roster.ants && DN.ants && DN.ants.bindAgentRecords) DN.ants.bindAgentRecords(roster.ants);
             const total = roster.ant_summary && roster.ant_summary.total || 0;
@@ -1699,7 +1747,10 @@ DN.hud = (function () {
             seed: 42,
           }))
           .then((payload) => {
-            renderColonySummary({ colony: (lastColonyPayload && lastColonyPayload.colony) || {}, ant_summary: payload.ant_summary });
+            const merged = { colony: (lastColonyPayload && lastColonyPayload.colony) || {}, ant_summary: payload.ant_summary };
+            renderColonySummary(merged);
+            const col = DN.app && DN.app.findMyColony ? DN.app.findMyColony() : null;
+            syncWalletColonyRosterStats(col, merged);
             if (payload.ants && DN.ants && DN.ants.bindAgentRecords) DN.ants.bindAgentRecords(payload.ants);
             const statuses = (payload.ant_summary && payload.ant_summary.statuses) || {};
             status.textContent = (statuses.alive || 0) + ' ants alive';
@@ -2298,6 +2349,34 @@ DN.hud = (function () {
     H._open = { type: 'colony', col };
     const c = hex(col.accent);
     const roster = DN.ants.heroes.filter(a => a.col === col);
+    if (col.owner) {
+      const config = col._colonyConfig || {};
+      const summary = col._antSummary || {};
+      const models = summary.models || {};
+      const modelRows = Object.keys(models).sort().map(key =>
+        `<div class="roster-row"><div class="roster-dot" style="background:${c}"></div><div class="roster-name">${esc(key)}</div><div class="roster-caste">${esc(models[key])}</div></div>`
+      ).join('') || '<div class="roster-row"><div class="roster-name">No model summary</div><div class="roster-caste">—</div></div>';
+      const target = Number.isFinite(Number(col._rosterTarget))
+        ? Number(col._rosterTarget)
+        : (Number.isFinite(Number(config.ant_count)) ? Number(config.ant_count) : null);
+      $('inspector').innerHTML =
+        `<div class="insp-head"><div class="insp-icon" style="background:${c}22;box-shadow:inset 0 0 0 1px ${c}66">
+          <div style="width:14px;height:14px;border-radius:50%;background:${c};box-shadow:0 0 12px ${c}"></div></div>
+          <div><div class="insp-kicker">Wallet colony</div><div class="insp-name">${esc(col.name)}</div></div></div>
+        <div class="metrics">
+          <div class="metric"><div class="mk">Alive ants</div><div class="mv" id="m-pop">—</div></div>
+          <div class="metric"><div class="mk">Target</div><div class="mv">${target == null ? '—' : esc(target)}</div></div>
+          <div class="metric"><div class="mk">Preset</div><div class="mv">${esc(config.preset || '—')}</div></div>
+          <div class="metric"><div class="mk">Risk</div><div class="mv">${esc(config.risk_profile || '—')}</div></div>
+        </div>
+        <div class="vital-bar"><div class="vlabel"><span>Wallet</span><span title="${esc(col.owner)}">${esc(shortPubkey(col.owner))}</span></div></div>
+        <div class="section-label">Roster models</div>
+        <div class="roster">${modelRows}</div>
+        <button class="btn-primary" id="enter-col"><svg viewBox="0 0 24 24"><path d="M12 3l9 6-9 6-9-6z" opacity=".5"/><path d="M3 13l9 6 9-6"/></svg>Enter Colony</button>`;
+      $('enter-col').addEventListener('click', () => DN.app.enterColony(col));
+      H._updateColony(col);
+      return;
+    }
     $('inspector').innerHTML =
       `<div class="insp-head"><div class="insp-icon" style="background:${c}22;box-shadow:inset 0 0 0 1px ${c}66">
         <div style="width:14px;height:14px;border-radius:50%;background:${c};box-shadow:0 0 12px ${c}"></div></div>
@@ -2327,7 +2406,20 @@ DN.hud = (function () {
     if (!H._open || H._open.type !== 'colony' || H._open.col !== col) return;
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
     const setW = (id, v) => { const e = $(id); if (e) e.style.width = v + '%'; };
-    set('m-pop', Math.round(col.stats.population));
+    if (col.owner) {
+      const aliveKnown = Number.isFinite(Number(col._rosterAlive));
+      const totalKnown = Number.isFinite(Number(col._rosterTotal));
+      let rosterText = '—';
+      if (aliveKnown && totalKnown) rosterText = Math.round(Number(col._rosterAlive)) + '/' + Math.round(Number(col._rosterTotal));
+      else if (aliveKnown) rosterText = String(Math.round(Number(col._rosterAlive)));
+      else if (totalKnown) rosterText = String(Math.round(Number(col._rosterTotal)));
+      set('m-pop', rosterText);
+      return;
+    }
+    const displayPopulation = col._rosterLockedPopulation && Number.isFinite(Number(col._rosterPopulation))
+      ? Number(col._rosterPopulation)
+      : col.stats.population;
+    set('m-pop', Math.round(displayPopulation));
     set('m-acc', Math.round(col.stats.accuracy)); set('m-rep', Math.round(col.stats.rep));
     const e = $('m-stk'); if (e) e.innerHTML = '<small>$</small>' + (col.stats.staked / 1000).toFixed(1) + '<small>k</small>';
     set('v-health', Math.round(col.stats.health) + '%'); set('v-food', Math.round(col.stats.food) + '%');

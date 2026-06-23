@@ -26,13 +26,19 @@ DN.app = (function () {
   function evolve(simDt) {
     DN.colony.list.forEach(c => {
       const s = c.stats;
-      let consume = s.population * 0.0006 * simDt;
+      const rosterLocked = c._rosterLockedPopulation && Number.isFinite(Number(c._rosterPopulation));
+      const rosterPopulation = rosterLocked ? Math.max(0, Number(c._rosterPopulation)) : s.population;
+      let consume = rosterPopulation * 0.0006 * simDt;
       if (c.directive === 'defend') consume *= 1.2; if (c.directive === 'expand') consume *= 1.15;
       s.food = Math.max(0, s.food - consume);
       let target = 40 + s.food * 0.5; if (c.directive === 'defend') target += 8;
       s.health += (target - s.health) * Math.min(1, 0.04 * simDt);
       s.health = Math.max(10, Math.min(100, s.health));
-      s.population = Math.max(40, s.population + (s.food > 35 && s.health > 45 ? 0.8 : -0.6) * simDt * (c.directive === 'expand' ? 1.4 : 1));
+      if (rosterLocked) {
+        s.population = rosterPopulation;
+      } else {
+        s.population = Math.max(40, s.population + (s.food > 35 && s.health > 45 ? 0.8 : -0.6) * simDt * (c.directive === 'expand' ? 1.4 : 1));
+      }
       s.accuracy = Math.max(45, Math.min(96, s.accuracy + (Math.random() - 0.5) * 0.4 * simDt));
       s.staked = Math.max(80, s.staked + (Math.random() - 0.45) * 8 * simDt);
     });
