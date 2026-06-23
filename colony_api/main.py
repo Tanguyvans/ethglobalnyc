@@ -374,6 +374,15 @@ def _run_supabase_call(func):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _supabase_missing_table_error(exc: SupabaseRequestError, table: str) -> bool:
+    message = str(exc)
+    return (
+        "PGRST205" in message
+        and "Could not find the table" in message
+        and (f"public.{table}" in message or f"'{table}'" in message)
+    )
+
+
 def _clean_pubkey(pubkey: str) -> str:
     cleaned = str(pubkey or "").strip()
     if not cleaned:
@@ -4040,13 +4049,24 @@ def list_benchmark_runs(limit: int = 50, snapshot_id: str | None = None, pubkey:
         cleaned_pubkey = _clean_pubkey(pubkey)
         path += f"&pubkey=eq.{_supabase_quote(cleaned_pubkey)}"
         base_path += f"&pubkey=eq.{_supabase_quote(cleaned_pubkey)}"
+    warning = ""
     try:
         rows = request_json(settings, path)
     except SupabaseRequestError as exc:
         message = str(exc)
-        if "started_at" not in message and "completed_at" not in message and "Could not find" not in message:
+        if _supabase_missing_table_error(exc, "colony_runs"):
+            rows = []
+            warning = "colony_runs table is missing; run frontend/supabase/colony_runs_bootstrap.sql in Supabase SQL Editor."
+        elif "started_at" not in message and "completed_at" not in message and "Could not find" not in message:
             raise HTTPException(status_code=502, detail=message) from exc
-        rows = _run_supabase_call(lambda: request_json(settings, base_path))
+        else:
+            try:
+                rows = request_json(settings, base_path)
+            except SupabaseRequestError as fallback_exc:
+                if not _supabase_missing_table_error(fallback_exc, "colony_runs"):
+                    raise HTTPException(status_code=502, detail=str(fallback_exc)) from fallback_exc
+                rows = []
+                warning = "colony_runs table is missing; run frontend/supabase/colony_runs_bootstrap.sql in Supabase SQL Editor."
     records: list[dict] = []
     wanted_snapshot = str(snapshot_id or "").strip()
     for row in rows if isinstance(rows, list) else []:
@@ -4058,13 +4078,16 @@ def list_benchmark_runs(limit: int = 50, snapshot_id: str | None = None, pubkey:
         records.append(record)
         if len(records) >= limit:
             break
-    return {
+    response = {
         "count": len(records),
         "limit": limit,
         "snapshot_id": wanted_snapshot or None,
         "pubkey": cleaned_pubkey or None,
         "runs": records,
     }
+    if warning:
+        response["warning"] = warning
+    return response
 
 
 @app.get("/recent_communications")

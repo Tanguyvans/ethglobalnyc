@@ -307,6 +307,23 @@ class ForecastGamesApiTest(unittest.TestCase):
         self.assertNotIn("config_snapshot", public)
         self.assertNotIn("colony", public)
 
+    def test_benchmark_runs_returns_warning_when_table_is_missing(self) -> None:
+        missing_table = api.SupabaseRequestError(
+            "Supabase GET failed with HTTP 404: "
+            "{\"code\":\"PGRST205\",\"message\":\"Could not find the table "
+            "'public.colony_runs' in the schema cache\"}"
+        )
+
+        with (
+            patch.object(api, "_supabase_service_settings_or_503", return_value=object()),
+            patch.object(api, "request_json", side_effect=missing_table),
+        ):
+            payload = api.list_benchmark_runs(limit=3)
+
+        self.assertEqual(payload["runs"], [])
+        self.assertEqual(payload["count"], 0)
+        self.assertIn("colony_runs table is missing", payload["warning"])
+
     def test_previous_command_uses_snapshot_without_live_scout_flags(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             request = api.UserColonyRunRequest(
