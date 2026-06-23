@@ -85,6 +85,7 @@ from colony_harness.supabase_client import (  # noqa: E402
     fetch_colony,
     fetch_colony_ants,
     load_supabase_settings,
+    request_json,
     update_ant_status,
     upsert_colony,
     upsert_colony_ants,
@@ -2409,6 +2410,54 @@ def _prematch_claim_count(payload: dict) -> int:
     return total
 
 
+def _prematch_supabase_index() -> dict[str, dict]:
+    try:
+        settings = load_supabase_settings(COLONY_ENV)
+    except SupabaseRequestError:
+        return {}
+    try:
+        rows = request_json(
+            settings,
+            "prematch_snapshots?"
+            "select=snapshot_id,match_id,match_slug,home_team,away_team,kickoff_utc,prediction_cutoff_utc,"
+            "created_at_utc,document_count,claim_count,raw_source_count,summary,status"
+            "&status=eq.ready&order=kickoff_utc.desc&limit=250",
+        )
+    except SupabaseRequestError:
+        return {}
+
+    index: dict[str, dict] = {}
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        home = str(row.get("home_team") or "").strip()
+        away = str(row.get("away_team") or "").strip()
+        slug = str(row.get("match_slug") or "").strip() or _match_pair_slug(home, away)
+        if not slug:
+            continue
+        summary = row.get("summary") if isinstance(row.get("summary"), dict) else {}
+        claim_count = int(row.get("claim_count") or 0)
+        usable_documents = int(row.get("document_count") or 0)
+        index[slug] = {
+            "kind": "prematch_supabase_snapshot",
+            "source": "supabase:prematch_snapshots",
+            "snapshot_id": row.get("snapshot_id"),
+            "match_id": row.get("match_id") or "",
+            "home_team": home,
+            "away_team": away,
+            "created_at_utc": row.get("created_at_utc"),
+            "kickoff_utc": row.get("kickoff_utc"),
+            "prediction_cutoff_utc": row.get("prediction_cutoff_utc"),
+            "evidence_claim_count": claim_count,
+            "usable_document_count": usable_documents,
+            "document_count": int(summary.get("total") or usable_documents),
+            "source_count": int(row.get("raw_source_count") or summary.get("source_count") or 0),
+            "usable_by_source_type": summary.get("usable_by_source_type") or {},
+            "usable_by_signal_type": summary.get("usable_by_signal_type") or {},
+        }
+    return index
+
+
 def _prematch_manifest_index() -> dict[str, dict]:
     if not PREMATCH_TEST_MANIFEST.exists():
         return {}
@@ -2434,8 +2483,8 @@ def _prematch_manifest_index() -> dict[str, dict]:
     return index
 
 
-def _prematch_test_data_index() -> dict[str, dict]:
-    index = _prematch_manifest_index()
+def _prematch_local_scrape_index() -> dict[str, dict]:
+    index: dict[str, dict] = {}
     if not PREMATCH_SCRAPE_ROOT.exists():
         return index
     for source_path in sorted(PREMATCH_SCRAPE_ROOT.glob("**/kg/prematch_kg_source.json")):
@@ -2487,6 +2536,26 @@ def _prematch_test_data_index() -> dict[str, dict]:
             index[slug] = candidate
     for value in index.values():
         value["artifact_count"] = int(value.pop("_artifact_count", 1))
+    return index
+
+
+def _merge_prematch_fallback_index(index: dict[str, dict], fallback: dict[str, dict]) -> dict[str, dict]:
+    for slug, candidate in fallback.items():
+        if slug not in index:
+            index[slug] = candidate
+            continue
+        fallback_source = candidate.get("source") or candidate.get("manifest") or candidate.get("run_dir")
+        if fallback_source:
+            sources = list(index[slug].get("fallback_sources") or [])
+            sources.append(str(fallback_source))
+            index[slug]["fallback_sources"] = sources
+    return index
+
+
+def _prematch_test_data_index() -> dict[str, dict]:
+    index = _prematch_supabase_index()
+    _merge_prematch_fallback_index(index, _prematch_manifest_index())
+    _merge_prematch_fallback_index(index, _prematch_local_scrape_index())
     return index
 
 
@@ -2822,7 +2891,7 @@ def get_forecast_games(limit: int = 104, include_previous_test_data: bool = Fals
         "count": len(games),
         "previous_test_count": sum(1 for game in games if game.get("has_previous_test_data")),
         "source": str(WORLD_CUP_KG.relative_to(REPO_ROOT)),
-        "previous_test_source": _relative_repo_path(PREMATCH_SCRAPE_ROOT) if include_previous_test_data else None,
+        "previous_test_source": "supabase:prematch_snapshots+fallback" if include_previous_test_data else None,
         "include_previous_test_data": include_previous_test_data,
         "games": games,
     }

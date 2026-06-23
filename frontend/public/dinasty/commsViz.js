@@ -6,8 +6,6 @@
 // Fed by backend run events from hud.js/databridge.
 window.DN = window.DN || {};
 
-console.log('[worldcolony] commsViz.js loaded · build 2026-06-14');
-
 DN.commsViz = (function () {
   const V = { _seen: new Set(), _arcs: [], _edges: new Map(), _queue: [], _queueTimer: null };
   let surfaceScene = null;

@@ -4,8 +4,6 @@
 // they happen.
 window.DN = window.DN || {};
 
-console.log('[worldcolony] txTable.js loaded · build 2026-06-14');
-
 DN.txTable = (function () {
   const T = {};
   const MAX_ROWS = 60;

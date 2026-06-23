@@ -3,8 +3,6 @@
 // lifecycle controller; not visible until DN.crystal.show() is called.
 window.DN = window.DN || {};
 
-console.log('[worldcolony] crystal.js loaded · build 2026-06-14');
-
 DN.crystal = (function () {
   const C = { _scene: null, _mesh: null, _halo: null, _deposits: 0, _scale: 0 };
   const POSITION = new THREE.Vector3(0, 0, 0); // world origin

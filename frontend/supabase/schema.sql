@@ -234,6 +234,181 @@ create index if not exists wallet_nonces_expires_at_idx
   on public.wallet_nonces (expires_at);
 
 -- ---------------------------------------------------------------------
+-- prematch_snapshots: immutable benchmark inputs for settled games
+-- ---------------------------------------------------------------------
+create table if not exists public.prematch_snapshots (
+  snapshot_id            text primary key,
+  match_id               text not null default '',
+  match_slug             text not null,
+  competition            text not null default 'worldcup_2026',
+  home_team              text not null,
+  away_team              text not null,
+  kickoff_utc            timestamptz not null,
+  prediction_cutoff_utc  timestamptz not null,
+  created_at_utc         timestamptz,
+  status                 text not null default 'ready',
+  document_count         integer not null default 0,
+  claim_count            integer not null default 0,
+  raw_source_count       integer not null default 0,
+  source_dir             text not null default '',
+  documents_path         text not null default '',
+  kg_source_path         text not null default '',
+  raw_storage_prefix     text not null default '',
+  summary                jsonb not null default '{}'::jsonb,
+  metadata               jsonb not null default '{}'::jsonb,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now(),
+
+  constraint prematch_snapshots_status_check
+    check (status in ('draft', 'ready', 'archived')),
+  constraint prematch_snapshots_counts_check
+    check (document_count >= 0 and claim_count >= 0 and raw_source_count >= 0),
+  constraint prematch_snapshots_summary_is_object_check
+    check (jsonb_typeof(summary) = 'object'),
+  constraint prematch_snapshots_metadata_is_object_check
+    check (jsonb_typeof(metadata) = 'object')
+);
+
+create index if not exists prematch_snapshots_competition_kickoff_idx
+  on public.prematch_snapshots (competition, kickoff_utc desc);
+
+create index if not exists prematch_snapshots_match_slug_cutoff_idx
+  on public.prematch_snapshots (match_slug, prediction_cutoff_utc desc);
+
+create or replace function public.prematch_snapshots_touch_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists prematch_snapshots_touch_updated_at on public.prematch_snapshots;
+create trigger prematch_snapshots_touch_updated_at
+  before update on public.prematch_snapshots
+  for each row execute function public.prematch_snapshots_touch_updated_at();
+
+-- ---------------------------------------------------------------------
+-- prematch_raw_sources: traceable source fetches that produced a snapshot
+-- ---------------------------------------------------------------------
+create table if not exists public.prematch_raw_sources (
+  id                 uuid primary key default gen_random_uuid(),
+  snapshot_id        text not null references public.prematch_snapshots(snapshot_id) on delete cascade,
+  source_id          text not null,
+  source_type        text not null default '',
+  locator            text not null default '',
+  sha256             text not null default '',
+  bytes              integer,
+  collected_at_utc   timestamptz,
+  raw_source         jsonb not null default '{}'::jsonb,
+  created_at         timestamptz not null default now(),
+
+  constraint prematch_raw_sources_unique
+    unique (snapshot_id, source_id),
+  constraint prematch_raw_sources_raw_source_is_object_check
+    check (jsonb_typeof(raw_source) = 'object')
+);
+
+create index if not exists prematch_raw_sources_snapshot_idx
+  on public.prematch_raw_sources (snapshot_id);
+
+create index if not exists prematch_raw_sources_type_idx
+  on public.prematch_raw_sources (source_type);
+
+-- ---------------------------------------------------------------------
+-- prematch_documents: normalized, timestamped documents before kickoff
+-- ---------------------------------------------------------------------
+create table if not exists public.prematch_documents (
+  id                   uuid primary key default gen_random_uuid(),
+  snapshot_id          text not null references public.prematch_snapshots(snapshot_id) on delete cascade,
+  document_id          text not null,
+  source_type          text not null default '',
+  adapter              text not null default '',
+  signal_type          text not null default '',
+  title                text not null default '',
+  snippet              text not null default '',
+  url                  text not null default '',
+  source_name          text not null default '',
+  source_snapshot_id   text not null default '',
+  published_at_utc     timestamptz,
+  available_at_utc     timestamptz,
+  timestamp_precision  text not null default '',
+  content_hash         text not null default '',
+  sentiment            jsonb not null default '{}'::jsonb,
+  raw_document         jsonb not null default '{}'::jsonb,
+  created_at           timestamptz not null default now(),
+
+  constraint prematch_documents_unique
+    unique (snapshot_id, document_id),
+  constraint prematch_documents_sentiment_is_object_check
+    check (jsonb_typeof(sentiment) = 'object'),
+  constraint prematch_documents_raw_document_is_object_check
+    check (jsonb_typeof(raw_document) = 'object')
+);
+
+create index if not exists prematch_documents_snapshot_available_idx
+  on public.prematch_documents (snapshot_id, available_at_utc);
+
+create index if not exists prematch_documents_snapshot_signal_idx
+  on public.prematch_documents (snapshot_id, signal_type);
+
+create index if not exists prematch_documents_source_type_idx
+  on public.prematch_documents (source_type);
+
+create index if not exists prematch_documents_title_fts_idx
+  on public.prematch_documents using gin (to_tsvector('english', title || ' ' || snippet));
+
+-- ---------------------------------------------------------------------
+-- prematch_kg_claims: KG-ready facts extracted from prematch documents
+-- ---------------------------------------------------------------------
+create table if not exists public.prematch_kg_claims (
+  id                    uuid primary key default gen_random_uuid(),
+  snapshot_id           text not null references public.prematch_snapshots(snapshot_id) on delete cascade,
+  claim_id              text not null,
+  team                  text not null default '',
+  player                text not null default '',
+  subject               text not null default '',
+  claim_type            text not null default '',
+  claim                 text not null,
+  impact                text not null default '',
+  confidence            double precision,
+  source_kind           text not null default '',
+  source_domain         text not null default '',
+  source_title          text not null default '',
+  source_url            text not null default '',
+  source_published      timestamptz,
+  source_published_date date,
+  available_at_utc      timestamptz,
+  source_quality        text not null default '',
+  extraction_method     text not null default '',
+  metrics               jsonb not null default '{}'::jsonb,
+  raw_claim             jsonb not null default '{}'::jsonb,
+  created_at            timestamptz not null default now(),
+
+  constraint prematch_kg_claims_unique
+    unique (snapshot_id, claim_id),
+  constraint prematch_kg_claims_metrics_is_object_check
+    check (jsonb_typeof(metrics) = 'object'),
+  constraint prematch_kg_claims_raw_claim_is_object_check
+    check (jsonb_typeof(raw_claim) = 'object')
+);
+
+create index if not exists prematch_kg_claims_snapshot_available_idx
+  on public.prematch_kg_claims (snapshot_id, available_at_utc);
+
+create index if not exists prematch_kg_claims_snapshot_type_idx
+  on public.prematch_kg_claims (snapshot_id, claim_type);
+
+create index if not exists prematch_kg_claims_source_kind_idx
+  on public.prematch_kg_claims (source_kind);
+
+create index if not exists prematch_kg_claims_metrics_gin_idx
+  on public.prematch_kg_claims using gin (metrics);
+
+create index if not exists prematch_kg_claims_claim_fts_idx
+  on public.prematch_kg_claims using gin (to_tsvector('english', claim));
+
+-- ---------------------------------------------------------------------
 -- Row-level security
 -- ---------------------------------------------------------------------
 alter table public.colonies enable row level security;
@@ -241,6 +416,10 @@ alter table public.colony_ants enable row level security;
 alter table public.colony_runs enable row level security;
 alter table public.colony_config_events enable row level security;
 alter table public.wallet_nonces enable row level security;
+alter table public.prematch_snapshots enable row level security;
+alter table public.prematch_raw_sources enable row level security;
+alter table public.prematch_documents enable row level security;
+alter table public.prematch_kg_claims enable row level security;
 
 drop policy if exists "colonies_public_read"   on public.colonies;
 drop policy if exists "colonies_public_insert" on public.colonies;
@@ -252,6 +431,10 @@ drop policy if exists "colony_ants_public_update" on public.colony_ants;
 drop policy if exists "colony_ants_public_delete" on public.colony_ants;
 drop policy if exists "colony_runs_public_read" on public.colony_runs;
 drop policy if exists "colony_config_events_public_read" on public.colony_config_events;
+drop policy if exists "prematch_snapshots_public_read" on public.prematch_snapshots;
+drop policy if exists "prematch_raw_sources_public_read" on public.prematch_raw_sources;
+drop policy if exists "prematch_documents_public_read" on public.prematch_documents;
+drop policy if exists "prematch_kg_claims_public_read" on public.prematch_kg_claims;
 
 create policy "colonies_public_read"
   on public.colonies for select using (true);
@@ -277,7 +460,20 @@ create policy "colony_ants_public_update"
 create policy "colony_ants_public_delete"
   on public.colony_ants for delete using (true);
 
+create policy "prematch_snapshots_public_read"
+  on public.prematch_snapshots for select using (true);
+
+create policy "prematch_raw_sources_public_read"
+  on public.prematch_raw_sources for select using (true);
+
+create policy "prematch_documents_public_read"
+  on public.prematch_documents for select using (true);
+
+create policy "prematch_kg_claims_public_read"
+  on public.prematch_kg_claims for select using (true);
+
 -- History/audit/nonce tables intentionally have no public policies yet.
+-- Prematch benchmark tables are public-read but server-write only.
 -- Add owner-scoped policies once signed wallet auth is wired.
 
 -- ---------------------------------------------------------------------

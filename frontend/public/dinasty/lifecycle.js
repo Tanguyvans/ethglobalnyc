@@ -8,8 +8,6 @@
 // contract and claims payouts for winning ants.
 window.DN = window.DN || {};
 
-console.log('[worldcolony] lifecycle.js loaded · build 2026-06-14');
-
 DN.lifecycle = (function () {
   const L = {
     phase: 'idle',

@@ -62,7 +62,6 @@ DN.supa = (function () {
         realtime: { params: { eventsPerSecond: 10 } },
       });
       S.ready = true;
-      console.log('[supa] live world ready');
     } catch (err) {
       console.warn('[supa] init failed:', err && err.message);
     }

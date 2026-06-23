@@ -93,6 +93,7 @@ class ForecastGamesApiTest(unittest.TestCase):
                 patch.object(api, "WORLD_CUP_KG", kg_path),
                 patch.object(api, "PREMATCH_SCRAPE_ROOT", root / "prematch_scrape"),
                 patch.object(api, "PREMATCH_TEST_MANIFEST", root / "missing_manifest.json"),
+                patch.object(api, "_prematch_supabase_index", return_value={}),
             ):
                 light_games = api._forecast_games_from_kg(include_previous_test_data=False)
                 games = api._forecast_games_from_kg(include_previous_test_data=True)
@@ -158,12 +159,81 @@ class ForecastGamesApiTest(unittest.TestCase):
                 patch.object(api, "WORLD_CUP_KG", kg_path),
                 patch.object(api, "PREMATCH_SCRAPE_ROOT", root / "missing_runs"),
                 patch.object(api, "PREMATCH_TEST_MANIFEST", manifest_path),
+                patch.object(api, "_prematch_supabase_index", return_value={}),
             ):
                 games = api._forecast_games_from_kg(include_previous_test_data=True)
 
         self.assertTrue(games[0]["has_previous_test_data"])
         self.assertEqual(games[0]["previous_test_data"]["usable_document_count"], 168)
         self.assertEqual(games[0]["previous_test_data"]["kind"], "prematch_scrape_manifest")
+
+    def test_prefers_supabase_snapshot_over_fallback_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            kg_path = root / "world_cup_kg.json"
+            kg_path.write_text(
+                json.dumps(
+                    {
+                        "entities": [
+                            {
+                                "entity_id": "match:world_cup_2026:051:2026_06_22_france_iraq",
+                                "entity_type": "match",
+                                "name": "France vs Iraq",
+                                "attributes": {
+                                    "team1": "France",
+                                    "team2": "Iraq",
+                                    "date": "2026-06-22",
+                                    "time": "17:00 UTC-4",
+                                    "round": "Matchday 12",
+                                    "group": "Group I",
+                                    "ground": "Philadelphia",
+                                },
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manifest_path = root / "prematch_test_data_manifest.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "match_slug": "france_vs_iraq",
+                                "kind": "prematch_scrape_manifest",
+                                "usable_document_count": 1,
+                                "evidence_claim_count": 1,
+                                "source": "legacy-manifest",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            supabase_index = {
+                "france_vs_iraq": {
+                    "kind": "prematch_supabase_snapshot",
+                    "source": "supabase:prematch_snapshots",
+                    "snapshot_id": "worldcup_2026_france_vs_iraq_20260622T210000Z",
+                    "usable_document_count": 168,
+                    "evidence_claim_count": 168,
+                }
+            }
+
+            with (
+                patch.object(api, "WORLD_CUP_KG", kg_path),
+                patch.object(api, "PREMATCH_SCRAPE_ROOT", root / "missing_runs"),
+                patch.object(api, "PREMATCH_TEST_MANIFEST", manifest_path),
+                patch.object(api, "_prematch_supabase_index", return_value=supabase_index),
+            ):
+                games = api._forecast_games_from_kg(include_previous_test_data=True)
+
+        data = games[0]["previous_test_data"]
+        self.assertEqual(data["kind"], "prematch_supabase_snapshot")
+        self.assertEqual(data["snapshot_id"], "worldcup_2026_france_vs_iraq_20260622T210000Z")
+        self.assertEqual(data["usable_document_count"], 168)
+        self.assertEqual(data["fallback_sources"], ["legacy-manifest"])
 
 
 if __name__ == "__main__":
