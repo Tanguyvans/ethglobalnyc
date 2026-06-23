@@ -42,12 +42,16 @@
     return '<span class="wc-flag wc-flag-tbd ' + (cls || '') + '">⚽</span>';
   }
 
-  /* Bare predictions.json trades (#9-#11) carry only a polygun_market_id. Map the ones
-     Adil confirms from the live Polymarket profile here; the rest fall to "unmapped".
-     CONFIRMED: France = tournament-winner outright (#1,#2). Panama = a Group L match
-     (Panama vs Croatia, 2026-06-23). TODO: pin which market id (1897246 / 1897121) is Panama. */
+  /* Bare predictions.json trades (#9-#12) carried only a polygun_market_id at execution time.
+     Resolved 2026-06-23 by matching each trade's outcome_token_id against the ClickHouse
+     markets catalog (default_v3.polymarket_markets_all). The trades' event/market_question/
+     outcome are now also backfilled in predictions.json; this map is the confirmed registry
+     (also supplies home/away + a date for the draw market, whose question has no date). */
   var MARKET_OVERRIDES = {
-    // '1897246': { home: 'Panama', away: 'Croatia', date: '2026-06-23', pick: 'Panama', question: 'Will Panama win on 2026-06-23?' }
+    '1897108': { home: 'Czech Republic', away: 'South Africa', date: '2026-06-18', pick: 'South Africa', question: 'Will South Africa win on 2026-06-18?' },
+    '1897246': { home: 'Panama', away: 'Croatia', date: '2026-06-23', pick: 'Panama', question: 'Will Panama win on 2026-06-23?' },
+    '1897121': { home: 'Scotland', away: 'Morocco', date: '2026-06-19', pick: 'Scotland', question: 'Will Scotland win on 2026-06-19?' },
+    '1897171': { home: 'Belgium', away: 'Iran', date: '2026-06-21', kind: 'draw', question: 'Will Belgium vs. IR Iran end in a draw?' }
   };
 
   /* normalize team names so predictions.json strings match the KG fixtures */
@@ -145,6 +149,16 @@
         return;
       }
       var date = (mq.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || (ov && ov.date) || null;
+      // draw markets ("...end in a draw?") don't name a winning team — pin them to the
+      // fixture via the override's home/away teams instead of a team pick.
+      var isDraw = (ov && ov.kind === 'draw') || /\bdraw\b/i.test(mq) || /\bdraw\b/i.test(t.outcome || '');
+      if (isDraw && date) {
+        out.perMatch.push({ date: date, pick: 'DRAW',
+          teams: ov ? [normTeam(ov.home), normTeam(ov.away)] : null,
+          side: t.side, price: t.avg_price, phase: t.bet_phase, method: t.method,
+          placed_by: t.placed_by, status: t.status, tx: t.tx_hash, simulated: false, id: t.id });
+        return;
+      }
       var pick = pickTeam(t, ov);
       if (date && pick) {
         out.perMatch.push({ date: date, pick: normTeam(pick), side: t.side, price: t.avg_price,
@@ -187,7 +201,11 @@
     return idx.perMatch.filter(function (b) {
       if (b.date !== g.date) return false;
       if (b.pick === 'DRAW' || b.pick === 'UNDER 2.5') {
-        // attach Qatar/Switzerland study reads to that fixture
+        // draw/over-under bets carry their own fixture teams when known (e.g. Belgium vs Iran);
+        // otherwise fall back to the Qatar/Switzerland study reads.
+        if (b.teams && b.teams.length === 2) {
+          return teams.indexOf(b.teams[0]) >= 0 && teams.indexOf(b.teams[1]) >= 0;
+        }
         return teams.indexOf('Switzerland') >= 0 && teams.indexOf('Qatar') >= 0;
       }
       return teams.indexOf(normTeam(b.pick)) >= 0;
@@ -361,6 +379,8 @@
     var idx = buildIndex();
     var outrightIds = {}; idx.outrights.forEach(function (o) { outrightIds[o.trade.id] = true; });
     var matchTrades = trades.filter(function (t) { return !outrightIds[t.id]; });
+    // latest bets first
+    matchTrades.sort(function (a, b) { return String(b.ts_utc || '').localeCompare(String(a.ts_utc || '')); });
     var unmapped = matchTrades.filter(function (t) { return !t.event && !MARKET_OVERRIDES[String(t.polygun_market_id)]; }).length;
 
     var rows = matchTrades.map(function (t) {
