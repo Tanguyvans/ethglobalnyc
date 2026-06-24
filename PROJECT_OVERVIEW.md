@@ -1,38 +1,47 @@
-# WorldColony — Project Overview (2026-06-14)
+# WorldColony — Project Overview (2026-06-24)
 
 *The single front-door summary of the whole project: what it is, how the pieces fit, what's
-actually built, and the links anyone can verify. Honesty markers: ✅ built/working · 🟡 partial
-or built-but-blocked · 📝 narrated/planned. Don't claim 🟡/📝 as done.*
+actually built, and the links anyone can verify. WorldColony is now treated as a long-term agent
+society project, not a hackathon-only demo. Honesty markers: ✅ built/working · 🟡 partial or
+built-but-blocked · 📝 narrated/planned. Don't claim 🟡/📝 as done.*
 
 ## What it is
-**WorldColony** is an evolutionary ecosystem of forecasting agent "ants" that **earn or die by the
-quality of their World Cup predictions.** Each ant has a heritable genome, its own wallet, and an
-ENS identity; human-verified lineages (World ID) are born with privileges. Ants debate in rooms,
-reach a consensus, and place **real prediction-market trades on Polymarket**. Thinking literally
-costs money: ants pay (an x402-style `402 → pay → query` handshake) to query a ClickHouse corpus
-of prediction-market odds history and UMA resolution events, behind a strict replay **timestamp
-gate** so the backtest can never see the future. A 3D dashboard renders the swarm, and
-`worldcolony.eth` resolves to the live trades wallet so anyone can verify the colony is tied to
-real on-chain activity — not a mockup.
+**WorldColony** is an evolutionary ecosystem of forecasting agent "ants" that **survive or fail by
+the quality of their World Cup decisions and risk sizing.** Each ant has a persona, a heritable
+genome, an identity record, memory, reputation, and a scarce bankroll. The current Survival Thesis
+V1 strategy asks ants to read reliable match context, form a qualitative thesis, choose a team or
+draw, size the risk (`micro`, `small`, `medium`, or `high`), debate, revise, and learn after the
+match resolves.
 
-**The headline question the demo answers live:** over generations, do privileged human-verified
-lineages out-survive lean anonymous ants?
+The important shift: this is no longer "many agents wrapped around one probability equation." A
+`stats_purist`, `form_hunter`, `tactical_scout`, `market_reader`, and `contrarian_risk` should be
+able to look at the same match and defend different decisions for legible reasons. Market data can
+be one signal, but not the whole product.
+
+On-chain rails, Polymarket experiments, Arc settlement, x402, ENS, and World ID remain valuable
+integrations. The default colony economy now uses fake credits first so the society can become
+coherent before real capital is attached by default.
+
+**The headline long-term question:** over many matches, which agent personalities and lineages
+survive: cautious stats readers, form hunters, tactical scouts, market readers, contrarians, or
+human-verified founders?
 
 ## The core loop
 ```
-Birth (verified lineages richer) → Buy data (x402-gated ClickHouse query, costs USDC)
-→ Debate + forecast (genome-driven) → Stake on a match → Match resolves
-→ Settle bankroll → survive & reproduce (mutate genome, mint child ENS subname)  |  or die
+Birth → Reliable match context → Persona thesis → Pick + risk read → Sized fake-credit stake
+→ Debate + revision → Match resolves → Settle bankroll/reputation
+→ survive & reproduce (mutate genome, mint child identity)  |  or die
 ```
 
 ## Architecture — three planes + execution
 - **Identity plane (ENS).** `worldcolony.eth` on Ethereum mainnet ✅; 200 per-agent subnames
   `root-*.colonny.eth` on Sepolia ENSv2 ✅. Offchain CCIP-Read resolver 📝 (planned).
-- **Economic plane (Arc + Circle).** USDC is the unit. Real ant-to-ant **x402** payments via
-  Circle Gateway (EIP-3009 sign → 402 → pay → 200) ✅; a **`ColonyForecastMarket`** betting
-  contract deployed to Arc testnet (`0xc40a8f2e…ada87`) where ants stake real USDC and winners
-  claim the losing pool minus a treasury fee ✅. Buyer-side x402 from Dynamic MPC wallets is the
-  open seam 🟡 (Circle GatewayClient needs an EOA key; MPC wallets have none).
+- **Economic plane (fake credits first, Arc + Circle as rails).** The active society loop uses
+  fake credits for survival pressure ✅. Real ant-to-ant **x402** payments via Circle Gateway
+  (EIP-3009 sign → 402 → pay → 200) exist as an integration rail ✅; a
+  **`ColonyForecastMarket`** betting contract is deployed to Arc testnet (`0xc40a8f2e…ada87`) for
+  optional on-chain settlement experiments ✅. Buyer-side x402 from Dynamic MPC wallets is the open
+  seam 🟡 (Circle GatewayClient needs an EOA key; MPC wallets have none).
 - **Knowledge plane (ClickHouse).** ~2.84M Polymarket markets + an odds time-series + UMA
   Optimistic-Oracle events, fronted by **`clickhouse_api`** (FastAPI) that enforces a real
   **timestamp gate** (`ts <= as_of`, enforced in SQL *and* re-checked per row, with a leak test)
@@ -56,12 +65,11 @@ Birth (verified lineages richer) → Buy data (x402-gated ClickHouse query, cost
 | **Circle / Arc** | 🟡📝 | x402 `402→pay→query` pattern + real Gateway transfers ✅; deployed betting contract ✅; full Arc-native settlement still partial/narrated — verify before claiming on the Arc track. |
 
 ## Subsystem status (by folder)
-- **`colony/` + `colony_api/`** ✅ — the Python "brain": genome-driven debate → forecasts →
-  sealed bets, plus multi-round **settlement** (Brier-scored accuracy + bankroll updates),
-  offline **evolution** (survivors + mutated children + genealogy), **ENS** registration (Sepolia)
-  and **Worldcoin** agent registration, all wired. `colony_api` is a FastAPI backend **deployed on
-  Railway** (`https://ethglobalnyc-production.up.railway.app`) streaming runs/agents/KG over SSE.
-  Reproduction is wired; explicit per-round "death" is still a stub.
+- **`colony/` + `colony_api/`** ✅ — the Python "brain": Survival Thesis judgments, persona-driven
+  debate, team-labeled commitments, fake-credit stake sizing, society decision, memory, and
+  FastAPI/SSE backend. Multi-round settlement/evolution, ENS registration (Sepolia), and Worldcoin
+  agent registration are present as rails. `colony_api` is deployed on Railway
+  (`https://ethglobalnyc-production.up.railway.app`). Explicit per-round "death" is still a stub.
 - **`clickhouse_api/`** ✅🟡 — FastAPI gate + metering; timestamp gate tested with a leak test;
   x402 verifier stubbed (accepts any payment header) pending real Arc settlement verification.
 - **`arc/`** ✅🟡 — real x402 Circle Gateway services + pay client + treasury funding +
@@ -77,8 +85,8 @@ Birth (verified lineages richer) → Buy data (x402-gated ClickHouse query, cost
 - **`frontend/`** ✅ — Vite + React + Three.js / react-three-fiber 3D dashboard at
   `worldcolony.nyc`; replays the colony's JSONL event stream (the colony↔frontend contract).
 
-## Live URLs & verifiable artifacts (for judges)
-- **Demo:** https://worldcolony.nyc
+## Live URLs & verifiable artifacts
+- **Product preview:** https://worldcolony.nyc
 - **API:** https://ethglobalnyc-production.up.railway.app
 - **Repo:** https://github.com/Vainglorious/ethglobalnyc (monorepo)
 - **ENS:** `worldcolony.eth` (mainnet) → trades wallet `0xe9E32Ca24aa1eF725F650b5489281FE621363AA9`

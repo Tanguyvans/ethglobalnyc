@@ -41,10 +41,24 @@ DN.commsViz = (function () {
     if (DN.databridge && DN.databridge.marketSideLabel) {
       return DN.databridge.marketSideLabel(side, ev || {});
     }
+    if (side === 'pass') return 'No stake';
     if (side === 'draw') return 'Draw';
     if (side === 'home') return 'Team A';
     if (side === 'away') return 'Team B';
     return String(side || 'unknown');
+  }
+
+  function qualitativeLean(homeProbability, ev) {
+    if (homeProbability == null) return '—';
+    const value = Number(homeProbability);
+    if (!Number.isFinite(value)) return '—';
+    const firstSide = marketSideLabel('home', ev);
+    const secondSide = marketSideLabel('away', ev);
+    if (value >= 0.62) return 'strong ' + firstSide;
+    if (value >= 0.54) return 'soft ' + firstSide;
+    if (value <= 0.38) return 'strong ' + secondSide;
+    if (value <= 0.46) return 'soft ' + secondSide;
+    return 'balanced';
   }
 
   function findAntByAgentId(agentId) {
@@ -243,10 +257,9 @@ DN.commsViz = (function () {
     if (!DN.logTerm) return;
     const aid = ev.ens_name || ev.agent_id || 'agent';
     const side = marketSideLabel(ev.side || 'pass', ev);
-    const firstSide = marketSideLabel('home', ev);
-    const prob = ev.home_probability != null ? firstSide + ' ' + Number(ev.home_probability).toFixed(2) : '—';
+    const lean = qualitativeLean(ev.home_probability, ev);
     const edge = ev.edge != null ? Number(ev.edge).toFixed(2) : '—';
-    const bank = ev.bankroll != null ? Math.round(Number(ev.bankroll)) : '—';
+    const bank = ev.credits_balance != null ? Math.round(Number(ev.credits_balance)) : ev.bankroll != null ? Math.round(Number(ev.bankroll)) : '—';
     const economy = economyState();
     if (economy.contract && !V._forecastContractLogged) {
       V._forecastContractLogged = true;
@@ -254,7 +267,7 @@ DN.commsViz = (function () {
     }
     const contractBit = economy.contract ? ', contract ' + shortHash(economy.contract) : '';
     const marketBit = economy.market_key ? ', market ' + economy.market_key : '';
-    DN.logTerm.push('FORECAST', aid + ' → ' + side + ' · ' + prob + ' (edge ' + edge + ', bankroll $' + bank + contractBit + marketBit + ')');
+    DN.logTerm.push('FORECAST', aid + ' → ' + side + ' · ' + lean + ' (edge read ' + edge + ', credits ' + bank + contractBit + marketBit + ')');
   };
 
   V.sawForecast = function () { return !!V._sawForecast; };

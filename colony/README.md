@@ -1,39 +1,54 @@
 # Colony Harness
 
-First implementation of a lightweight agent-colony debate harness inspired by MiroFish, without cloning or depending on MiroFish.
+WorldColony's colony harness is the long-term simulation core for a forecasting-agent society. It
+started as a lightweight debate harness inspired by MiroFish, but the current direction is broader:
+ants should read reliable match context, defend qualitative theses, debate risk, commit scarce
+credits, and survive or fail across many rounds.
 
-The goal of this prototype is narrow:
+The goal is not to hide one probability equation behind many agent names. The colony should create
+different judgment styles:
 
-1. spawn many genome-based predictors;
-2. give each predictor a private genome;
-3. attach match data through scout findings and evidence claims;
-4. route selected predictors into topic debate rooms;
-5. synthesize room disagreements into one final public debate signal;
-6. let the rest of the colony consume the debate parametrically;
-7. produce sealed betting commitments.
+1. spawn many genome-based ants with distinct personas;
+2. give each ant reliable match context and a private memory/reputation profile;
+3. ask the ant for a thesis, a pick, a conviction level, and a risk read;
+4. force participation through a mandatory but size-limited stake level;
+5. route selected ants into topic debate rooms;
+6. allow revisions after debate and post-resolution reviews;
+7. produce one colony decision that rewards good risk-taking, not permanent recklessness.
 
-This is intentionally not the full product yet. Arc trades, x402 purchases, ClickHouse, and real settlement are still outside this first harness. The harness can now generate local EVM wallets and ENS identity-card records for agents so the identity layer can be tested before those systems are attached.
+Arc trades, x402 purchases, ClickHouse, and real settlement remain integration rails. The default
+strategy now uses fake credits first so the society can be tested safely before any real-money path
+becomes the normal execution mode.
 
 ## Current Working Version
 
-This repository now has a first working harness loop. It is not production quality, but it is useful enough to iterate on:
+This repository now has a working Survival Thesis V1 loop. It is still an evolving product system,
+not a finished production market, but it is the intended base for long-term colony behavior:
 
 ```text
 World Cup KG
   -> one match subgraph
   -> public/shared/private scout findings
   -> evidence claims linked to teams, players, and sources
-  -> many genome predictors
+  -> many persona-driven ants
+  -> qualitative thesis + pick + risk read
   -> overlapping topic debate rooms
   -> final chamber synthesis
-  -> forecasts, pass/bet decisions, compact logs
+  -> mandatory sized stake commitments
+  -> settlement, memory, and compact logs
 ```
 
 What works today:
 
 - Build a World Cup tournament KG from OpenFootball.
 - Run a single match from the KG, for example Brazil vs Morocco.
-- Spawn tens of cheap genome predictors with different source weights, thresholds, risk appetite, and herd bias.
+- Spawn tens or hundreds of genome ants with different source weights, thresholds, risk appetite, herd bias, and Survival Thesis personas.
+- Run the V1 persona set: `stats_purist`, `form_hunter`, `tactical_scout`, `market_reader`, and `contrarian_risk`.
+- Ask CAMEL-backed ants for natural judgments with `pick`, `thesis`, `main_signal`, `conviction`, `risk_read`, `stake_level`, and `survival_reason`.
+- Keep all valid ants participating. A cautious ant does not pass; it commits `micro`.
+- Fall back to a deterministic `micro` commitment on the baseline side when CAMEL is unavailable, so model/provider failures do not create silent inactivity.
+- Display team names in run summaries and frontend payloads instead of raw `home`/`away` labels.
+- Scope conversation recall with the `survival_thesis_v1` memory version so old probability-shaped memories do not pollute the current strategy.
 - Fetch public web/search data for match news, squad availability, recent team form, player form, squad depth, predicted XI, tactical context, and optional CAMEL-style research.
 - Normalize datasource output into `Finding` objects and smaller `evidence_claims`.
 - Write a round `world_graph.json` with match, teams, findings, evidence claims, sources, players, genomes, predictions, and debate claims.
@@ -54,11 +69,12 @@ What works today:
 
 Known rough edges:
 
-- Claim extraction is still heuristic. It can misclassify a positive player note as `injury_availability`, or attach a sentence to the wrong team when both teams are mentioned.
-- Source quality is not ranked strongly enough yet. Search snippets and generic squad pages can leak into the debate beside stronger sources such as BBC, ESPN, RotoWire, or official pages.
-- Debate wording now uses short source summaries such as "BBC has Neymar missing", structured dispute targets, challenger objections, and room-level synthesis. The replies are cleaner and less repetitive than the first version, but still template-driven rather than a full natural conversation.
-- A real odds provider is not connected yet, so no odds-source finding is added to the KG.
-- Settlement, bankroll updates, death, x402 data purchases, and live Worldcoin privilege routing are not implemented yet.
+- Natural CAMEL judgments depend on the configured provider/model. If the provider fails, the fallback keeps the run valid but does not create a rich thesis.
+- Baseline-only ants still use deterministic judgment fields unless they are selected for CAMEL judgment or a future local thesis generator is added.
+- Claim extraction is still heuristic. It can attach a sentence to the wrong team when both teams are mentioned.
+- Debate wording is cleaner than the first template version, but still not a fully open-ended multi-agent conversation for every ant.
+- Some compatibility code for earlier civic actions still exists internally for old artifacts, but Survival Thesis V1 emits the `commit_stake` path.
+- On-chain settlement, x402 data purchases, and live Worldcoin privilege routing are integration rails, not the default economy loop.
 
 ## Why This Shape
 
@@ -68,10 +84,10 @@ MiroFish's useful idea is not "copy their stack". It is the pattern:
 source context -> agent population -> bounded social interaction -> action logs -> analysis
 ```
 
-For Colony, the equivalent first loop is:
+For Colony, the current long-term loop is:
 
 ```text
-match context -> predictor genomes -> debate claims -> herd-adjusted forecasts -> sealed stakes
+reliable match context -> persona -> thesis -> risk-sized stake -> debate -> revision -> survival memory
 ```
 
 ## Install
@@ -407,6 +423,23 @@ python3 colony/run_match.py --match "Brazil vs Morocco" --agents 40 --rooms 6 --
 
 This path uses tournament metadata from the KG and deterministic seeded scout outputs for market, team-form, odds, news, lineup, and weather. X/social scouts are intentionally disabled here so we can test the core predictor/debater loop before adding noisy or paid social data.
 
+To exercise the Survival Thesis V1 judgment layer, select CAMEL-backed ants:
+
+```bash
+python3 colony/run_match.py \
+  --match "Brazil vs Morocco" \
+  --data-mode synthetic \
+  --agents 10 \
+  --rooms 3 \
+  --seed 103 \
+  --camel-judgment-agents 10 \
+  --camel-judgment-timeout 30
+```
+
+Those ants return qualitative judgments: team pick, thesis, main signal, conviction, risk read,
+stake level, and survival reason. If the configured model provider is unavailable, the run still
+finishes with a baseline `micro` commitment rather than a silent pass.
+
 To fetch lightweight public data instead of using seeded scout outputs:
 
 ```bash
@@ -620,11 +653,11 @@ Default logs are intentionally compact. They are designed for debugging and anal
 
 Each automatic run directory contains:
 
-- `summary.md` - match, population, datasource, and betting summary.
+- `summary.md` - match, population, datasource, team-labeled commitments, and colony decision.
 - `debate.md` - room debates and the final chamber synthesis.
 - `rooms.json` - topic room membership, representatives, claims, and synthesis.
 - `conversation_memory.json` - queryable debate memory: room timeline, claims, dispute edges, debater activity, and final diagnostics.
-- `forecasts.csv` - final forecast and bet/pass decision for every predictor.
+- `forecasts.csv` - final pick, team label, thesis fields, risk read, stake level, and commitment for every predictor.
 - `findings.json` - normalized findings used by the run.
 - `scouting_audit.json` - scout coverage, per-team coverage gaps, targeted re-scouting backlog, claim types, source domains, source quality, source kind, source recency, provenance summary, and KG integrity checks.
 - `knowledge_views.json` - filtered predictor views derived from the full graph.
@@ -632,7 +665,7 @@ Each automatic run directory contains:
 - `kg_manifest.json` - KG schema version, ingestion entrypoints, entity/relationship counts, and integrity status for external KG loaders.
 - `kg_readiness` inside `scouting_audit.json` and `kg_manifest.json` separates `kg_load_ready` from `scouting_complete`, so a loader can ingest a structurally valid graph while keeping freshness or coverage backlog visible.
 - `scouting_log.jsonl` - source progress events, including `public_stage_complete` timings for public web, ScrapeCreators X, CAMEL, and claim extraction stages when enabled.
-- `events.compact.jsonl` - compact event stream with summary, findings, claims, and forecasts.
+- `events.compact.jsonl` - compact event stream with summary, team-labeled stakes, findings, claims, and forecasts.
 - `debug.md` - optional, written only with `--debug`.
 
 The legacy `--out` JSONL export still includes bet commitments and should be used deliberately.
@@ -714,12 +747,11 @@ python3 colony/evaluate_colony.py \
 
 The evaluator writes `evaluation_report.md` and `evaluation_results.json` under
 `colony/runs/evaluations/<timestamp>/`. It compares `no_debate`,
-`debate_memory_log`, and `debate_memory_injected`. It measures Brier score, side
-accuracy, toy ROI, collective accuracy, debate-driven side changes, total memory
-hits, match-relevant memory hits, irrelevant memory hits, memory-driven side
-changes, and memory-driven probability shift. Use this report to check whether
-memory injection improves truth-facing metrics rather than only making the run
-logs look richer.
+`debate_memory_log`, and `debate_memory_injected`. Some metrics still use classic
+forecasting diagnostics such as Brier score, side accuracy, toy ROI, and collective
+accuracy. Treat those as internal evaluation signals, not as the ant-facing decision
+model. The current ant-facing contract is the qualitative Survival Thesis output:
+pick, thesis, signal, conviction, risk read, and stake level.
 
 To evaluate multiple population sizes, room budgets, and seeds in one run:
 
@@ -1110,7 +1142,7 @@ Each claim includes:
 - debate role;
 - `claim_type`;
 - `selection_reason`;
-- stated probability;
+- stated confidence/risk signal;
 - confidence;
 - direction;
 - short message;
@@ -1126,9 +1158,9 @@ relationship between the two debate-claim entities.
 
 ### Listening
 
-Predictors do not become free-form LLM workers. They read the debate as a structured social finding. Their `source_weights.debate` and `herd_bias` determine how strongly they follow or fade the crowd.
+Predictors do not become unbounded LLM workers. They read the debate as a structured social finding. Their `source_weights.debate`, `herd_bias`, persona, and risk appetite determine how strongly they follow or fade the crowd.
 
-Every forecast includes a compact `decision_reason` in `forecasts.csv`, explaining whether the predictor bet or passed based on edge, threshold, debate shift, and dominant source weights.
+Every forecast includes a compact `decision_reason` in `forecasts.csv`. Survival Thesis runs also include the ant's thesis, main signal, risk read, stake level, and survival reason, so the output explains why the ant committed the amount it did.
 
 ### Sealed Bets
 

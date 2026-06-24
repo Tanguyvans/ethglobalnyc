@@ -54,6 +54,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--live-cache-dir", default=None, help="Cache directory for public-data scout fetches.")
     parser.add_argument("--openfootball-cache", default=None, help="Cache path for openfootball/worldcup.json.")
     parser.add_argument("--include-camel", action="store_true", help="Forward CAMEL/deep-research scout.")
+    parser.add_argument(
+        "--camel-judgment-agents",
+        type=int,
+        default=0,
+        help="Forward CAMEL natural-judgment agent count to run_match.py.",
+    )
     parser.add_argument("--include-x", action="store_true", help="Forward X availability scout.")
     parser.add_argument("--include-telegram", action="store_true", help="Forward Telegram social/news scout.")
     parser.add_argument("--include-polygun", action="store_true", help="Forward PolyGun market snapshot scout.")
@@ -66,6 +72,18 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--rescout-from-audit", default=None, help="Read scouting_audit.json and re-scout its backlog.")
     parser.add_argument("--voice-mode", choices=["template", "llm"], default="template")
+    parser.add_argument(
+        "--camel-judgment-timeout",
+        type=int,
+        default=45,
+        help="Forward CAMEL natural-judgment timeout to run_match.py.",
+    )
+    parser.add_argument(
+        "--camel-judgment-concurrency",
+        type=int,
+        default=1,
+        help="Forward maximum parallel CAMEL judgment calls to run_match.py.",
+    )
     parser.add_argument(
         "--market-home-probability",
         type=float,
@@ -198,6 +216,10 @@ def _run_match_command(
         command.extend(["--openfootball-cache", args.openfootball_cache])
     if args.include_camel:
         command.append("--include-camel")
+    if args.camel_judgment_agents:
+        command.extend(["--camel-judgment-agents", str(args.camel_judgment_agents)])
+        command.extend(["--camel-judgment-timeout", str(args.camel_judgment_timeout)])
+        command.extend(["--camel-judgment-concurrency", str(args.camel_judgment_concurrency)])
     if args.include_x:
         command.append("--include-x")
     if args.include_telegram:

@@ -8,7 +8,7 @@ from .agent import AntAgent
 from .decision import build_collective_decision
 from .economy import EconomyLedger, build_paid_knowledge_views, market_spec_for_match, settle_internal_pool
 from .genes import Genome, SourceWeights
-from .models import Finding, Forecast, InternalStake, MarketSpec, MatchContext
+from .models import CivicAction, Finding, Forecast, InternalStake, MarketSpec, MatchContext
 from .scouts import synthetic_probabilities
 
 
@@ -43,7 +43,15 @@ def _agent(
     )
 
 
-def _forecast(agent: AntAgent, match: MatchContext, *, probability: float, side: str, visible_findings: int = 4) -> Forecast:
+def _forecast(
+    agent: AntAgent,
+    match: MatchContext,
+    *,
+    probability: float,
+    side: str,
+    visible_findings: int = 4,
+    stake: float = 1.0,
+) -> Forecast:
     edge = probability - match.market_home_probability if side == "home" else match.market_home_probability - probability
     if side == "draw":
         edge = 0.01
@@ -65,10 +73,49 @@ def _forecast(agent: AntAgent, match: MatchContext, *, probability: float, side:
         edge_threshold=agent.genome.edge_threshold,
         edge=round(edge, 4),
         side=side,  # type: ignore[arg-type]
-        stake=1.0,
+        stake=stake,
         bankroll=agent.bankroll,
         decision_reason=f"test {side} forecast",
         genome_id=agent.genome_id,
+    )
+
+
+def _civic_action(agent: AntAgent, *, side: str, action_type: str = "vote_only", weight: float = 1.0) -> CivicAction:
+    return CivicAction(
+        action_id=f"civic:round:{agent.agent_id}",
+        round_id="round_society_decision",
+        agent_id=agent.agent_id,
+        action_type=action_type,
+        civic_choice=side,  # type: ignore[arg-type]
+        commitment_label="none",
+        status="accepted",
+        action_points_spent=1,
+        credits_spent=0.0,
+        target=side,
+        effect_type="civic_vote",
+        effect_summary=f"{agent.agent_id} supports {side}",
+        source="camel",
+        weight=weight,
+    )
+
+
+def _review_civic_action(agent: AntAgent, *, side: str, weight: float = 1.05) -> CivicAction:
+    return CivicAction(
+        action_id=f"civic_review:round:{agent.agent_id}",
+        round_id="round_society_decision",
+        agent_id=agent.agent_id,
+        action_type="vote_only",
+        civic_choice=side,  # type: ignore[arg-type]
+        commitment_label="none",
+        status="reviewed",
+        action_points_spent=0,
+        credits_spent=0.0,
+        target=side,
+        effect_type="civic_vote",
+        effect_summary=f"{agent.agent_id} revised to {side}",
+        source="camel",
+        weight=weight,
+        metadata={"phase": "post_resolution_review"},
     )
 
 
@@ -285,6 +332,204 @@ class EconomyTests(unittest.TestCase):
         self.assertEqual(decision.recommendation["side"], "draw")
         self.assertLess(decision.internal_metrics["confidence"], 0.48)
         self.assertEqual(decision.recommendation["confidence_label"], "low")
+
+    def test_society_decision_uses_civic_actions_when_available(self) -> None:
+        match = MatchContext(
+            round_id="round_society_decision",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.5,
+            odds_home_signal=0.5,
+            news_home_signal=0.5,
+        )
+        agents = [_agent(f"ant_{index:04d}") for index in range(7)]
+        forecasts = [
+            _forecast(agents[0], match, probability=0.45, side="away", stake=100.0),
+            *[
+                _forecast(agent, match, probability=0.51, side="home", stake=0.0)
+                for agent in agents[1:]
+            ],
+        ]
+        actions = [
+            _civic_action(agents[0], side="away", action_type="commit_stake", weight=1.2),
+            *[_civic_action(agent, side="home") for agent in agents[1:]],
+        ]
+
+        decision = build_collective_decision(
+            match=match,
+            agents=agents,
+            forecasts=forecasts,
+            civic_actions=actions,
+            society_state={"execution_guidance": {"open_blockers": []}},
+        )
+
+        self.assertEqual(decision.method["name"], "civic_society_decision_v2")
+        self.assertEqual(decision.internal_metrics["decision_layer"], "society_v2")
+        self.assertIn("risk", decision.internal_metrics["society_decision"]["component_scores"])
+        self.assertEqual(decision.recommendation["side"], "home")
+        self.assertEqual(decision.prediction["winner"], "France")
+        self.assertGreater(
+            decision.internal_metrics["society_decision"]["normalized_scores"]["home"],
+            decision.internal_metrics["society_decision"]["normalized_scores"]["away"],
+        )
+
+    def test_society_decision_exposes_blockers_and_lowers_confidence(self) -> None:
+        match = MatchContext(
+            round_id="round_society_blockers",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.5,
+            odds_home_signal=0.5,
+            news_home_signal=0.5,
+        )
+        agents = [_agent(f"ant_{index:04d}") for index in range(5)]
+        forecasts = [
+            _forecast(agent, match, probability=0.51, side="home", stake=0.0)
+            for agent in agents
+        ]
+        actions = [
+            _civic_action(agent, side="home", action_type="request_evidence", weight=1.05)
+            for agent in agents
+        ]
+
+        decision = build_collective_decision(
+            match=match,
+            agents=agents,
+            forecasts=forecasts,
+            civic_actions=actions,
+            society_state={
+                "execution_guidance": {"open_blockers": ["evidence_requests_open"]},
+                "evidence_backlog": [
+                    {
+                        "priority": "high",
+                        "choice_context": {"home": 5},
+                    }
+                ],
+            },
+        )
+
+        society_decision = decision.internal_metrics["society_decision"]
+        self.assertEqual(decision.recommendation["side"], "home")
+        self.assertIn("evidence_requests_open", society_decision["open_blockers"])
+        self.assertLess(decision.internal_metrics["confidence"], 0.7)
+        self.assertIn("open blockers", decision.recommendation["rationale"])
+
+    def test_society_decision_penalizes_downgraded_source_context(self) -> None:
+        match = MatchContext(
+            round_id="round_society_source_effect",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.5,
+            odds_home_signal=0.5,
+            news_home_signal=0.5,
+        )
+        agents = [_agent(f"ant_{index:04d}") for index in range(4)]
+        sides = ["home", "home", "away", "away"]
+        forecasts = [
+            _forecast(agent, match, probability=0.51 if side == "home" else 0.49, side=side, stake=0.0)
+            for agent, side in zip(agents, sides)
+        ]
+        actions = [
+            _civic_action(agent, side=side)
+            for agent, side in zip(agents, sides)
+        ]
+
+        decision = build_collective_decision(
+            match=match,
+            agents=agents,
+            forecasts=forecasts,
+            civic_actions=actions,
+            society_state={
+                "execution_guidance": {"open_blockers": ["weak_sources_found"]},
+                "source_audit_effects": [
+                    {
+                        "status": "downgraded",
+                        "choice_context": {"home": 2},
+                        "finding_ids": ["finding_bad_home"],
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(decision.recommendation["side"], "away")
+        penalties = decision.internal_metrics["society_decision"]["blocker_penalties"]
+        self.assertGreater(penalties["home"], penalties["away"])
+
+    def test_society_decision_exposes_post_resolution_reviews(self) -> None:
+        match = MatchContext(
+            round_id="round_society_review",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.5,
+            odds_home_signal=0.5,
+            news_home_signal=0.5,
+        )
+        agents = [_agent(f"ant_{index:04d}") for index in range(3)]
+        forecasts = [
+            _forecast(agent, match, probability=0.51, side="home", stake=0.0)
+            for agent in agents
+        ]
+        actions = [_civic_action(agent, side="home") for agent in agents]
+
+        decision = build_collective_decision(
+            match=match,
+            agents=agents,
+            forecasts=forecasts,
+            civic_actions=actions,
+            society_state={
+                "execution_guidance": {"open_blockers": []},
+                "reviews": [
+                    {
+                        "review_id": "review:round:00001",
+                        "review_type": "evidence_scout_review",
+                        "affected_side": "home",
+                        "status": "evidence_gap_resolved",
+                        "decision_effect": "clear_blocker",
+                        "support_count": 3,
+                        "summary": "Review cleared evidence gap for home.",
+                    }
+                ],
+            },
+        )
+
+        society_decision = decision.internal_metrics["society_decision"]
+        self.assertEqual(society_decision["component_scores"]["review"], {"away": 0.0, "draw": 0.0, "home": 1.0})
+        self.assertEqual(society_decision["reviews"][0]["decision_effect"], "clear_blocker")
+        self.assertIn("post-resolution reviews", decision.recommendation["rationale"])
+
+    def test_society_decision_uses_review_action_as_latest_agent_choice(self) -> None:
+        match = MatchContext(
+            round_id="round_society_review_choice",
+            home_team="France",
+            away_team="Senegal",
+            market_home_probability=0.5,
+            stats_home_signal=0.5,
+            odds_home_signal=0.5,
+            news_home_signal=0.5,
+        )
+        agents = [_agent(f"ant_{index:04d}") for index in range(3)]
+        forecasts = [
+            _forecast(agent, match, probability=0.49, side="away", stake=0.0)
+            for agent in agents
+        ]
+        initial_actions = [_civic_action(agent, side="home") for agent in agents]
+        review_actions = [_review_civic_action(agent, side="away") for agent in agents]
+
+        decision = build_collective_decision(
+            match=match,
+            agents=agents,
+            forecasts=forecasts,
+            civic_actions=initial_actions + review_actions,
+            society_state={"execution_guidance": {"open_blockers": []}},
+        )
+
+        self.assertEqual(decision.recommendation["side"], "away")
+        self.assertEqual(decision.internal_metrics["society_decision"]["component_scores"]["civic"]["away"], 1.0)
+        self.assertEqual(decision.internal_metrics["society_decision"]["component_scores"]["civic"]["home"], 0.0)
 
     def test_settlement_distributes_losing_pool_80_10_10(self) -> None:
         winner = _agent("ant_0000", bankroll=0.0)

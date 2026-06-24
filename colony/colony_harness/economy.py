@@ -1,4 +1,4 @@
-"""Internal USDC ledger for Colony v1.
+"""Internal credit ledger for Colony v1.
 
 This is intentionally an off-chain deterministic ledger. Real x402/Arc receipts
 can later plug into the same PaymentReceipt/BalanceUpdate event shape.
@@ -279,7 +279,11 @@ def debit_internal_stakes(
         if agent is None:
             updated.append(forecast)
             continue
-        amount = round(min(max(forecast.stake, 0.0), max(agent.bankroll, 0.0)), 4)
+        requested = round(max(forecast.stake, 0.0), 4)
+        if requested <= 0.0:
+            updated.append(replace(forecast, stake=0.0))
+            continue
+        amount = round(min(requested, max(agent.bankroll, 0.0)), 4)
         if amount <= 0.0:
             updated.append(replace(forecast, stake=0.0, decision_reason="Insufficient balance to stake."))
             continue

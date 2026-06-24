@@ -337,6 +337,152 @@ class SocialAction:
 
 
 @dataclass(frozen=True)
+class CivicAction:
+    action_id: str
+    round_id: str
+    agent_id: str
+    action_type: str
+    civic_choice: Side
+    commitment_label: str
+    status: str
+    action_points_spent: int
+    credits_spent: float
+    target: str
+    effect_type: str
+    effect_summary: str
+    source: str
+    weight: float = 1.0
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class SocietyResolution:
+    resolution_id: str
+    round_id: str
+    resolution_type: str
+    target: str
+    status: str
+    priority: str
+    support_count: int
+    credit_budget: float
+    next_step: str
+    reason: str
+    related_action_ids: list[str] = field(default_factory=list)
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class SocietyExecution:
+    execution_id: str
+    round_id: str
+    resolution_id: str
+    execution_type: str
+    target: str
+    status: str
+    result_summary: str
+    produced_finding_ids: list[str] = field(default_factory=list)
+    blocker_effect: str = ""
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class SocietyReview:
+    review_id: str
+    round_id: str
+    review_type: str
+    target: str
+    affected_side: str
+    status: str
+    decision_effect: str
+    support_count: int
+    summary: str
+    related_execution_id: str
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CivicReward:
+    reward_id: str
+    round_id: str
+    agent_id: str
+    amount: float
+    reason: str
+    related_execution_id: str
+    related_action_id: str
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CivicReputationChange:
+    change_id: str
+    round_id: str
+    agent_id: str
+    delta: float
+    score_after: float
+    reason: str
+    related_execution_id: str
+    related_action_id: str
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CalibrationReputationChange:
+    change_id: str
+    round_id: str
+    agent_id: str
+    delta: float
+    score_after: float
+    reason: str
+    forecast_side: Side
+    result_side: ResultSide
+    stake: float
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class JudgmentRevision:
+    revision_id: str
+    round_id: str
+    agent_id: str
+    phase: str
+    previous_side: Side
+    revised_side: Side
+    previous_action: str
+    revised_action: str
+    previous_stake: float
+    revised_stake: float
+    changed: bool
+    reason: str
+    review_ids: list[str] = field(default_factory=list)
+    judgment: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class Forecast:
     agent_id: str
     wallet_address: str
@@ -366,9 +512,12 @@ class Forecast:
     social_class: str = ""
     mind_summary: str = ""
     memory_recall_count: int = 0
+    judgment: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        data = asdict(self)
+        data["credits_balance"] = self.bankroll
+        return data
 
 
 @dataclass(frozen=True)
@@ -408,6 +557,15 @@ class RoundResult:
     rooms: list[DebateRoom]
     claims: list[DebateClaim]
     social_actions: list[SocialAction]
+    civic_actions: list[CivicAction]
+    society_resolutions: list[SocietyResolution]
+    society_executions: list[SocietyExecution]
+    society_reviews: list[SocietyReview]
+    judgment_revisions: list[JudgmentRevision]
+    review_civic_actions: list[CivicAction]
+    civic_rewards: list[CivicReward]
+    civic_reputation_changes: list[CivicReputationChange]
+    calibration_reputation_changes: list[CalibrationReputationChange]
     forecasts: list[Forecast]
     commitments: list[BetCommitment]
     findings: list[Finding]
@@ -424,6 +582,7 @@ class RoundResult:
     memory_writes: list[dict] = field(default_factory=list)
     class_transitions: list[dict] = field(default_factory=list)
     evolution_trace: dict = field(default_factory=dict)
+    society_state: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -435,6 +594,17 @@ class RoundResult:
             "rooms": [room.to_dict() for room in self.rooms],
             "claims": [claim.to_dict() for claim in self.claims],
             "social_actions": [action.to_dict() for action in self.social_actions],
+            "civic_actions": [action.to_dict() for action in self.civic_actions],
+            "society_resolutions": [resolution.to_dict() for resolution in self.society_resolutions],
+            "society_executions": [execution.to_dict() for execution in self.society_executions],
+            "society_reviews": [review.to_dict() for review in self.society_reviews],
+            "judgment_revisions": [revision.to_dict() for revision in self.judgment_revisions],
+            "review_civic_actions": [action.to_dict() for action in self.review_civic_actions],
+            "civic_rewards": [reward.to_dict() for reward in self.civic_rewards],
+            "civic_reputation_changes": [change.to_dict() for change in self.civic_reputation_changes],
+            "calibration_reputation_changes": [
+                change.to_dict() for change in self.calibration_reputation_changes
+            ],
             "forecasts": [forecast.to_dict() for forecast in self.forecasts],
             "commitments": [commitment.to_dict() for commitment in self.commitments],
             "collective_decision": self.collective_decision.to_dict(),
@@ -447,5 +617,6 @@ class RoundResult:
             "memory_writes": self.memory_writes,
             "class_transitions": self.class_transitions,
             "evolution_trace": self.evolution_trace,
+            "society_state": self.society_state,
             "summary": self.summary,
         }

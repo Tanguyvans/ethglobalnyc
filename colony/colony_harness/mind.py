@@ -16,20 +16,130 @@ from .genes import Genome, SourceWeights
 
 
 ARCHETYPE_ORDER = [
-    "rich_safe_allocator",
-    "degen_risk_taker",
-    "sentiment_scout",
-    "market_purist",
-    "debate_follower",
-    "contrarian",
-    "source_auditor",
-    "data_hoarder",
-    "public_signal_ant",
-    "lineage_loyalist",
+    "stats_purist",
+    "form_hunter",
+    "tactical_scout",
+    "market_reader",
+    "contrarian_risk",
 ]
 
 
 ARCHETYPE_CARDS: dict[str, dict[str, Any]] = {
+    "stats_purist": {
+        "label": "stats purist",
+        "belief": "Long-run quality beats one beautiful story.",
+        "voice": "calm, structured, and allergic to overreaction",
+        "risk_style": "cautious",
+        "data_style": "rankings, xG, team strength, and long-run statistical baselines",
+        "debate_style": "asks whether a thesis survives the base rate",
+        "wealth_behavior": "protects credits and sizes down unless the statistical case is clean",
+        "trust_style": "trusts stable samples before fresh narratives",
+        "learning_style": "updates slowly when repeated exceptions prove real",
+        "ambition": "survive many rounds through disciplined allocation",
+        "fear": "chasing a hot anecdote into a bad stake",
+        "policy": {
+            "source_weights": {"stats": 0.62, "odds": 0.22, "news": 0.10, "debate": 0.06},
+            "risk_appetite": 0.055,
+            "edge_threshold": 0.12,
+            "query_budget": 1.3,
+            "herd_bias": -0.20,
+            "stake_multiplier": 0.55,
+            "debate_multiplier": 0.35,
+            "memory_recall_depth": 8,
+        },
+    },
+    "form_hunter": {
+        "label": "form hunter",
+        "belief": "Football turns when a live player bends the match.",
+        "voice": "sharp, alert, and momentum-sensitive",
+        "risk_style": "medium-high",
+        "data_style": "player form, recent momentum, confidence, and short-run team rhythm",
+        "debate_style": "defends fresh signals when the room is stuck on old averages",
+        "wealth_behavior": "takes small-to-medium shots when a form signal is underpriced",
+        "trust_style": "trusts fresh football context when it is specific",
+        "learning_style": "remembers which hot streaks were real and which were noise",
+        "ambition": "catch turning points before conservative ants move",
+        "fear": "confusing a highlight run with repeatable edge",
+        "policy": {
+            "source_weights": {"stats": 0.18, "odds": 0.18, "news": 0.48, "debate": 0.16},
+            "risk_appetite": 0.115,
+            "edge_threshold": 0.055,
+            "query_budget": 1.25,
+            "herd_bias": 0.05,
+            "stake_multiplier": 0.95,
+            "debate_multiplier": 0.85,
+            "memory_recall_depth": 7,
+        },
+    },
+    "tactical_scout": {
+        "label": "tactical scout",
+        "belief": "Matchups decide whether talent can express itself.",
+        "voice": "observant, concrete, and matchup-first",
+        "risk_style": "measured",
+        "data_style": "tactics, absences, fatigue, formations, travel, and style clashes",
+        "debate_style": "turns broad opinions into specific matchup claims",
+        "wealth_behavior": "stakes when the tactical path to the result is clear",
+        "trust_style": "trusts coherent football mechanisms over generic confidence",
+        "learning_style": "tracks which matchup patterns repeated across rounds",
+        "ambition": "be the ant that sees how the match is actually played",
+        "fear": "overfitting a clever tactical story",
+        "policy": {
+            "source_weights": {"stats": 0.24, "odds": 0.16, "news": 0.38, "debate": 0.22},
+            "risk_appetite": 0.09,
+            "edge_threshold": 0.07,
+            "query_budget": 1.4,
+            "herd_bias": -0.05,
+            "stake_multiplier": 0.85,
+            "debate_multiplier": 0.95,
+            "memory_recall_depth": 7,
+        },
+    },
+    "market_reader": {
+        "label": "market reader",
+        "belief": "The price is a signal, but mispriced context survives around the edges.",
+        "voice": "dry, selective, and price-aware",
+        "risk_style": "selective",
+        "data_style": "odds, market movement, liquidity, and whether new information is priced in",
+        "debate_style": "asks whether the thesis is already in the price",
+        "wealth_behavior": "waits for clean value instead of paying for activity",
+        "trust_style": "trusts the market until a specific mispricing is visible",
+        "learning_style": "updates when price memories show blind spots",
+        "ambition": "compound credits by avoiding bad prices",
+        "fear": "being seduced by narratives the market already solved",
+        "policy": {
+            "source_weights": {"stats": 0.14, "odds": 0.66, "news": 0.08, "debate": 0.12},
+            "risk_appetite": 0.075,
+            "edge_threshold": 0.08,
+            "query_budget": 1.1,
+            "herd_bias": -0.45,
+            "stake_multiplier": 0.80,
+            "debate_multiplier": 0.30,
+            "memory_recall_depth": 6,
+        },
+    },
+    "contrarian_risk": {
+        "label": "contrarian risk",
+        "belief": "The best survival jumps come from selective disagreement.",
+        "voice": "independent, spicy, and payoff-aware",
+        "risk_style": "bold but selective",
+        "data_style": "ignored angles, upside asymmetry, minority theses, and market blind spots",
+        "debate_style": "pushes the group to price the neglected case",
+        "wealth_behavior": "risks credits only when disagreement has real upside",
+        "trust_style": "trusts dissent when it has a concrete football mechanism",
+        "learning_style": "remembers when rebellion was insight and when it was ego",
+        "ambition": "earn reputation by being early against the room",
+        "fear": "becoming a reflexive risk machine",
+        "policy": {
+            "source_weights": {"stats": 0.20, "odds": 0.28, "news": 0.24, "debate": 0.28},
+            "risk_appetite": 0.145,
+            "edge_threshold": 0.045,
+            "query_budget": 1.0,
+            "herd_bias": -0.75,
+            "stake_multiplier": 1.20,
+            "debate_multiplier": -0.50,
+            "memory_recall_depth": 6,
+        },
+    },
     "rich_safe_allocator": {
         "label": "rich safe allocator",
         "belief": "Capital preservation beats heroic calls.",
@@ -279,6 +389,8 @@ def build_agent_mind(
         mind["social_class"] = social_class_for(bankroll=bankroll, accuracy=accuracy, generation=generation)
         mind.setdefault("life_status", "alive")
         mind.setdefault("memory_summary", {})
+        mind.setdefault("civic_reputation", {"score": 0.0, "events": []})
+        mind.setdefault("calibration_reputation", {"score": 0.0, "events": []})
         return mind
 
     archetype = _choose_archetype(index=index, genome=genome, rng=rng)
@@ -302,6 +414,8 @@ def build_agent_mind(
         "llm_model": genome.model,
         "life_status": "alive",
         "memory_summary": {},
+        "civic_reputation": {"score": 0.0, "events": []},
+        "calibration_reputation": {"score": 0.0, "events": []},
         "compiled_policy": deepcopy(card["policy"]),
     }
 
@@ -368,6 +482,8 @@ def mind_public_card(mind: dict) -> dict:
         "ambition": mind.get("ambition", ""),
         "fear": mind.get("fear", ""),
         "memory_summary": mind.get("memory_summary") or {},
+        "civic_reputation": mind.get("civic_reputation") or {"score": 0.0, "events": []},
+        "calibration_reputation": mind.get("calibration_reputation") or {"score": 0.0, "events": []},
     }
 
 
@@ -396,6 +512,11 @@ def memory_influence_weight(mind: dict) -> float:
         return float(explicit)
     archetype = str(mind.get("archetype") or "")
     weights = {
+        "stats_purist": 0.10,
+        "form_hunter": 0.12,
+        "tactical_scout": 0.11,
+        "market_reader": 0.08,
+        "contrarian_risk": 0.07,
         "data_hoarder": 0.18,
         "lineage_loyalist": 0.14,
         "source_auditor": 0.12,
@@ -444,17 +565,19 @@ def memory_seed_for_mind(mind: dict) -> str:
 def _choose_archetype(*, index: int, genome: Genome, rng: random.Random) -> str:
     persona = genome.persona.lower()
     if "contrarian" in persona or "value" in persona:
-        return "contrarian" if index % 2 else "market_purist"
-    if "scout" in persona or "news" in persona:
-        return "sentiment_scout"
+        return "contrarian_risk" if index % 2 else "market_reader"
+    if "scout" in persona or "tactic" in persona:
+        return "tactical_scout"
+    if "news" in persona or "form" in persona or "sentiment" in persona:
+        return "form_hunter"
     if "skeptic" in persona:
-        return "source_auditor"
-    if "crowd" in persona:
-        return "debate_follower"
-    if "model" in persona or "probabilist" in persona:
-        return "data_hoarder" if index % 3 == 0 else "market_purist"
+        return "stats_purist"
+    if "crowd" in persona or "market" in persona:
+        return "market_reader"
+    if "model" in persona or "probabilist" in persona or "stats" in persona:
+        return "stats_purist"
     if "risk" in persona:
-        return "degen_risk_taker"
+        return "contrarian_risk"
     if rng.random() < 0.08:
         return rng.choice(ARCHETYPE_ORDER)
     return ARCHETYPE_ORDER[index % len(ARCHETYPE_ORDER)]

@@ -6,7 +6,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from .agent import AntAgent
-from .models import CollectiveDecision, Forecast, MatchContext
+from .models import CivicAction, CollectiveDecision, Forecast, MatchContext
 
 ACCESS_MULTIPLIERS = {
     "public": 1.0,
@@ -16,6 +16,15 @@ ACCESS_MULTIPLIERS = {
 WORLD_VERIFIED_MULTIPLIER = 1.25
 VERIFIED_LINEAGE_MULTIPLIER = 1.1
 DEFAULT_COLLECTIVE_EDGE_THRESHOLD = 0.015
+SOCIETY_DECISION_WEIGHTS = {
+    "civic": 0.32,
+    "action_quality": 0.16,
+    "reputation": 0.12,
+    "risk": 0.14,
+    "commitment": 0.16,
+    "review": 0.12,
+    "blocker_penalty": 0.16,
+}
 
 
 @dataclass(frozen=True)
@@ -32,6 +41,8 @@ def build_collective_decision(
     match: MatchContext,
     agents: list[AntAgent],
     forecasts: list[Forecast],
+    civic_actions: list[CivicAction] | None = None,
+    society_state: dict | None = None,
     collective_edge_threshold: float = DEFAULT_COLLECTIVE_EDGE_THRESHOLD,
 ) -> CollectiveDecision:
     agents_by_id = {agent.agent_id: agent for agent in agents}
@@ -50,12 +61,22 @@ def build_collective_decision(
     agent_predictions = [_agent_prediction_payload(vote, match) for vote in votes]
     prediction_counts = _prediction_counts(agent_predictions)
     weighted_side_support = _weighted_side_support(votes)
+    forecast_weighted_side_support = dict(weighted_side_support)
+    society_decision = _society_decision_v2(
+        agents_by_id=agents_by_id,
+        forecasts=forecasts,
+        civic_actions=civic_actions or [],
+        society_state=society_state or {},
+    )
     recommendation_side = _collective_recommendation_side(
         weighted_side_support=weighted_side_support,
         raw_counts=raw_counts,
         weighted_edge=weighted_edge,
         collective_edge_threshold=collective_edge_threshold,
     )
+    if society_decision:
+        recommendation_side = society_decision["side"]
+        weighted_side_support = society_decision["normalized_scores"]
     prediction_side = recommendation_side
     prediction_outcome = _winner_label(prediction_side, match)
     recommendation_outcome = _winner_label(recommendation_side, match)
@@ -65,10 +86,14 @@ def build_collective_decision(
         weighted_edge=weighted_edge,
         support_margin=support_margin,
     )
-    confidence = _decision_confidence(
-        edge=prediction_value_signal,
-        support_margin=support_margin,
-        participation=len(votes),
+    confidence = (
+        society_decision["confidence"]
+        if society_decision
+        else _decision_confidence(
+            edge=prediction_value_signal,
+            support_margin=support_margin,
+            participation=len(votes),
+        )
     )
     calibrated_home_probability = _calibrated_home_probability(
         weighted_home_probability=weighted_home_probability,
@@ -99,21 +124,15 @@ def build_collective_decision(
             "market_home_probability": round(match.market_home_probability, 4),
         },
         method={
-            "name": "privilege_weighted_prediction_vote",
-            "description": (
-                "Every ant emits a post-debate prediction. Internally, the prediction is scored against "
-                "the market anchor so the colony can detect value. Votes are weighted by "
-                "knowledge access, World/lineage verification, historical accuracy, and conviction. "
-                "Votes with deeper visible evidence get a modest boost, while evidence-thin votes are damped. "
-                "For group-stage markets every ant must pick one outcome: home win, draw, or away win. "
-                "The final prediction and bet follow the strongest weighted outcome after debate."
-            ),
+            "name": "civic_society_decision_v2" if society_decision else "privilege_weighted_prediction_vote",
+            "description": _method_description(society_decision=bool(society_decision)),
             "collective_edge_threshold": collective_edge_threshold,
             "access_multipliers": ACCESS_MULTIPLIERS,
             "world_verified_multiplier": WORLD_VERIFIED_MULTIPLIER,
             "verified_lineage_multiplier": VERIFIED_LINEAGE_MULTIPLIER,
             "weight_cap": 4.0,
             "evidence_depth_range": [0.88, 1.16],
+            "society_decision_weights": SOCIETY_DECISION_WEIGHTS,
         },
         match_call={
             "predicted_winner": prediction_outcome,
@@ -127,16 +146,21 @@ def build_collective_decision(
             "winner": recommendation_outcome,
             "should_place_single_bet": True,
             "confidence_label": _confidence_label(confidence),
-            "rationale": _rationale(
-                side=recommendation_side,
-                match=match,
-                weighted_home_probability=weighted_home_probability,
-                weighted_edge=weighted_edge,
-                confidence=confidence,
-                support_margin=support_margin,
+            "rationale": (
+                _society_rationale(society_decision, match)
+                if society_decision
+                else _rationale(
+                    side=recommendation_side,
+                    match=match,
+                    weighted_home_probability=weighted_home_probability,
+                    weighted_edge=weighted_edge,
+                    confidence=confidence,
+                    support_margin=support_margin,
+                )
             ),
         },
         internal_metrics={
+            "decision_layer": "society_v2" if society_decision else "legacy_weighted_forecast",
             "weighted_home_probability": round(weighted_home_probability, 4),
             "weighted_away_probability": round(1.0 - weighted_home_probability, 4),
             "market_home_probability": round(match.market_home_probability, 4),
@@ -144,6 +168,7 @@ def build_collective_decision(
             "prediction_value_signal": round(prediction_value_signal, 4),
             "calibrated_home_probability": round(calibrated_home_probability, 4),
             "confidence": confidence,
+            "society_decision": society_decision or {},
         },
         score_projection=score_projection,
         vote_breakdown={
@@ -153,6 +178,7 @@ def build_collective_decision(
             "raw_scorelines": prediction_counts["scoreline"],
             "raw_total_goals": prediction_counts["total_goals"],
             "weighted_side_support": weighted_side_support,
+            "forecast_weighted_side_support": forecast_weighted_side_support,
             "support_margin": round(support_margin, 4),
             "average_weight": round(total_weight / len(votes), 4),
             "total_weight": round(total_weight, 4),
@@ -171,7 +197,8 @@ def _weighted_vote(agent: AntAgent, forecast: Forecast) -> WeightedVote:
     conviction = 0.65 + min(abs(forecast.edge) / 0.08, 1.35)
     budget = 1.0 + min(max(agent.genome.query_budget, 0.0), 3.0) * 0.05
     evidence_depth = _evidence_depth_multiplier(forecast.visible_findings)
-    raw_weight = access * world * lineage * reputation * conviction * budget * evidence_depth
+    participation = 1.0 if forecast.stake > 0.0 else 0.25
+    raw_weight = access * world * lineage * reputation * conviction * budget * evidence_depth * participation
     weight = min(raw_weight, 4.0)
     return WeightedVote(
         agent=agent,
@@ -186,6 +213,7 @@ def _weighted_vote(agent: AntAgent, forecast: Forecast) -> WeightedVote:
             "conviction": round(conviction, 4),
             "query_budget": round(budget, 4),
             "evidence_depth": round(evidence_depth, 4),
+            "participation": round(participation, 4),
         },
     )
 
@@ -238,6 +266,300 @@ def _weighted_side_support(votes: list[WeightedVote]) -> dict[str, float]:
         "draw": round(draw / total, 4),
         "away": round(away / total, 4),
     }
+
+
+def _society_decision_v2(
+    *,
+    agents_by_id: dict[str, AntAgent],
+    forecasts: list[Forecast],
+    civic_actions: list[CivicAction],
+    society_state: dict,
+) -> dict | None:
+    actions = [
+        action
+        for action in civic_actions
+        if action.civic_choice in {"home", "draw", "away"}
+        and action.status not in {"skipped_unavailable_judgment", "rejected_insufficient_credits"}
+    ]
+    actions = _latest_civic_actions_by_agent(actions)
+    if not actions:
+        return None
+
+    components = {
+        side: {"civic": 0.0, "action_quality": 0.0, "reputation": 0.0, "risk": 0.0, "commitment": 0.0}
+        for side in ("home", "draw", "away")
+    }
+    for action in actions:
+        side = action.civic_choice
+        agent = agents_by_id.get(action.agent_id)
+        base = _civic_action_base_weight(action)
+        reputation = _agent_reputation_multiplier(agent)
+        components[side]["civic"] += base * reputation
+        components[side]["action_quality"] += base * _civic_action_quality(action)
+        components[side]["reputation"] += base * reputation
+        components[side]["risk"] += base * _risk_coherence(action)
+
+    for forecast in forecasts:
+        if forecast.side not in {"home", "draw", "away"}:
+            continue
+        components[forecast.side]["commitment"] += _commitment_units(forecast.stake)
+
+    blocker_penalties = _society_blocker_penalties(society_state)
+    normalized_components = {
+        component: _normalize_side_scores({side: values[component] for side, values in components.items()})
+        for component in ("civic", "action_quality", "reputation", "risk", "commitment")
+    }
+    review_signal = _society_review_signal(society_state)
+    normalized_components["review"] = _normalize_side_scores(review_signal)
+    normalized_penalties = _normalize_side_scores(blocker_penalties)
+    raw_scores: dict[str, float] = {}
+    for side in ("home", "draw", "away"):
+        score = 0.0
+        for component, weight in SOCIETY_DECISION_WEIGHTS.items():
+            if component == "blocker_penalty":
+                continue
+            score += normalized_components[component][side] * weight
+        score -= normalized_penalties[side] * SOCIETY_DECISION_WEIGHTS["blocker_penalty"]
+        raw_scores[side] = round(max(0.0, score), 6)
+
+    normalized_scores = _normalize_side_scores(raw_scores)
+    side = max(normalized_scores, key=normalized_scores.get)
+    blockers = _society_open_blockers(society_state)
+    confidence = _society_decision_confidence(
+        normalized_scores=normalized_scores,
+        actions=actions,
+        selected_side=side,
+        blockers=blockers,
+        normalized_commitment=normalized_components["commitment"],
+    )
+    return {
+        "version": "civic_society_decision_v2",
+        "side": side,
+        "normalized_scores": normalized_scores,
+        "raw_scores": {key: round(value, 4) for key, value in raw_scores.items()},
+        "component_scores": {
+            key: {side: round(value, 4) for side, value in scores.items()}
+            for key, scores in normalized_components.items()
+        },
+        "blocker_penalties": {side: round(value, 4) for side, value in normalized_penalties.items()},
+        "reviews": _society_review_payloads(society_state),
+        "open_blockers": blockers,
+        "civic_action_count": len(actions),
+        "support_margin": round(_support_margin(normalized_scores), 4),
+        "confidence": confidence,
+        "weights": dict(SOCIETY_DECISION_WEIGHTS),
+    }
+
+
+def _normalize_side_scores(scores: dict[str, float]) -> dict[str, float]:
+    total = sum(max(float(value), 0.0) for value in scores.values())
+    if total <= 1e-9:
+        return {"home": 0.0, "draw": 0.0, "away": 0.0}
+    return {
+        "home": round(max(float(scores.get("home", 0.0)), 0.0) / total, 4),
+        "draw": round(max(float(scores.get("draw", 0.0)), 0.0) / total, 4),
+        "away": round(max(float(scores.get("away", 0.0)), 0.0) / total, 4),
+    }
+
+
+def _civic_action_base_weight(action: CivicAction) -> float:
+    if action.status == "accepted":
+        return max(float(action.weight or 0.0), 0.1)
+    if action.status == "reviewed":
+        return max(float(action.weight or 0.0), 0.1)
+    if action.status == "observed":
+        return 0.3
+    return 0.0
+
+
+def _latest_civic_actions_by_agent(actions: list[CivicAction]) -> list[CivicAction]:
+    latest: dict[str, tuple[int, int, CivicAction]] = {}
+    for index, action in enumerate(actions):
+        rank = _civic_action_phase_rank(action)
+        previous = latest.get(action.agent_id)
+        if previous is None or (rank, index) >= (previous[0], previous[1]):
+            latest[action.agent_id] = (rank, index, action)
+    return [
+        item[2]
+        for item in sorted(latest.values(), key=lambda value: (value[0], value[1], value[2].agent_id))
+    ]
+
+
+def _civic_action_phase_rank(action: CivicAction) -> int:
+    phase = str((action.metadata or {}).get("phase") or "")
+    if phase == "post_resolution_review" or action.action_id.startswith("civic_review:"):
+        return 2
+    return 1
+
+
+def _civic_action_quality(action: CivicAction) -> float:
+    if action.action_type == "commit_stake":
+        thesis_bonus = 0.04 if str((action.metadata or {}).get("thesis") or "").strip() else 0.0
+        signal_bonus = 0.03 if str((action.metadata or {}).get("main_signal") or "").strip() else 0.0
+        survival_bonus = 0.03 if str((action.metadata or {}).get("survival_reason") or "").strip() else 0.0
+        level = {"micro": 0.96, "small": 1.05, "medium": 1.12, "high": 1.18}.get(action.commitment_label, 1.0)
+        return round(level + thesis_bonus + signal_bonus + survival_bonus, 4)
+    if action.action_type == "challenge_source":
+        return 1.16
+    if action.action_type == "minority_report":
+        return 1.12
+    if action.action_type in {"request_evidence", "fund_scout"}:
+        return 1.08
+    if action.action_type == "call_discussion":
+        return 1.04
+    if action.action_type == "hold_position":
+        return 0.55
+    return 1.0
+
+
+def _risk_coherence(action: CivicAction) -> float:
+    metadata = action.metadata or {}
+    risk_read = str(metadata.get("risk_read") or "acceptable")
+    stake_level = str(metadata.get("stake_level") or action.commitment_label or "micro")
+    conviction = str(metadata.get("conviction") or "medium")
+    if risk_read == "too_risky":
+        return {"micro": 1.18, "small": 0.95, "medium": 0.58, "high": 0.35}.get(stake_level, 0.8)
+    if risk_read == "attractive":
+        base = {"micro": 0.68, "small": 0.9, "medium": 1.12, "high": 1.18}.get(stake_level, 0.9)
+        if stake_level == "high" and conviction != "high":
+            base -= 0.18
+        return round(max(base, 0.35), 4)
+    base = {"micro": 0.88, "small": 1.08, "medium": 1.12, "high": 0.82}.get(stake_level, 1.0)
+    if stake_level == "high" and conviction == "high":
+        base = 1.02
+    return round(base, 4)
+
+
+def _agent_reputation_multiplier(agent: AntAgent | None) -> float:
+    if agent is None:
+        return 1.0
+    civic = _mind_reputation_score(agent, "civic_reputation")
+    calibration = _mind_reputation_score(agent, "calibration_reputation")
+    value = 1.0 + civic * 0.3 + calibration * 0.2
+    return round(max(0.72, min(1.28, value)), 4)
+
+
+def _mind_reputation_score(agent: AntAgent, key: str) -> float:
+    reputation = (agent.mind or {}).get(key) or {}
+    try:
+        return max(-1.0, min(1.0, float(reputation.get("score") or 0.0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _commitment_units(stake: float) -> float:
+    if stake <= 0.0:
+        return 0.0
+    capped = min(float(stake), 20.0)
+    return capped ** 0.5
+
+
+def _society_blocker_penalties(society_state: dict) -> dict[str, float]:
+    penalties = {"home": 0.0, "draw": 0.0, "away": 0.0}
+    blockers = set(_society_open_blockers(society_state))
+    for key, factor, blocker in (
+        ("evidence_backlog", 0.05, "evidence_requests_open"),
+        ("source_audit_backlog", 0.14, "source_audits_open"),
+        ("discussion_backlog", 0.04, "discussion_calls_open"),
+        ("minority_reports", 0.03, "minority_reports_present"),
+    ):
+        if blocker not in blockers:
+            continue
+        for item in society_state.get(key, []) or []:
+            priority = _priority_penalty_multiplier(str(item.get("priority") or "low"))
+            context = item.get("choice_context") or {}
+            if not isinstance(context, dict):
+                continue
+            for side, count in context.items():
+                if side in penalties:
+                    penalties[side] += factor * priority * max(int(count or 0), 0)
+    for effect in society_state.get("source_audit_effects", []) or []:
+        if not isinstance(effect, dict) or effect.get("status") != "downgraded":
+            continue
+        context = effect.get("choice_context") or {}
+        if not isinstance(context, dict):
+            continue
+        for side, count in context.items():
+            if side in penalties:
+                penalties[side] += 0.18 * max(int(count or 0), 0)
+    return penalties
+
+
+def _society_review_signal(society_state: dict) -> dict[str, float]:
+    signal = {"home": 0.0, "draw": 0.0, "away": 0.0}
+    for review in society_state.get("reviews", []) or []:
+        if not isinstance(review, dict):
+            continue
+        side = str(review.get("affected_side") or "none")
+        if side not in signal:
+            continue
+        effect = str(review.get("decision_effect") or "")
+        support = max(int(review.get("support_count") or 0), 1)
+        if effect == "clear_blocker":
+            signal[side] += 1.0 * support
+        elif effect == "carry_minority":
+            signal[side] += 0.45 * support
+        elif effect == "reserve_budget":
+            signal[side] += 0.3 * support
+    return signal
+
+
+def _society_review_payloads(society_state: dict) -> list[dict]:
+    reviews = society_state.get("reviews") or []
+    if not isinstance(reviews, list):
+        return []
+    payloads = []
+    for review in reviews:
+        if not isinstance(review, dict):
+            continue
+        payloads.append(
+            {
+                "review_id": review.get("review_id") or "",
+                "review_type": review.get("review_type") or "",
+                "affected_side": review.get("affected_side") or "none",
+                "status": review.get("status") or "",
+                "decision_effect": review.get("decision_effect") or "",
+                "support_count": review.get("support_count") or 0,
+                "summary": review.get("summary") or "",
+            }
+        )
+    return payloads[:8]
+
+
+def _priority_penalty_multiplier(priority: str) -> float:
+    if priority == "high":
+        return 1.4
+    if priority == "medium":
+        return 1.0
+    return 0.65
+
+
+def _society_open_blockers(society_state: dict) -> list[str]:
+    guidance = society_state.get("execution_guidance") or society_state.get("decision_guidance") or {}
+    blockers = guidance.get("open_blockers") or []
+    if not isinstance(blockers, list):
+        return []
+    return [str(blocker) for blocker in blockers if str(blocker)]
+
+
+def _society_decision_confidence(
+    *,
+    normalized_scores: dict[str, float],
+    actions: list[CivicAction],
+    selected_side: str,
+    blockers: list[str],
+    normalized_commitment: dict[str, float],
+) -> float:
+    margin = _support_margin(normalized_scores)
+    participation_score = min(len(actions) / 80.0, 1.0)
+    commitment_alignment = float(normalized_commitment.get(selected_side, 0.0))
+    blocker_penalty = min(len(blockers) * 0.08, 0.32)
+    if "weak_sources_found" in blockers:
+        blocker_penalty += 0.08
+    confidence = 0.24 + min(margin / 0.28, 1.0) * 0.38 + participation_score * 0.14
+    confidence += min(commitment_alignment, 1.0) * 0.12
+    confidence -= blocker_penalty
+    return round(max(0.18, min(confidence, 0.9)), 4)
 
 
 def _support_margin(weighted_side_support: dict[str, float]) -> float:
@@ -404,6 +726,7 @@ def _agent_prediction_payload(vote: WeightedVote, match: MatchContext) -> dict:
         "weight": vote.weight,
         "access_tier": forecast.access_tier,
         "risk_profile": forecast.risk_profile,
+        "survival_thesis": _survival_thesis_payload(forecast),
         "reason": forecast.decision_reason,
     }
 
@@ -478,6 +801,25 @@ def _prediction_counts(agent_predictions: list[dict]) -> dict[str, dict[str, int
     }
 
 
+def _method_description(*, society_decision: bool) -> str:
+    if society_decision:
+        return (
+            "When CAMEL-backed civic actions exist, the final side is selected by a civic society score: "
+            "social choice, thesis quality, reputation, survival-risk coherence, capped financial commitment, "
+            "post-resolution reviews, and unresolved blockers. "
+            "The legacy weighted forecast remains available as a baseline signal, but stake size alone cannot "
+            "dominate the colony decision."
+        )
+    return (
+        "Every ant emits a post-debate prediction. Internally, the prediction is scored against "
+        "the market anchor so the colony can detect value. Votes are weighted by "
+        "knowledge access, World/lineage verification, historical accuracy, and conviction. "
+        "Votes with deeper visible evidence get a modest boost, while evidence-thin votes are damped. "
+        "For group-stage markets every ant must pick one outcome: home win, draw, or away win. "
+        "The final prediction and bet follow the strongest weighted outcome after debate."
+    )
+
+
 def _rationale(
     *,
     side: str,
@@ -493,6 +835,21 @@ def _rationale(
     return (
         f"Weighted colony interactions favor {team} with {value} value "
         f"and {confidence_label} confidence."
+    )
+
+
+def _society_rationale(society_decision: dict, match: MatchContext) -> str:
+    side = str(society_decision.get("side") or "draw")
+    team = _winner_label(side, match)
+    margin = float(society_decision.get("support_margin") or 0.0)
+    blockers = society_decision.get("open_blockers") or []
+    blocker_text = "no open blockers"
+    if blockers:
+        blocker_text = "open blockers: " + ", ".join(str(item) for item in blockers)
+    return (
+        f"Civic society score favors {team} with margin {margin:.2f}; "
+        f"the decision combines civic choice, thesis quality, reputation, survival-risk coherence, "
+        f"capped commitment, post-resolution reviews, and {blocker_text}."
     )
 
 
@@ -544,7 +901,21 @@ def _agent_vote_payload(vote: WeightedVote, match: MatchContext) -> dict:
         "market_edge": forecast.market_edge,
         "edge": forecast.edge,
         "stake": forecast.stake,
+        "survival_thesis": _survival_thesis_payload(forecast),
         "weight": vote.weight,
         "weight_components": vote.components,
         "decision_reason": forecast.decision_reason,
+    }
+
+
+def _survival_thesis_payload(forecast: Forecast) -> dict:
+    judgment = forecast.judgment or {}
+    return {
+        "pick": forecast.side,
+        "thesis": judgment.get("thesis") or "",
+        "main_signal": judgment.get("main_signal") or "",
+        "conviction": judgment.get("conviction") or "",
+        "risk_read": judgment.get("risk_read") or "",
+        "stake_level": judgment.get("stake_level") or "",
+        "survival_reason": judgment.get("survival_reason") or "",
     }

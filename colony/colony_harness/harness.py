@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import random
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -21,8 +22,14 @@ from .economy import (
     settle_room_payments,
 )
 from .genes import random_genome
-from .memory import build_ant_memory_store, forecast_memory_signal, forecast_memory_text, recall_query_for_match
-from .models import DebateClaim, DebateRoom, KnowledgeView, MatchContext, RoundResult
+from .memory import (
+    SURVIVAL_MEMORY_VERSION,
+    build_ant_memory_store,
+    forecast_memory_signal,
+    forecast_memory_text,
+    recall_query_for_match,
+)
+from .models import DebateClaim, DebateRoom, JudgmentRevision, KnowledgeView, MatchContext, RoundResult
 from .mind import (
     apply_mind_to_genome,
     build_agent_mind,
@@ -32,7 +39,24 @@ from .mind import (
     refresh_mind_after_round,
 )
 from .population import normalize_agent_lineages
+from .reasoning import CamelReasoner, apply_judgment_to_forecast
 from .social import build_social_actions
+from .society import (
+    apply_calibration_reputation_changes,
+    apply_execution_guidance,
+    apply_civic_reputation_changes,
+    apply_society_commitment_policy,
+    apply_source_audit_effects,
+    build_society_state,
+    build_society_reviews,
+    civic_layer_metrics,
+    execute_society_resolutions,
+    resolve_civic_actions,
+    resolve_review_civic_actions,
+    resolve_society_backlogs,
+    settle_civic_rewards,
+    society_commitment_policy,
+)
 from .voice import TemplateVoiceModel, VoiceModel
 from .wallets import WalletStore
 from .world_graph import build_world_graph
@@ -73,6 +97,9 @@ class ColonyHarness:
         colony_config: dict | None = None,
         memory_influence: bool = False,
         memory_write_enabled: bool = True,
+        judgment_reasoner: CamelReasoner | None = None,
+        judgment_agent_count: int = 0,
+        judgment_concurrency: int = 1,
     ) -> None:
         if agents is not None:
             population_size = len(agents)
@@ -89,6 +116,9 @@ class ColonyHarness:
         self.voice_model = voice_model or TemplateVoiceModel()
         self.memory_influence = memory_influence
         self.memory_write_enabled = memory_write_enabled
+        self.judgment_reasoner = judgment_reasoner
+        self.judgment_agent_count = max(0, judgment_agent_count)
+        self.judgment_concurrency = max(1, judgment_concurrency)
         self.colony_config = normalize_colony_config(colony_config) if colony_config else None
         self.wallet_store = (
             WalletStore(wallet_store_path, provider=wallet_provider, dynamic_env_path=dynamic_env_path)
@@ -162,7 +192,7 @@ class ColonyHarness:
     def select_debaters(self) -> list[tuple[AntAgent, str]]:
         ranked = sorted(
             self.agents,
-            key=lambda ant: (ant.bankroll * 0.7) + (ant.accuracy * 100.0 * 0.3),
+            key=_debate_score,
             reverse=True,
         )
         elite_count = max(1, self.speaker_slots // 2)
@@ -171,14 +201,40 @@ class ColonyHarness:
         wildcards = self.rng.sample(remaining, k=self.speaker_slots - elite_count)
         selected: list[tuple[AntAgent, str]] = []
         for rank, agent in enumerate(elite, start=1):
-            score = (agent.bankroll * 0.7) + (agent.accuracy * 100.0 * 0.3)
-            selected.append((agent, f"elite rank {rank}: bankroll/accuracy score {score:.2f}"))
+            score = _debate_score(agent)
+            civic_bonus = _civic_reputation_debate_bonus(agent)
+            selected.append((
+                agent,
+                f"elite rank {rank}: debate score {score:.2f}, civic reputation bonus {civic_bonus:.2f}",
+            ))
         for agent in wildcards:
             selected.append((agent, "wildcard: exploration slot for diversity and noisy debate"))
         return selected
 
     def select_speakers(self) -> list[AntAgent]:
         return [agent for agent, _reason in self.select_debaters()]
+
+    def _judgment_agent_ids(self) -> set[str]:
+        if self.judgment_reasoner is None or self.judgment_agent_count <= 0:
+            return set()
+        count = min(self.judgment_agent_count, len(self.agents))
+        selected: list[AntAgent] = []
+        seen_archetypes: set[str] = set()
+        ranked = sorted(self.agents, key=lambda ant: (-ant.bankroll, ant.agent_id))
+        for agent in ranked:
+            archetype = str((agent.mind or {}).get("archetype") or agent.genome.persona)
+            if archetype in seen_archetypes:
+                continue
+            selected.append(agent)
+            seen_archetypes.add(archetype)
+            if len(selected) >= count:
+                return {item.agent_id for item in selected}
+        for agent in ranked:
+            if agent not in selected:
+                selected.append(agent)
+            if len(selected) >= count:
+                break
+        return {item.agent_id for item in selected}
 
     def run_round(self, match: MatchContext) -> RoundResult:
         self._ensure_agent_minds(apply_policy=False)
@@ -199,22 +255,32 @@ class ColonyHarness:
 
         debate_signal = feed.consensus_home_probability()
         forecasts = []
+        judgment_contexts = []
         allow_draw = market_spec.market_type == "three_way"
+        judgment_agent_ids = self._judgment_agent_ids()
+        judgment_debate_messages = _judgment_debate_messages(rooms, feed)
         for agent in self.agents:
             view = knowledge_views_by_agent[agent.agent_id]
             visible_match = view.to_match_context(match)
             signal = memory_signals.get(agent.agent_id) or {}
             use_memory = self.memory_influence and bool(signal.get("available"))
-            forecasts.append(
-                agent.forecast(
-                    visible_match,
-                    debate_signal,
-                    view.access_tier,
-                    len(view.visible_findings),
-                    allow_draw=allow_draw,
-                    memory_home_probability=signal.get("home_probability") if use_memory else None,
-                    memory_confidence=float(signal.get("confidence") or 0.0) if use_memory else 0.0,
-                )
+            forecast = agent.forecast(
+                visible_match,
+                debate_signal,
+                view.access_tier,
+                len(view.visible_findings),
+                allow_draw=allow_draw,
+                memory_home_probability=signal.get("home_probability") if use_memory else None,
+                memory_confidence=float(signal.get("confidence") or 0.0) if use_memory else 0.0,
+            )
+            if self.judgment_reasoner is not None and agent.agent_id in judgment_agent_ids:
+                judgment_contexts.append((len(forecasts), agent, visible_match))
+            forecasts.append(forecast)
+        if judgment_contexts:
+            forecasts = self._apply_natural_judgments(
+                forecasts=forecasts,
+                contexts=judgment_contexts,
+                debate_messages=judgment_debate_messages,
             )
         recall_counts = {
             str(item.get("agent_id")): len((item.get("recall") or {}).get("results") or [])
@@ -224,6 +290,73 @@ class ColonyHarness:
             replace(forecast, memory_recall_count=recall_counts.get(forecast.agent_id, 0))
             for forecast in forecasts
         ]
+        civic_actions, civic_summary = resolve_civic_actions(
+            match=match,
+            agents=self.agents,
+            forecasts=forecasts,
+            ledger=ledger,
+        )
+        society_state = build_society_state(match=match, civic_actions=civic_actions, rooms=rooms)
+        society_resolutions, society_resolution_summary = resolve_society_backlogs(
+            match=match,
+            society_state=society_state,
+        )
+        society_executions, society_execution_summary = execute_society_resolutions(
+            match=match,
+            resolutions=society_resolutions,
+            rooms=rooms,
+        )
+        audited_findings, source_audit_effects, source_audit_effect_summary = apply_source_audit_effects(
+            findings=match.findings,
+            executions=society_executions,
+        )
+        society_reviews, society_review_summary = build_society_reviews(
+            executions=society_executions,
+            source_audit_effects=source_audit_effects,
+        )
+        effective_match = replace(match, findings=audited_findings)
+        civic_rewards, civic_reward_summary = settle_civic_rewards(
+            agents=self.agents,
+            civic_actions=civic_actions,
+            executions=society_executions,
+            ledger=ledger,
+        )
+        civic_reputation_changes, civic_reputation_summary = apply_civic_reputation_changes(
+            agents=self.agents,
+            civic_actions=civic_actions,
+            executions=society_executions,
+        )
+        society_state = apply_execution_guidance(society_state, society_executions)
+        society_policy = society_commitment_policy(society_state)
+        society_state["commitment_policy"] = society_policy
+        society_state["resolutions"] = [resolution.to_dict() for resolution in society_resolutions]
+        society_state["executions"] = [execution.to_dict() for execution in society_executions]
+        society_state["source_audit_effects"] = source_audit_effects
+        society_state["reviews"] = [review.to_dict() for review in society_reviews]
+        review_judgment_contexts = _review_judgment_contexts(
+            forecasts=forecasts,
+            agents=self.agents,
+            knowledge_views_by_agent=knowledge_views_by_agent,
+            effective_match=effective_match,
+            judgment_agent_ids=judgment_agent_ids,
+        )
+        judgment_revisions: list[JudgmentRevision] = []
+        if society_reviews and review_judgment_contexts:
+            forecasts, judgment_revisions = self._apply_review_judgments(
+                forecasts=forecasts,
+                contexts=review_judgment_contexts,
+                review_messages=_society_review_messages(society_reviews),
+                review_ids=[review.review_id for review in society_reviews],
+            )
+        review_civic_actions, review_civic_summary = resolve_review_civic_actions(
+            match=match,
+            forecasts=forecasts,
+            revisions=judgment_revisions,
+        )
+        society_state["judgment_revisions"] = [revision.to_dict() for revision in judgment_revisions]
+        society_state["review_civic_actions"] = [action.to_dict() for action in review_civic_actions]
+        decision_civic_actions = civic_actions + review_civic_actions
+        forecasts = apply_society_commitment_policy(forecasts, society_policy)
         forecasts = debit_internal_stakes(agents=self.agents, forecasts=forecasts, ledger=ledger)
         forecasts_by_agent = {forecast.agent_id: forecast for forecast in forecasts}
         social_actions = build_social_actions(
@@ -238,23 +371,64 @@ class ColonyHarness:
             for agent, forecast in zip(self.agents, forecasts, strict=True)
         ]
 
-        home_bets = sum(1 for forecast in forecasts if forecast.side == "home")
-        draw_bets = sum(1 for forecast in forecasts if forecast.side == "draw")
-        away_bets = sum(1 for forecast in forecasts if forecast.side == "away")
+        active_forecasts = [forecast for forecast in forecasts if forecast.stake > 0.0]
+        home_bets = sum(1 for forecast in active_forecasts if forecast.side == "home")
+        draw_bets = sum(1 for forecast in active_forecasts if forecast.side == "draw")
+        away_bets = sum(1 for forecast in active_forecasts if forecast.side == "away")
+        participating_bets = home_bets + draw_bets + away_bets
         prediction_sides = Counter(_prediction_side(forecast.home_probability) for forecast in forecasts)
         total_staked = round(sum(forecast.stake for forecast in forecasts), 4)
+        civic_metrics = civic_layer_metrics(
+            civic_summary=civic_summary,
+            population=self.population_size,
+            participating_bets=participating_bets,
+            total_staked=total_staked,
+        )
         risk_profiles = Counter(forecast.risk_profile for forecast in forecasts)
+        judgment_intents = Counter(
+            str((forecast.judgment or {}).get("intent") or "baseline")
+            for forecast in forecasts
+        )
+        judgment_actions = Counter(
+            str((forecast.judgment or {}).get("action") or (forecast.judgment or {}).get("intent") or "baseline")
+            for forecast in forecasts
+        )
+        judgment_commitments = Counter(
+            str((forecast.judgment or {}).get("commitment_label") or "baseline")
+            for forecast in forecasts
+        )
+        judgment_stake_levels = Counter(
+            str((forecast.judgment or {}).get("stake_level") or "baseline")
+            for forecast in forecasts
+        )
+        judgment_risk_reads = Counter(
+            str((forecast.judgment or {}).get("risk_read") or "baseline")
+            for forecast in forecasts
+        )
+        judgment_main_signals = Counter(
+            str((forecast.judgment or {}).get("main_signal") or "baseline")
+            for forecast in forecasts
+        )
 
         debate_quality = _debate_quality_metrics(rooms)
         collective_decision = build_collective_decision(
-            match=match,
+            match=effective_match,
             agents=self.agents,
             forecasts=forecasts,
+            civic_actions=decision_civic_actions,
+            society_state=society_state,
         )
+        collective_decision = _apply_society_policy_to_decision(collective_decision, society_policy)
         settlement_summary = settle_internal_pool(
             market_spec=market_spec,
             agents=self.agents,
             ledger=ledger,
+        )
+        calibration_reputation_changes, calibration_reputation_summary = apply_calibration_reputation_changes(
+            round_id=match.round_id,
+            agents=self.agents,
+            forecasts=forecasts,
+            result_side=market_spec.result_side,
         )
         class_transitions = self._refresh_agent_classes(agent_minds_before)
         memory_writes = (
@@ -268,6 +442,13 @@ class ColonyHarness:
         )
         summary = {
             "population": self.population_size,
+            "home_team": match.home_team,
+            "away_team": match.away_team,
+            "side_labels": {
+                "home": match.home_team,
+                "draw": "Draw",
+                "away": match.away_team,
+            },
             "speaker_slots": self.speaker_slots,
             "market_type": market_spec.market_type,
             "market_outcomes": market_spec.outcomes,
@@ -279,23 +460,63 @@ class ColonyHarness:
             **debate_quality,
             "debate_home_probability": None if debate_signal is None else round(debate_signal, 4),
             "market_home_probability": match.market_home_probability,
-            "findings": len(match.findings),
-            "public_findings": sum(1 for finding in match.findings if finding.access_level == "public"),
-            "shared_findings": sum(1 for finding in match.findings if finding.access_level == "shared"),
-            "private_findings": sum(1 for finding in match.findings if finding.access_level == "private"),
+            "findings": len(effective_match.findings),
+            "public_findings": sum(1 for finding in effective_match.findings if finding.access_level == "public"),
+            "shared_findings": sum(1 for finding in effective_match.findings if finding.access_level == "shared"),
+            "private_findings": sum(1 for finding in effective_match.findings if finding.access_level == "private"),
             "public_views": sum(1 for view in knowledge_views_by_agent.values() if view.access_tier == "public"),
             "shared_views": sum(1 for view in knowledge_views_by_agent.values() if view.access_tier == "shared"),
             "private_views": sum(1 for view in knowledge_views_by_agent.values() if view.access_tier == "private"),
             "home_bets": home_bets,
             "draw_bets": draw_bets,
             "away_bets": away_bets,
+            "stake_counts_by_team": {
+                match.home_team: home_bets,
+                "Draw": draw_bets,
+                match.away_team: away_bets,
+            },
             "prediction_home": prediction_sides.get("home", 0),
             "prediction_draw": prediction_sides.get("draw", 0),
             "prediction_away": prediction_sides.get("away", 0),
-            "participating_bets": home_bets + draw_bets + away_bets,
+            "prediction_counts_by_team": {
+                match.home_team: prediction_sides.get("home", 0),
+                "Draw": prediction_sides.get("draw", 0),
+                match.away_team: prediction_sides.get("away", 0),
+            },
+            "participating_bets": participating_bets,
+            "judgment_reasoner": "camel" if self.judgment_reasoner is not None else "baseline",
+            "judgment_agent_count": len(judgment_agent_ids),
+            "judgment_intents": dict(judgment_intents),
+            "judgment_actions": dict(judgment_actions),
+            "judgment_commitments": dict(judgment_commitments),
+            "judgment_stake_levels": dict(judgment_stake_levels),
+            "judgment_risk_reads": dict(judgment_risk_reads),
+            "judgment_main_signals": dict(judgment_main_signals),
+            **civic_summary,
+            **civic_metrics,
+            "society_posture": society_state.get("decision_guidance", {}).get("posture", ""),
+            "society_open_blockers": society_state.get("decision_guidance", {}).get("open_blockers", []),
+            "society_commitment_mode": society_state.get("decision_guidance", {}).get("commitment_mode", ""),
+            "society_execution_mode": society_policy.get("execution_mode", ""),
+            "financial_execution_label": society_policy.get("financial_execution_label", ""),
+            "society_stake_scale": society_policy.get("stake_scale", 1.0),
+            "society_authorized_single_bet": society_policy.get("should_place_single_bet", True),
+            **society_resolution_summary,
+            **society_execution_summary,
+            **source_audit_effect_summary,
+            **society_review_summary,
+            **review_civic_summary,
+            **civic_reward_summary,
+            **civic_reputation_summary,
+            **calibration_reputation_summary,
             "risk_profiles": dict(risk_profiles),
             "total_staked": total_staked,
             "decision_side": collective_decision.recommendation["side"],
+            "decision_label": {
+                "home": match.home_team,
+                "draw": "Draw",
+                "away": match.away_team,
+            }.get(str(collective_decision.recommendation["side"]), str(collective_decision.recommendation["side"])),
             "decision_winner": collective_decision.recommendation["winner"],
             "decision_confidence": collective_decision.internal_metrics["confidence"],
             "decision_market_edge": collective_decision.internal_metrics["market_edge"],
@@ -314,7 +535,7 @@ class ColonyHarness:
             "social_classes": dict(Counter(str(agent.mind.get("social_class") or "unknown") for agent in self.agents)),
         }
         all_debate_claims = [claim for room in rooms for claim in room.claims] + feed.claims
-        world_graph = build_world_graph(match, claims=all_debate_claims, forecasts=forecasts)
+        world_graph = build_world_graph(effective_match, claims=all_debate_claims, forecasts=forecasts)
 
         return RoundResult(
             round_id=match.round_id,
@@ -322,9 +543,18 @@ class ColonyHarness:
             claims=feed.claims,
             rooms=rooms,
             social_actions=social_actions,
+            civic_actions=civic_actions,
+            society_resolutions=society_resolutions,
+            society_executions=society_executions,
+            society_reviews=society_reviews,
+            judgment_revisions=judgment_revisions,
+            review_civic_actions=review_civic_actions,
+            civic_rewards=civic_rewards,
+            civic_reputation_changes=civic_reputation_changes,
+            calibration_reputation_changes=calibration_reputation_changes,
             forecasts=forecasts,
             commitments=commitments,
-            findings=match.findings,
+            findings=effective_match.findings,
             knowledge_views=list(knowledge_views_by_agent.values()),
             world_graph=world_graph,
             collective_decision=collective_decision,
@@ -337,6 +567,7 @@ class ColonyHarness:
             memory_recall=memory_recall,
             memory_writes=memory_writes,
             class_transitions=class_transitions,
+            society_state=society_state,
             evolution_trace={
                 "mode": "round_observation",
                 "note": "Full reproduction still runs through evolve_population.py; this trace records class and memory movement for the round.",
@@ -344,6 +575,120 @@ class ColonyHarness:
                 "social_classes": summary["social_classes"],
             },
         )
+
+    def _apply_natural_judgments(
+        self,
+        *,
+        forecasts: list,
+        contexts: list[tuple[int, AntAgent, MatchContext]],
+        debate_messages: list[str],
+    ) -> list:
+        if self.judgment_reasoner is None or not contexts:
+            return forecasts
+
+        updated = list(forecasts)
+        worker_count = min(self.judgment_concurrency, len(contexts))
+
+        def judge(context: tuple[int, AntAgent, MatchContext]) -> tuple[int, object]:
+            index, agent, visible_match = context
+            reasoner = CamelReasoner(self.judgment_reasoner.config)
+            judgment = reasoner.private_judgment(
+                agent=agent,
+                match=visible_match,
+                debate_messages=debate_messages,
+            )
+            return index, apply_judgment_to_forecast(
+                forecast=forecasts[index],
+                match=visible_match,
+                judgment=judgment,
+            )
+
+        if worker_count <= 1:
+            for context in contexts:
+                index, forecast = judge(context)
+                updated[index] = forecast
+            return updated
+
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [executor.submit(judge, context) for context in contexts]
+            for future in as_completed(futures):
+                index, forecast = future.result()
+                updated[index] = forecast
+        return updated
+
+    def _apply_review_judgments(
+        self,
+        *,
+        forecasts: list,
+        contexts: list[tuple[int, AntAgent, MatchContext]],
+        review_messages: list[str],
+        review_ids: list[str],
+    ) -> tuple[list, list[JudgmentRevision]]:
+        if self.judgment_reasoner is None or not contexts:
+            return forecasts, []
+
+        updated = list(forecasts)
+        revisions: list[JudgmentRevision] = []
+        worker_count = min(self.judgment_concurrency, len(contexts))
+
+        def judge(context: tuple[int, AntAgent, MatchContext]) -> tuple[int, object, JudgmentRevision]:
+            index, agent, visible_match = context
+            previous = forecasts[index]
+            previous_action = str((previous.judgment or {}).get("action") or "baseline")
+            reasoner = CamelReasoner(self.judgment_reasoner.config)
+            judgment = reasoner.private_judgment(
+                agent=agent,
+                match=visible_match,
+                debate_messages=_review_messages_for_forecast(previous, review_messages),
+            )
+            review_base = replace(
+                previous,
+                decision_reason=(
+                    f"previous pre-review choice={previous.side}; "
+                    f"action={previous_action}; stake={previous.stake:.4f}"
+                ),
+            )
+            revised = apply_judgment_to_forecast(
+                forecast=review_base,
+                match=visible_match,
+                judgment=judgment,
+            )
+            revised_judgment = {
+                **dict(revised.judgment or {}),
+                "phase": "post_resolution_review",
+                "previous_side": previous.side,
+                "previous_action": previous_action,
+                "review_ids": review_ids,
+            }
+            revised = replace(
+                revised,
+                judgment=revised_judgment,
+                decision_reason=f"{revised.decision_reason}; post-resolution review considered",
+            )
+            revision = _judgment_revision_from_forecasts(
+                round_id=visible_match.round_id,
+                index=index,
+                previous=previous,
+                revised=revised,
+                review_ids=review_ids,
+            )
+            return index, revised, revision
+
+        if worker_count <= 1:
+            for context in contexts:
+                index, forecast, revision = judge(context)
+                updated[index] = forecast
+                revisions.append(revision)
+            return updated, revisions
+
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [executor.submit(judge, context) for context in contexts]
+            for future in as_completed(futures):
+                index, forecast, revision = future.result()
+                updated[index] = forecast
+                revisions.append(revision)
+        revisions.sort(key=lambda revision: revision.revision_id)
+        return updated, revisions
 
     def _recall_agent_memories(self, match: MatchContext) -> list[dict]:
         rows = []
@@ -357,7 +702,12 @@ class ColonyHarness:
                 agent_id=agent.agent_id,
                 query=query,
                 limit=memory_recall_depth(agent.mind),
-                metadata={"round_id": match.round_id, "home_team": match.home_team, "away_team": match.away_team},
+                metadata={
+                    "round_id": match.round_id,
+                    "home_team": match.home_team,
+                    "away_team": match.away_team,
+                    "memory_version": SURVIVAL_MEMORY_VERSION,
+                },
             )
             signal = forecast_memory_signal(recall)
             rows.append(
@@ -392,6 +742,7 @@ class ColonyHarness:
             )
             metadata = {
                 "round_id": match.round_id,
+                "memory_version": SURVIVAL_MEMORY_VERSION,
                 "home_team": match.home_team,
                 "away_team": match.away_team,
                 "memory_type": "forecast_attempt",
@@ -442,6 +793,32 @@ class ColonyHarness:
         events.extend({"event_type": "social_action", **action.to_dict()} for action in result.social_actions)
         events.append({"event_type": "world_graph", **result.world_graph.to_dict()})
         events.extend({"event_type": "debate_claim", **claim.to_dict()} for claim in result.claims)
+        events.extend(
+            {"event_type": "natural_judgment", **forecast.judgment}
+            for forecast in result.forecasts
+            if forecast.judgment
+        )
+        events.extend({"event_type": "civic_action", **action.to_dict()} for action in result.civic_actions)
+        events.extend({"event_type": "judgment_revision", **revision.to_dict()} for revision in result.judgment_revisions)
+        events.extend({"event_type": "review_civic_action", **action.to_dict()} for action in result.review_civic_actions)
+        events.extend({"event_type": "society_resolution", **resolution.to_dict()} for resolution in result.society_resolutions)
+        events.extend({"event_type": "society_execution", **execution.to_dict()} for execution in result.society_executions)
+        events.extend({"event_type": "society_review", **review.to_dict()} for review in result.society_reviews)
+        events.extend(
+            {"event_type": "source_audit_effect", **effect}
+            for effect in result.society_state.get("source_audit_effects", [])
+            if isinstance(effect, dict)
+        )
+        events.extend({"event_type": "civic_reward", **reward.to_dict()} for reward in result.civic_rewards)
+        events.extend(
+            {"event_type": "civic_reputation_change", **change.to_dict()}
+            for change in result.civic_reputation_changes
+        )
+        events.extend(
+            {"event_type": "calibration_reputation_change", **change.to_dict()}
+            for change in result.calibration_reputation_changes
+        )
+        events.append({"event_type": "society_state", **result.society_state})
         events.extend({"event_type": "forecast", **forecast.to_dict()} for forecast in result.forecasts)
         events.extend({"event_type": "internal_stake", **stake.to_dict()} for stake in result.internal_stakes)
         events.append({"event_type": "collective_decision", **result.collective_decision.to_dict()})
@@ -500,6 +877,9 @@ class ColonyHarness:
                         selection_reason=(
                             f"{role} in {venue.room_id}: topic={venue.topic}, "
                             f"participants={len(room_profiles)}, "
+                            f"debate_score={representative.score:.2f}, "
+                            f"civic_rep={_civic_reputation_score(representative.agent):.3f}, "
+                            f"civic_bonus={_civic_reputation_debate_bonus(representative.agent):.2f}, "
                             f"carried_from={','.join(prior_rooms) if prior_rooms else 'none'}"
                         ),
                         access_tier=representative.view.access_tier,
@@ -600,7 +980,16 @@ class ColonyHarness:
 
 
 def _debate_score(agent: AntAgent) -> float:
-    return (agent.bankroll * 0.7) + (agent.accuracy * 100.0 * 0.3)
+    return (agent.bankroll * 0.7) + (agent.accuracy * 100.0 * 0.3) + _civic_reputation_debate_bonus(agent)
+
+
+def _civic_reputation_score(agent: AntAgent) -> float:
+    reputation = (agent.mind or {}).get("civic_reputation") or {}
+    return max(-1.0, min(1.0, float(reputation.get("score") or 0.0)))
+
+
+def _civic_reputation_debate_bonus(agent: AntAgent) -> float:
+    return round(max(-4.0, min(6.0, _civic_reputation_score(agent) * 12.0)), 4)
 
 
 def _debate_quality_metrics(rooms: list[DebateRoom]) -> dict:
@@ -918,6 +1307,135 @@ def _roles_for_representatives(count: int) -> list[str]:
     if count > len(roles):
         roles.extend(["skeptic"] * (count - len(roles)))
     return roles[:count]
+
+
+def _judgment_debate_messages(rooms: list[DebateRoom], feed: DebateFeed) -> list[str]:
+    messages: list[str] = []
+    for room in rooms:
+        if room.synthesis:
+            messages.append(f"{room.room_id} synthesis: {room.synthesis}")
+        for claim in room.claims[:2]:
+            messages.append(
+                f"{claim.speaker_name} ({claim.debate_role or claim.claim_type}) said: {claim.message}"
+            )
+        if len(messages) >= 8:
+            break
+    for claim in feed.claims[:2]:
+        messages.append(f"final chamber said: {claim.message}")
+    return messages[:8]
+
+
+def _review_judgment_contexts(
+    *,
+    forecasts: list,
+    agents: list[AntAgent],
+    knowledge_views_by_agent: dict[str, KnowledgeView],
+    effective_match: MatchContext,
+    judgment_agent_ids: set[str],
+) -> list[tuple[int, AntAgent, MatchContext]]:
+    agents_by_id = {agent.agent_id: agent for agent in agents}
+    contexts: list[tuple[int, AntAgent, MatchContext]] = []
+    for index, forecast in enumerate(forecasts):
+        if forecast.agent_id not in judgment_agent_ids:
+            continue
+        agent = agents_by_id.get(forecast.agent_id)
+        view = knowledge_views_by_agent.get(forecast.agent_id)
+        if agent is None or view is None:
+            continue
+        contexts.append((index, agent, _visible_effective_match(view, effective_match)))
+    return contexts
+
+
+def _visible_effective_match(view: KnowledgeView, effective_match: MatchContext) -> MatchContext:
+    effective_by_id = {finding.finding_id: finding for finding in effective_match.findings}
+    visible_findings = [
+        effective_by_id.get(finding.finding_id, finding)
+        for finding in view.visible_findings
+    ]
+    return replace(effective_match, findings=visible_findings)
+
+
+def _society_review_messages(reviews) -> list[str]:
+    messages = []
+    for review in reviews[:6]:
+        side = review.affected_side if review.affected_side != "none" else "all sides"
+        messages.append(
+            f"POST-RESOLUTION REVIEW {review.review_id}: {review.decision_effect} "
+            f"for {side}; status={review.status}; {review.summary}"
+        )
+    return messages
+
+
+def _review_messages_for_forecast(forecast, review_messages: list[str]) -> list[str]:
+    previous_action = str((forecast.judgment or {}).get("action") or "baseline")
+    previous_line = str((forecast.judgment or {}).get("one_line") or forecast.decision_reason)
+    return [
+        f"Your previous civic choice was {forecast.side}; previous action={previous_action}; previous stake={forecast.stake:.4f}.",
+        f"Previous reason: {previous_line}",
+        *review_messages,
+        "You may keep your prior choice, reduce risk, request more evidence, or change side if the reviews undermine your evidence.",
+    ]
+
+
+def _judgment_revision_from_forecasts(
+    *,
+    round_id: str,
+    index: int,
+    previous,
+    revised,
+    review_ids: list[str],
+) -> JudgmentRevision:
+    previous_action = str((previous.judgment or {}).get("action") or "baseline")
+    revised_action = str((revised.judgment or {}).get("action") or "baseline")
+    changed = (
+        previous.side != revised.side
+        or previous_action != revised_action
+        or round(float(previous.stake), 4) != round(float(revised.stake), 4)
+    )
+    return JudgmentRevision(
+        revision_id=f"judgment_revision:{round_id}:{index + 1:05d}",
+        round_id=round_id,
+        agent_id=revised.agent_id,
+        phase="post_resolution_review",
+        previous_side=previous.side,
+        revised_side=revised.side,
+        previous_action=previous_action,
+        revised_action=revised_action,
+        previous_stake=round(float(previous.stake), 4),
+        revised_stake=round(float(revised.stake), 4),
+        changed=changed,
+        reason=str((revised.judgment or {}).get("one_line") or ""),
+        review_ids=review_ids,
+        judgment=dict(revised.judgment or {}),
+        metadata={
+            "previous_reason": previous.decision_reason,
+            "revised_reason": revised.decision_reason,
+        },
+    )
+
+
+def _apply_society_policy_to_decision(decision, policy: dict):
+    recommendation = dict(decision.recommendation)
+    original_rationale = str(recommendation.get("rationale") or "")
+    policy_reason = str(policy.get("reason") or "")
+    recommendation.update(
+        {
+            "should_place_single_bet": bool(policy.get("should_place_single_bet", True)),
+            "financial_execution": {
+                "mode": policy.get("execution_mode", ""),
+                "label": policy.get("financial_execution_label", ""),
+                "stake_scale": policy.get("stake_scale", 1.0),
+                "max_commitment_label": policy.get("max_commitment_label", ""),
+                "blockers": policy.get("blockers", []),
+            },
+            "rationale": (
+                f"{original_rationale} Society policy: {policy_reason}"
+                if policy_reason
+                else original_rationale
+            ),
+        }
+    )
+    return replace(decision, recommendation=recommendation)
 
 
 def _dominant_label(labels: object) -> str:

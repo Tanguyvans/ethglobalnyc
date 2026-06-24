@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from .harness import ColonyHarness
+from .mind import ARCHETYPE_ORDER
 from .memory import JsonAntMemoryStore, forecast_memory_signal, forecast_memory_text
 from .models import MatchContext
 
@@ -102,6 +103,13 @@ class MindMemoryTests(unittest.TestCase):
         self.assertTrue(result.forecasts[0].archetype)
         self.assertTrue(result.forecasts[0].mind_summary)
         self.assertIn("memory_backend", result.summary)
+
+    def test_new_round_uses_survival_thesis_personas(self) -> None:
+        harness = ColonyHarness(population_size=10, speaker_slots=3, seed=3)
+        archetypes = {str(agent.mind.get("archetype")) for agent in harness.agents}
+
+        self.assertTrue(archetypes)
+        self.assertTrue(archetypes.issubset(set(ARCHETYPE_ORDER)))
 
     def test_round_can_disable_memory_writes_for_benchmark(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -16,6 +16,7 @@ from typing import Any
 
 
 DEFAULT_MEMORY_PATH = Path("colony/secrets/ant-memory.jsonl")
+SURVIVAL_MEMORY_VERSION = "survival_thesis_v1"
 
 
 class AntMemoryStore:
@@ -173,8 +174,8 @@ def build_ant_memory_store() -> AntMemoryStore:
 
 def recall_query_for_match(*, home_team: str, away_team: str, archetype: str) -> str:
     return (
-        f"Past forecasting memories for {home_team} vs {away_team}; "
-        f"source reliability, debate influence, and mistakes for archetype {archetype}."
+        f"Survival Thesis V1 memories for {home_team} vs {away_team}; "
+        f"risk sizing, thesis quality, debate influence, and mistakes for archetype {archetype}."
     )
 
 
@@ -229,13 +230,22 @@ def _score_memory(row: dict, query: str) -> int:
 def _scoped_records(records: list[dict], metadata: dict) -> list[dict]:
     home_team = str(metadata.get("home_team") or "").strip()
     away_team = str(metadata.get("away_team") or "").strip()
+    memory_version = str(metadata.get("memory_version") or "").strip()
     if not home_team or not away_team:
-        return records
+        scoped = records
+    else:
+        scoped = [
+            row
+            for row in records
+            if (row.get("metadata") or {}).get("home_team") == home_team
+            and (row.get("metadata") or {}).get("away_team") == away_team
+        ]
+    if not memory_version:
+        return scoped
     return [
         row
-        for row in records
-        if (row.get("metadata") or {}).get("home_team") == home_team
-        and (row.get("metadata") or {}).get("away_team") == away_team
+        for row in scoped
+        if (row.get("metadata") or {}).get("memory_version") == memory_version
     ]
 
 

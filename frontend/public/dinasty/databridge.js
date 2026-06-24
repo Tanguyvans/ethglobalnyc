@@ -37,7 +37,20 @@ DN.databridge = (function () {
 
   function marketSideLabel(side, source) {
     const labels = marketOutcomeLabels(source);
+    if (side === 'pass') return 'No stake';
     return labels[side] || String(side || 'unknown');
+  }
+
+  function qualitativeLean(homeProbability, source) {
+    if (homeProbability == null) return '';
+    const value = Number(homeProbability);
+    if (!Number.isFinite(value)) return '';
+    const labels = marketOutcomeLabels(source);
+    if (value >= 0.62) return ' · strong ' + labels.home + ' lean';
+    if (value >= 0.54) return ' · soft ' + labels.home + ' lean';
+    if (value <= 0.38) return ' · strong ' + labels.away + ' lean';
+    if (value <= 0.46) return ' · soft ' + labels.away + ' lean';
+    return ' · balanced lean';
   }
 
   function marketSideCountsText(values, source) {
@@ -78,11 +91,10 @@ DN.databridge = (function () {
 
     const q = [];
     if (summary) {
-      const labels = marketOutcomeLabels(summary);
+      const lean = qualitativeLean(summary.market_home_probability, summary).replace(/^ · /, '');
       q.push([
-        'Round resolved — market probability for ' + labels.home + ' ' +
-          Math.round(summary.market_home_probability * 100) +
-          '%, $' + r1(summary.total_staked) + ' staked across ' + summary.population +
+        'Round resolved — ' + lean +
+          ', ' + r1(summary.total_staked) + ' credits committed across ' + summary.population +
           ' agents (' + marketSideCountsText({ home: summary.home_bets, draw: summary.draw_bets, away: summary.away_bets }, summary) + ').',
         'Forecast', COL.economy,
       ]);
@@ -99,9 +111,10 @@ DN.databridge = (function () {
       .forEach((f) => {
         const agent = records.find((r) => r.agent_id === f.agent_id);
         const nm = (agent && (agent.ens_name || agent.name)) || (f.agent_id || 'agent').replace('_', '-');
+        const lean = qualitativeLean(f.home_probability, summary || f).replace(/^ · /, '');
         q.push([
-          nm + ' commits ' + r1(f.stake) + ' USDC ' + f.side + ' @ ' +
-            Math.round(f.home_probability * 100) + '% (edge ' + r1(f.edge) + ')',
+          nm + ' commits ' + r1(f.stake) + ' credits on ' + marketSideLabel(f.side, summary || f) +
+            ' · ' + lean + ' · edge read ' + r1(f.edge),
           'Forecast', COL.forecast,
         ]);
       });
@@ -110,7 +123,7 @@ DN.databridge = (function () {
     if (top) {
       q.push([
         (top.ens_name || top.name || top.agent_id) + ' leads the gene pool — ' +
-          Math.round(top.accuracy * 100) + '% accuracy, ' + r1(top.bankroll) + ' USDC bankroll.',
+          Math.round(top.accuracy * 100) + '% accuracy, ' + r1(top.bankroll) + ' credits bankroll.',
         'Lineage', COL.lineage,
       ]);
       if (top.wallet_address) {
@@ -135,7 +148,7 @@ DN.databridge = (function () {
       if (!grp.length) return;
       const accAvg = grp.reduce((s, r) => s + r.accuracy, 0) / grp.length;
       const bankAvg = grp.reduce((s, r) => s + r.bankroll, 0) / grp.length;
-      const treasury = grp.reduce((s, r) => s + r.bankroll, 0); // ~real USDC held
+      const treasury = grp.reduce((s, r) => s + r.bankroll, 0); // internal credits held
       const stakedNow = grp.reduce((s, r) => s + (stakeByAgent[r.agent_id] || 0), 0);
       c.stats.population = grp.length;
       c.stats.accuracy = Math.round(accAvg * 100);
@@ -578,10 +591,10 @@ DN.databridge = (function () {
     if (event.event_type === 'forecast') {
       const side = event.side || 'pass';
       const stake = event.stake == null ? '' : ' · stake ' + Number(event.stake || 0).toFixed(2);
-      const pFirst = event.home_probability == null ? '' : ' · ' + marketSideLabel('home', event) + ' ' + Math.round(Number(event.home_probability || 0) * 100) + '%';
+      const lean = qualitativeLean(event.home_probability, event);
       return {
         level: 'VOTE',
-        message: (event.agent_id || 'ant') + ' votes ' + marketSideLabel(side, event) + stake + pFirst,
+        message: (event.agent_id || 'ant') + ' votes ' + marketSideLabel(side, event) + stake + lean,
       };
     }
     if (event.event_type === 'collective_decision') {

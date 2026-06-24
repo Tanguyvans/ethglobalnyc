@@ -20,6 +20,34 @@ from .world_graph import KG_SCHEMA_VERSION, _evidence_rejection_reasons
 
 KG_FORBIDDEN_CLAIM_TYPES = {"team_history"}
 
+CIVIC_ACTION_LABELS = {
+    "commit_stake": "commit stake",
+    "vote_only": "vote only",
+    "request_evidence": "request evidence",
+    "challenge_source": "challenge source",
+    "call_discussion": "call discussion",
+    "minority_report": "minority report",
+    "fund_scout": "fund scout",
+    "hold_position": "hold position",
+}
+CIVIC_EFFECT_LABELS = {
+    "stake_commitment": "stake commitment",
+    "civic_vote": "civic vote",
+    "evidence_request": "evidence request",
+    "source_audit": "source audit",
+    "discussion_call": "discussion call",
+    "minority_report": "minority report",
+    "scout_funding": "scout funding",
+    "observation": "observation",
+}
+INTENT_LABELS = {
+    "bet": "commit stake",
+    "pass": "vote only",
+    "buy_info": "request evidence",
+    "ask_debate": "ask debate",
+    "watch": "watch",
+}
+
 
 def _pct(value: float | None) -> str:
     if value is None:
@@ -65,6 +93,27 @@ def write_compact_run_artifacts(
     _write_social_feed(path / "social_feed.md", result)
     _write_social_actions(path / "social_feed.json", result)
     _write_social_actions_jsonl(path / "actions.jsonl", result)
+    _write_civic_actions(path / "civic_actions.json", result)
+    _write_civic_actions_jsonl(path / "civic_actions.jsonl", result)
+    _write_judgment_revisions(path / "judgment_revisions.json", result)
+    _write_judgment_revisions_jsonl(path / "judgment_revisions.jsonl", result)
+    _write_review_civic_actions(path / "review_civic_actions.json", result)
+    _write_review_civic_actions_jsonl(path / "review_civic_actions.jsonl", result)
+    _write_society_resolutions(path / "society_resolutions.json", result)
+    _write_society_resolutions_jsonl(path / "society_resolutions.jsonl", result)
+    _write_society_executions(path / "society_executions.json", result)
+    _write_society_executions_jsonl(path / "society_executions.jsonl", result)
+    _write_society_reviews(path / "society_reviews.json", result)
+    _write_society_reviews_jsonl(path / "society_reviews.jsonl", result)
+    _write_source_audit_effects(path / "source_audit_effects.json", result)
+    _write_source_audit_effects_jsonl(path / "source_audit_effects.jsonl", result)
+    _write_civic_rewards(path / "civic_rewards.json", result)
+    _write_civic_rewards_jsonl(path / "civic_rewards.jsonl", result)
+    _write_civic_reputation_changes(path / "civic_reputation_changes.json", result)
+    _write_civic_reputation_changes_jsonl(path / "civic_reputation_changes.jsonl", result)
+    _write_calibration_reputation_changes(path / "calibration_reputation_changes.json", result)
+    _write_calibration_reputation_changes_jsonl(path / "calibration_reputation_changes.jsonl", result)
+    _write_society_state(path / "society_state.json", result)
     _write_social_profiles(path / "social_profiles.json", result)
     _write_agent_minds(path / "agent_minds.json", result)
     _write_memory_recall(path / "memory_recall.json", result)
@@ -77,7 +126,7 @@ def write_compact_run_artifacts(
     _write_participants(path / "participants.json", result)
     _write_debate_trace(path / "debate_trace.json", result)
     _write_conversation_memory(path / "conversation_memory.json", result)
-    _write_forecasts(path / "forecasts.csv", result)
+    _write_forecasts(path / "forecasts.csv", match, result)
     _write_collective_decision(path / "decision.json", result)
     _write_compact_collective_decision(path / "decision.compact.json", result)
     _write_vote_trace(path / "vote_trace.json", result)
@@ -103,8 +152,8 @@ def _write_summary(path: Path, match: MatchContext, result: RoundResult) -> None
         "",
         f"- Home: {match.home_team}",
         f"- Away: {match.away_team}",
-        f"- Market anchor: {_room_lean(summary['market_home_probability'])}",
-        f"- Debate lean: {_room_lean(summary['debate_home_probability'])}",
+        f"- Market anchor: {_room_lean(summary['market_home_probability'], match)}",
+        f"- Debate lean: {_room_lean(summary['debate_home_probability'], match)}",
         "",
         "## Population",
         "",
@@ -112,42 +161,61 @@ def _write_summary(path: Path, match: MatchContext, result: RoundResult) -> None
         f"- Room budget: {summary['speaker_slots']}",
         f"- Debate rooms: {summary.get('room_count', 0)} rooms, {summary.get('room_claims', 0)} room claims, {summary.get('final_claims', 0)} final claims",
         f"- Social actions: {len(result.social_actions)} grounded posts/replies/reactions/prediction cards",
+        f"- Civic actions: {summary.get('civic_action_count', 0)} natural actions, effects={_counter_text(summary.get('civic_effect_counts', {}), CIVIC_EFFECT_LABELS)}",
+        f"- Civic layer: {_human_side_text(summary.get('civic_decision_note', 'n/a'), match)}",
+        f"- Society posture: {summary.get('society_posture', 'n/a')} blockers={_display_list(summary.get('society_open_blockers', []))}",
+        f"- Financial execution: {summary.get('financial_execution_label', 'n/a')} stake_scale={summary.get('society_stake_scale', 'n/a')} single_bet={summary.get('society_authorized_single_bet', 'n/a')}",
+        f"- Society resolutions: {summary.get('society_resolution_count', 0)} statuses={_counter_text(summary.get('society_resolution_statuses', {}))}",
+        f"- Society executions: {summary.get('society_execution_count', 0)} statuses={_counter_text(summary.get('society_execution_statuses', {}))}",
+        f"- Society reviews: {summary.get('society_review_count', 0)} effects={_counter_text(summary.get('society_review_effects', {}))}",
+        f"- Source audit effects: {summary.get('source_audit_effect_count', 0)} statuses={_counter_text(summary.get('source_audit_effect_statuses', {}))}",
+        f"- Civic rewards: {summary.get('civic_reward_count', 0)} total={summary.get('civic_reward_total', 0.0)}",
+        f"- Civic reputation: changes={summary.get('civic_reputation_change_count', 0)} delta={summary.get('civic_reputation_delta_total', 0.0)}",
+        f"- Calibration reputation: changes={summary.get('calibration_reputation_change_count', 0)} delta={summary.get('calibration_reputation_delta_total', 0.0)}",
         f"- Debate quality: {summary.get('dispute_count', 0)} disputes, {summary.get('subject_count', 0)} evidence subjects, {summary.get('subject_shift_count', 0)} subject shifts",
         f"- Findings: {summary['findings']} public={summary['public_findings']} shared={summary['shared_findings']} private={summary['private_findings']}",
         f"- Knowledge views: public={summary['public_views']} shared={summary['shared_views']} private={summary['private_views']}",
         f"- Risk profiles: {_risk_profile_summary(summary.get('risk_profiles', {}))}",
+        f"- Natural judgment actions: {_counter_text(summary.get('judgment_actions', {}), CIVIC_ACTION_LABELS)}",
+        f"- Natural judgment commitments: {_counter_text(summary.get('judgment_commitments', {}))}",
+        f"- Survival stake levels: {_counter_text(summary.get('judgment_stake_levels', {}))}",
+        f"- Survival risk reads: {_counter_text(summary.get('judgment_risk_reads', {}))}",
+        f"- Main thesis signals: {_counter_text(summary.get('judgment_main_signals', {}))}",
+        f"- Baseline intent compatibility: {_counter_text(summary.get('judgment_intents', {}), INTENT_LABELS)}",
+        f"- Review judgments: {summary.get('review_judgment_count', 0)} revisions, changed={summary.get('review_judgment_changed_count', 0)}",
+        f"- Civic resources: action_points={summary.get('civic_action_points_spent', 0)} credits={summary.get('civic_credits_spent', 0.0)}",
         f"- Archetypes: {_counter_text(summary.get('archetypes', {}))}",
         f"- Social classes: {_counter_text(summary.get('social_classes', {}))}",
         f"- Memory: backend={summary.get('memory_backend', 'n/a')} recalls={summary.get('memory_recalls', 0)} writes={summary.get('memory_writes', 0)}",
         "",
-        "## Probability Lean Distribution",
+        "## Baseline Model Lean Distribution",
         "",
-        f"- {match.home_team}/home predictions: {summary.get('prediction_home', 0)}",
+        f"- {match.home_team}: {summary.get('prediction_home', 0)}",
         f"- Draw predictions: {summary.get('prediction_draw', 0)}",
-        f"- {match.away_team}/away predictions: {summary.get('prediction_away', 0)}",
+        f"- {match.away_team}: {summary.get('prediction_away', 0)}",
         "",
-        "## Forecast Vote Distribution",
+        "## Stake Distribution",
         "",
-        f"- Home bets: {summary['home_bets']}",
-        f"- Draw bets: {summary.get('draw_bets', 0)}",
-        f"- Away bets: {summary['away_bets']}",
+        f"- {match.home_team} stakes: {summary['home_bets']}",
+        f"- Draw stakes: {summary.get('draw_bets', 0)}",
+        f"- {match.away_team} stakes: {summary['away_bets']}",
         "",
-        "## Betting",
+        "## Financial Commitments",
         "",
         f"- Market type: {summary.get('market_type', 'three_way')}",
         f"- Settlement status: {summary.get('settlement_status', 'pending')}",
-        f"- Home bets: {summary['home_bets']}",
-        f"- Draw bets: {summary.get('draw_bets', 0)}",
-        f"- Away bets: {summary['away_bets']}",
+        f"- {match.home_team} stakes: {summary['home_bets']}",
+        f"- Draw stakes: {summary.get('draw_bets', 0)}",
+        f"- {match.away_team} stakes: {summary['away_bets']}",
         f"- Participation: {summary.get('participating_bets', summary['home_bets'] + summary['away_bets'])}/{summary['population']}",
-        f"- Total staked: {summary['total_staked']}",
+        f"- Total committed: {summary['total_staked']}",
         f"- Economy receipts: {summary.get('payment_receipts', 0)} payments, {summary.get('balance_updates', 0)} balance updates",
-        f"- Treasury: {summary.get('treasury_balance', 0.0)} USDC",
+        f"- Treasury: {summary.get('treasury_balance', 0.0)} internal credits",
         "",
         "## Collective Decision",
         "",
         f"- Prediction: {result.collective_decision.prediction['sentence']}",
-        f"- Recommendation: {summary.get('decision_side', 'n/a')} ({summary.get('decision_winner', 'n/a')})",
+        f"- Recommendation: {_recommendation_text(summary, match)}",
         f"- Value: {result.collective_decision.prediction.get('value', 'n/a')}",
         f"- Confidence: {result.collective_decision.prediction.get('confidence', 'n/a')}",
         f"- Score call: {result.collective_decision.score_projection['most_likely_score']['label']}",
@@ -158,6 +226,27 @@ def _write_summary(path: Path, match: MatchContext, result: RoundResult) -> None
         "- `social_feed.md`: MiroFish-style social interaction feed grounded in evidence.",
         "- `social_feed.json`: structured social actions with evidence cards.",
         "- `actions.jsonl`: replayable social action stream.",
+        "- `civic_actions.json`: replayable civic/economic actions derived from natural judgments.",
+        "- `civic_actions.jsonl`: JSONL stream of civic/economic actions.",
+        "- `judgment_revisions.json`: post-resolution natural judgment revisions.",
+        "- `judgment_revisions.jsonl`: JSONL stream of post-resolution judgment revisions.",
+        "- `review_civic_actions.json`: civic actions emitted by review judgments.",
+        "- `review_civic_actions.jsonl`: JSONL stream of review civic actions.",
+        "- `society_resolutions.json`: executable tasks derived from civic backlogs.",
+        "- `society_resolutions.jsonl`: JSONL stream of executable society tasks.",
+        "- `society_executions.json`: local execution results for society tasks.",
+        "- `society_executions.jsonl`: JSONL stream of local society execution results.",
+        "- `society_reviews.json`: post-resolution review notes consumed by the civic decision layer.",
+        "- `society_reviews.jsonl`: JSONL stream of post-resolution reviews.",
+        "- `source_audit_effects.json`: finding-level effects from source audit executions.",
+        "- `source_audit_effects.jsonl`: JSONL stream of source audit effects.",
+        "- `civic_rewards.json`: fake-credit rewards paid for useful civic work.",
+        "- `civic_rewards.jsonl`: JSONL stream of civic reward payments.",
+        "- `civic_reputation_changes.json`: non-monetary civic reputation changes from useful work.",
+        "- `civic_reputation_changes.jsonl`: JSONL stream of civic reputation changes.",
+        "- `calibration_reputation_changes.json`: outcome-time calibration reputation changes from known results.",
+        "- `calibration_reputation_changes.jsonl`: JSONL stream of calibration reputation changes.",
+        "- `society_state.json`: current civic backlogs, source audits, discussion queue, and decision guidance.",
         "- `social_profiles.json`: per-ant persona, risk, stance, activity, influence, and timing profile.",
         "- `agent_minds.json`: readable ant persona cards, social classes, beliefs, and memory summaries.",
         "- `memory_recall.json`: per-ant memory lookups performed before forecasting.",
@@ -349,7 +438,141 @@ def _write_social_actions_jsonl(path: Path, result: RoundResult) -> None:
             handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _write_civic_actions(path: Path, result: RoundResult) -> None:
+    actions = [action.to_dict() for action in result.civic_actions]
+    path.write_text(json.dumps(actions, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_civic_actions_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for action in result.civic_actions:
+            event = {"event_type": "civic_action", **action.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_judgment_revisions(path: Path, result: RoundResult) -> None:
+    revisions = [revision.to_dict() for revision in result.judgment_revisions]
+    path.write_text(json.dumps(revisions, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_judgment_revisions_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for revision in result.judgment_revisions:
+            event = {"event_type": "judgment_revision", **revision.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_review_civic_actions(path: Path, result: RoundResult) -> None:
+    actions = [action.to_dict() for action in result.review_civic_actions]
+    path.write_text(json.dumps(actions, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_review_civic_actions_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for action in result.review_civic_actions:
+            event = {"event_type": "review_civic_action", **action.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_society_resolutions(path: Path, result: RoundResult) -> None:
+    resolutions = [resolution.to_dict() for resolution in result.society_resolutions]
+    path.write_text(json.dumps(resolutions, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_society_resolutions_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for resolution in result.society_resolutions:
+            event = {"event_type": "society_resolution", **resolution.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_society_executions(path: Path, result: RoundResult) -> None:
+    executions = [execution.to_dict() for execution in result.society_executions]
+    path.write_text(json.dumps(executions, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_society_executions_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for execution in result.society_executions:
+            event = {"event_type": "society_execution", **execution.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_society_reviews(path: Path, result: RoundResult) -> None:
+    reviews = [review.to_dict() for review in result.society_reviews]
+    path.write_text(json.dumps(reviews, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_society_reviews_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for review in result.society_reviews:
+            event = {"event_type": "society_review", **review.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _source_audit_effects(result: RoundResult) -> list[dict]:
+    effects = result.society_state.get("source_audit_effects") or []
+    if not isinstance(effects, list):
+        return []
+    return [dict(effect) for effect in effects if isinstance(effect, dict)]
+
+
+def _write_source_audit_effects(path: Path, result: RoundResult) -> None:
+    path.write_text(
+        json.dumps(_source_audit_effects(result), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_source_audit_effects_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for effect in _source_audit_effects(result):
+            event = {"event_type": "source_audit_effect", **effect}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_civic_rewards(path: Path, result: RoundResult) -> None:
+    rewards = [reward.to_dict() for reward in result.civic_rewards]
+    path.write_text(json.dumps(rewards, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_civic_rewards_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for reward in result.civic_rewards:
+            event = {"event_type": "civic_reward", **reward.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_civic_reputation_changes(path: Path, result: RoundResult) -> None:
+    changes = [change.to_dict() for change in result.civic_reputation_changes]
+    path.write_text(json.dumps(changes, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_civic_reputation_changes_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for change in result.civic_reputation_changes:
+            event = {"event_type": "civic_reputation_change", **change.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_calibration_reputation_changes(path: Path, result: RoundResult) -> None:
+    changes = [change.to_dict() for change in result.calibration_reputation_changes]
+    path.write_text(json.dumps(changes, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_calibration_reputation_changes_jsonl(path: Path, result: RoundResult) -> None:
+    with path.open("w", encoding="utf-8") as handle:
+        for change in result.calibration_reputation_changes:
+            event = {"event_type": "calibration_reputation_change", **change.to_dict()}
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _write_society_state(path: Path, result: RoundResult) -> None:
+    path.write_text(json.dumps(result.society_state, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def _write_social_profiles(path: Path, result: RoundResult) -> None:
+    minds_by_agent = {mind.get("agent_id"): mind for mind in result.agent_minds}
     profiles = [
         {
             "agent_id": forecast.agent_id,
@@ -367,6 +590,8 @@ def _write_social_profiles(path: Path, result: RoundResult) -> None:
             "visible_findings": forecast.visible_findings,
             "archetype": forecast.archetype,
             "social_class": forecast.social_class,
+            "civic_reputation": (minds_by_agent.get(forecast.agent_id) or {}).get("civic_reputation") or {},
+            "calibration_reputation": (minds_by_agent.get(forecast.agent_id) or {}).get("calibration_reputation") or {},
             "mind_summary": forecast.mind_summary,
             "memory_recall_count": forecast.memory_recall_count,
             "pick": forecast.side,
@@ -532,14 +757,44 @@ def _write_social_activity_config(path: Path, result: RoundResult) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _room_lean(value: float | None) -> str:
+def _room_lean(value: float | None, match: MatchContext | None = None) -> str:
     if value is None:
         return "unclear"
     if value >= 0.515:
-        return "leans home"
+        return f"leans {_side_label('home', match)}"
     if value <= 0.485:
-        return "leans away"
+        return f"leans {_side_label('away', match)}"
     return "contested"
+
+
+def _side_label(side: object, match: MatchContext | None) -> str:
+    labels = {
+        "home": match.home_team if match is not None else "home",
+        "draw": "Draw",
+        "away": match.away_team if match is not None else "away",
+    }
+    return labels.get(str(side), str(side))
+
+
+def _human_side_text(text: object, match: MatchContext | None) -> str:
+    value = str(text)
+    replacements = {
+        "leans home": f"leans {_side_label('home', match)}",
+        "leans away": f"leans {_side_label('away', match)}",
+        "leans draw": "leans Draw",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    return value
+
+
+def _recommendation_text(payload: dict, match: MatchContext | None) -> str:
+    side = payload.get("decision_side") or payload.get("side")
+    label = str(payload.get("decision_label") or _side_label(side, match))
+    winner = str(payload.get("decision_winner") or payload.get("winner") or "").strip()
+    if not winner or winner.lower() == label.lower():
+        return label
+    return f"{label} ({winner})"
 
 
 def _display_tags(tags: list[str]) -> str:
@@ -813,7 +1068,7 @@ def _finalize_debater_memory(record: dict) -> dict:
     }
 
 
-def _write_forecasts(path: Path, result: RoundResult) -> None:
+def _write_forecasts(path: Path, match: MatchContext, result: RoundResult) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
@@ -843,14 +1098,36 @@ def _write_forecasts(path: Path, result: RoundResult) -> None:
                 "edge_threshold",
                 "edge",
                 "side",
+                "side_label",
                 "stake",
                 "bankroll",
+                "credits_balance",
+                "thesis",
+                "main_signal",
+                "conviction",
+                "risk_read",
+                "stake_level",
+                "survival_reason",
                 "decision_reason",
+                "judgment",
             ],
         )
         writer.writeheader()
         for forecast in result.forecasts:
-            writer.writerow(forecast.to_dict())
+            row = forecast.to_dict()
+            judgment = forecast.judgment or {}
+            row.update(
+                {
+                    "thesis": judgment.get("thesis") or "",
+                    "side_label": _side_label(forecast.side, match),
+                    "main_signal": judgment.get("main_signal") or "",
+                    "conviction": judgment.get("conviction") or "",
+                    "risk_read": judgment.get("risk_read") or "",
+                    "stake_level": judgment.get("stake_level") or "",
+                    "survival_reason": judgment.get("survival_reason") or "",
+                }
+            )
+            writer.writerow(row)
 
 
 def _write_participants(path: Path, result: RoundResult) -> None:
@@ -1012,8 +1289,8 @@ def _write_vote_trace(path: Path, result: RoundResult) -> None:
     payload = {
         "round_id": result.round_id,
         "note": (
-            "raw_forecast_sides are actual bet/pick votes; raw_prediction_winners are probability-implied "
-            "match winners from each ant's post-debate probability."
+            "raw_forecast_sides are actual bet/pick votes; raw_prediction_winners are "
+            "baseline-model winners from each ant's post-debate lean."
         ),
         "method": decision.method,
         "final_prediction": decision.prediction,
@@ -1158,7 +1435,7 @@ def _write_run_report(path: Path, match: MatchContext, result: RoundResult) -> N
     for room in result.rooms:
         lines.append(
             f"- {room.room_id}: {len(room.participant_ids)} ants, reps={len(room.representative_ids)}, "
-            f"focus={room.evidence_focus}, lean={_room_lean(room.synthesis_home_probability)}, "
+            f"focus={room.evidence_focus}, lean={_room_lean(room.synthesis_home_probability, match)}, "
             f"claims={len(room.claims)}"
         )
 
@@ -1167,11 +1444,11 @@ def _write_run_report(path: Path, match: MatchContext, result: RoundResult) -> N
             "",
             "## Vote",
             "",
-            f"- Final recommendation: {result.collective_decision.recommendation.get('side')} ({result.collective_decision.recommendation.get('winner')})",
+            f"- Final recommendation: {_recommendation_text(result.collective_decision.recommendation, match)}",
             f"- Confidence: {result.collective_decision.prediction.get('confidence')}",
-            f"- Forecast vote distribution: {_counter_text(vote_breakdown.get('raw_forecast_sides') or {})}",
-            f"- Probability lean distribution: {_counter_text(vote_breakdown.get('raw_prediction_winners') or {})}",
-            f"- Weighted support: {_counter_text(vote_breakdown.get('weighted_side_support') or {})}",
+            f"- Forecast vote distribution: {_side_counter_text(vote_breakdown.get('raw_forecast_sides') or {}, match)}",
+            f"- Baseline model lean distribution: {_counter_text(vote_breakdown.get('raw_prediction_winners') or {})}",
+            f"- Weighted support: {_side_counter_text(vote_breakdown.get('weighted_side_support') or {}, match)}",
             "",
             "## Main Files",
             "",
@@ -1291,11 +1568,36 @@ def _average_visible_findings(result: RoundResult) -> float:
     )
 
 
-def _counter_text(values) -> str:
+def _counter_text(values, labels: dict | None = None) -> str:
     if not values:
         return "none"
     items = values.items() if hasattr(values, "items") else Counter(values).items()
-    return ", ".join(f"{key}={value}" for key, value in sorted(items, key=lambda item: str(item[0])))
+    return ", ".join(
+        f"{(labels or {}).get(str(key), key)}={value}"
+        for key, value in sorted(items, key=lambda item: str(item[0]))
+    )
+
+
+def _side_counter_text(values, match: MatchContext) -> str:
+    if not values:
+        return "none"
+    labels = {
+        "home": match.home_team,
+        "draw": "Draw",
+        "away": match.away_team,
+    }
+    order = {"home": 0, "draw": 1, "away": 2}
+    items = values.items() if hasattr(values, "items") else Counter(values).items()
+    return ", ".join(
+        f"{labels.get(str(key), str(key))}={value}"
+        for key, value in sorted(items, key=lambda item: order.get(str(item[0]), 99))
+    )
+
+
+def _display_list(values) -> str:
+    if not values:
+        return "none"
+    return ", ".join(str(value) for value in values)
 
 
 def _write_collective_decision(path: Path, result: RoundResult) -> None:
@@ -2181,6 +2483,28 @@ def _write_compact_events(path: Path, result: RoundResult) -> None:
     events.extend({"event_type": "debate_room", **room.to_dict()} for room in result.rooms)
     events.extend({"event_type": "social_action", **action.to_dict()} for action in result.social_actions)
     events.extend({"event_type": "debate_claim", **claim.to_dict()} for claim in result.claims)
+    events.extend(
+        {"event_type": "natural_judgment", **forecast.judgment}
+        for forecast in result.forecasts
+        if forecast.judgment
+    )
+    events.extend({"event_type": "civic_action", **action.to_dict()} for action in result.civic_actions)
+    events.extend({"event_type": "judgment_revision", **revision.to_dict()} for revision in result.judgment_revisions)
+    events.extend({"event_type": "review_civic_action", **action.to_dict()} for action in result.review_civic_actions)
+    events.extend({"event_type": "society_resolution", **resolution.to_dict()} for resolution in result.society_resolutions)
+    events.extend({"event_type": "society_execution", **execution.to_dict()} for execution in result.society_executions)
+    events.extend({"event_type": "society_review", **review.to_dict()} for review in result.society_reviews)
+    events.extend({"event_type": "source_audit_effect", **effect} for effect in _source_audit_effects(result))
+    events.extend({"event_type": "civic_reward", **reward.to_dict()} for reward in result.civic_rewards)
+    events.extend(
+        {"event_type": "civic_reputation_change", **change.to_dict()}
+        for change in result.civic_reputation_changes
+    )
+    events.extend(
+        {"event_type": "calibration_reputation_change", **change.to_dict()}
+        for change in result.calibration_reputation_changes
+    )
+    events.append({"event_type": "society_state", **result.society_state})
     events.extend({"event_type": "forecast", **forecast.to_dict()} for forecast in result.forecasts)
     events.extend({"event_type": "internal_stake", **stake.to_dict()} for stake in result.internal_stakes)
     events.append({"event_type": "collective_decision", **result.collective_decision.to_dict()})

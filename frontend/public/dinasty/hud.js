@@ -422,7 +422,7 @@ DN.hud = (function () {
       });
     }
 
-    function buildLegacyScoutingPayload() {
+    function buildFallbackScoutingPayload() {
       return {
         match: selectedGame.name,
         match_id: selectedGame.match_id || selectedGame.market_key,
@@ -445,7 +445,7 @@ DN.hud = (function () {
       const modules = selectedKgModules({ allowEmpty: true });
       if (!modules.length) return Promise.reject(new Error('Select at least one KG plugin before running.'));
       const kgPayload = buildKgRunPayload(modules);
-      const legacyScoutingPayload = buildLegacyScoutingPayload();
+      const fallbackScoutingPayload = buildFallbackScoutingPayload();
       const starter = DN.databridge.startKgRun || DN.databridge.startScoutingRun;
       status.textContent = contextLabel === 'all' ? 'Run all · KG...' : 'KG run...';
       H.pushThought('KG run started for ' + selectedGame.name + ' with ' + modules.length + ' plugins.', 'Backend', '#3FA89F');
@@ -460,7 +460,7 @@ DN.hud = (function () {
           opponent: selectedGame.away_team,
         });
       }
-      return starter(DN.databridge.startKgRun ? kgPayload : legacyScoutingPayload)
+      return starter(DN.databridge.startKgRun ? kgPayload : fallbackScoutingPayload)
         .then((result) => {
           const manifest = result.manifest || {};
           const kg = result.kg || {};
@@ -1034,7 +1034,20 @@ DN.hud = (function () {
 
     function marketSideLabel(side, source) {
       const labels = marketOutcomeLabels(source);
+      if (side === 'pass') return 'No stake';
       return labels[side] || String(side || 'unknown');
+    }
+
+    function qualitativeLean(homeProbability, source) {
+      if (homeProbability == null) return '-';
+      const value = Number(homeProbability);
+      if (!Number.isFinite(value)) return '-';
+      const labels = marketOutcomeLabels(source);
+      if (value >= 0.62) return 'strong ' + labels.home;
+      if (value >= 0.54) return 'soft ' + labels.home;
+      if (value <= 0.38) return 'strong ' + labels.away;
+      if (value <= 0.46) return 'soft ' + labels.away;
+      return 'balanced';
     }
 
     function marketSideCountsText(values, source, opts) {
@@ -1107,7 +1120,7 @@ DN.hud = (function () {
       const seller = result.seller || {};
       const artifacts = result.artifacts || {};
       DN.logTerm.push('X402', 'rail ' + (result.rail || 'x402_circle_gateway') + ' · network ' + (result.network || 'Arc Testnet'));
-      DN.logTerm.push('X402', 'flow ' + (result.money_flow || '') + ' · amount ' + (result.amount_usdc || '?') + ' USDC');
+      DN.logTerm.push('X402', 'flow ' + (result.money_flow || '') + ' · amount ' + (result.amount_usdc || '?') + ' credits');
       if (buyer.wallet) DN.logTerm.push('X402', 'buyer ' + (buyer.agent_id || '') + ' wallet ' + buyer.wallet);
       if (seller.wallet) DN.logTerm.push('X402', 'seller ' + (seller.agent_id || '') + ' wallet ' + seller.wallet);
       if (result.gateway_transfer_id) DN.logTerm.push('X402', 'gateway_transfer_id ' + result.gateway_transfer_id);
@@ -1255,11 +1268,15 @@ DN.hud = (function () {
         const sideLabel = marketSideLabel(side, predictionPayload);
         const winner = itemPrediction.winner || bet.outcome || sideLabel;
         const line = itemPrediction.scoreline && itemPrediction.scoreline.label ? itemPrediction.scoreline.label : '-';
-        const firstProb = forecast.home_probability != null ? fmtRunNumber(Number(forecast.home_probability) * 100, 1) + '%' : '-';
+        const lean = qualitativeLean(forecast.home_probability, predictionPayload);
         const edge = forecast.edge != null ? fmtRunNumber(forecast.edge, 3) : '-';
         const stake = forecast.stake != null ? fmtRunNumber(forecast.stake, 2) : '-';
-        const bankrollValue = forecast.bankroll != null ? forecast.bankroll : agent.bankroll;
-        const bankroll = bankrollValue != null ? fmtRunNumber(bankrollValue, 1) : '-';
+        const survival = item.survival_thesis || {};
+        const stakeLevel = forecast.stake_level || survival.stake_level || '-';
+        const riskRead = forecast.risk_read || survival.risk_read || '-';
+        const thesis = forecast.thesis || survival.thesis || '';
+        const creditsValue = forecast.credits_balance != null ? forecast.credits_balance : forecast.bankroll != null ? forecast.bankroll : agent.bankroll;
+        const credits = creditsValue != null ? fmtRunNumber(creditsValue, 1) : '-';
         const model = item.model || agent.model || '-';
         const persona = item.persona || agent.persona || '-';
         const risk = item.risk_profile || agent.risk_profile || '-';
@@ -1268,11 +1285,11 @@ DN.hud = (function () {
           '<td><i class="run-side run-side-' + esc(side) + '">' + esc(sideLabel) + '</i></td>' +
           '<td>' + esc(winner) + '</td>' +
           '<td>' + esc(line) + '</td>' +
-          '<td>' + esc(firstProb) + '</td>' +
+          '<td>' + esc(lean) + '</td>' +
           '<td>' + esc(edge) + '</td>' +
-          '<td>' + esc(stake) + '</td>' +
-          '<td>' + esc(bankroll) + '</td>' +
-          '<td><b>' + esc(model) + '</b><span>' + esc(persona) + ' · ' + esc(risk) + '</span></td>' +
+          '<td>' + esc(stake) + '<span>' + esc(stakeLevel + ' · ' + riskRead) + '</span></td>' +
+          '<td>' + esc(credits) + '</td>' +
+          '<td><b>' + esc(model) + '</b><span>' + esc(persona) + ' · ' + esc(risk) + (thesis ? ' · ' + esc(thesis) : '') + '</span></td>' +
         '</tr>';
       }).join('');
       return '<div class="run-results-detail" id="run-results-detail">' +
@@ -1287,7 +1304,7 @@ DN.hud = (function () {
         '<div class="run-results-summary">' + esc(rows.length) + ' ants · market order: ' + esc(support) + '</div>' +
         '<div class="run-results-table-wrap">' +
           '<table class="run-results-table">' +
-            '<thead><tr><th>Ant</th><th>Vote</th><th>Prediction</th><th>Score</th><th>' + esc(marketSideLabel('home', predictionPayload)) + ' prob.</th><th>Edge</th><th>Stake</th><th>Bankroll</th><th>Model</th></tr></thead>' +
+            '<thead><tr><th>Ant</th><th>Vote</th><th>Prediction</th><th>Score</th><th>Lean</th><th>Edge read</th><th>Stake</th><th>Credits</th><th>Model</th></tr></thead>' +
             '<tbody>' + (tableRows || '<tr><td colspan="9">No ant predictions available for this run.</td></tr>') + '</tbody>' +
           '</table>' +
         '</div>' +
@@ -1955,7 +1972,7 @@ DN.hud = (function () {
 
     // Manual debug fetch only. Product colony rosters should come from
     // /colonies/{wallet}/ants, otherwise a user with no colony still sees
-    // legacy global agents in the UI.
+    // fallback global agents in the UI.
     function pollAgents(showErrors) {
       if (!DN.databridge || !DN.databridge.fetchAgents) return Promise.resolve(null);
       return DN.databridge.fetchAgents()
@@ -2177,7 +2194,7 @@ DN.hud = (function () {
           const tx = result.gateway_transfer_id || '';
           const amount = result.amount_usdc || '0';
           logX402Trail(result);
-          status.textContent = 'x402 paid ' + amount + ' USDC';
+          status.textContent = 'x402 paid ' + amount + ' credits';
           H.pushThought('x402 payment complete: ' + result.money_flow + ' for ' + result.resource_id + (tx ? ' · transfer ' + shortHash(tx) : '') + '.', 'x402', '#3FA89F');
         })
         .catch((err) => {
@@ -2211,7 +2228,7 @@ DN.hud = (function () {
           forecastStakes = result.stakes || [];
           const totals = result.totals || {};
           logForecastChainTrail('STAKE', result);
-          status.textContent = 'Staked ' + (totals.total_usdc || '0') + ' USDC';
+          status.textContent = 'Staked ' + (totals.total_usdc || '0') + ' credits';
 	          H.pushThought('Arc market funded from real backend forecasts: ' + marketMoneyText(totals, { match: selectedGame }) + '.', 'Arc', '#3FA89F');
         })
         .catch((err) => {
@@ -2346,7 +2363,7 @@ DN.hud = (function () {
       ['Colonies', s.colonies],
       ['Active Ants', s.ants.toLocaleString()],
       ['Resources', s.resources],
-      ['USDC Staked', '<b>$' + Math.round(s.staked).toLocaleString() + '</b>'],
+      ['Credits Staked', '<b>' + Math.round(s.staked).toLocaleString() + '</b>'],
       ['Forecast Acc', s.accuracy + '%'],
       ['Round', '#' + s.round]
     ].map(r => `<div class="stat"><div class="sk">${r[0]}</div><div class="sv">${r[1]}</div></div>`).join('');
@@ -2399,7 +2416,7 @@ DN.hud = (function () {
       <div class="metrics">
         <div class="metric"><div class="mk">Population</div><div class="mv" id="m-pop">0</div></div>
         <div class="metric"><div class="mk">Forecast Acc</div><div class="mv" id="m-acc">0<small>%</small></div></div>
-        <div class="metric"><div class="mk">USDC Staked</div><div class="mv" id="m-stk">0</div></div>
+        <div class="metric"><div class="mk">Credits Staked</div><div class="mv" id="m-stk">0</div></div>
         <div class="metric"><div class="mk">Reputation</div><div class="mv" id="m-rep">0</div></div>
       </div>
       <div class="vital-bar"><div class="vlabel"><span>Colony health</span><span id="v-health">—</span></div><div class="bar"><i id="b-health" style="background:#5FB84A"></i></div></div>
@@ -2452,11 +2469,11 @@ DN.hud = (function () {
 	    if (fc) {
 	      const sideRaw = fc.side || 'draw';
 	      const sideLabel = marketSideLabel(sideRaw, { match: selectedGame });
-	      const firstTeamProb = fc.home_probability != null ? marketSideLabel('home', { match: selectedGame }) + ' ' + Math.round(fc.home_probability * 100) + '%' : '—';
-	      const stake = fc.stake != null ? '$' + Math.round(fc.stake) : '—';
+	      const lean = qualitativeLean(fc.home_probability, { match: selectedGame });
+	      const stake = fc.stake != null ? Math.round(fc.stake) + ' credits' : '—';
 	      html += `<div class="vital-bar" style="margin-top:9px"><div class="vlabel">
 	        <span>Forecast</span>
-	        <span style="font-family:var(--mono)">${sideLabel} · ${firstTeamProb} · stake ${stake}</span>
+	        <span style="font-family:var(--mono)">${sideLabel} · ${lean} · stake ${stake}</span>
 	      </div></div>`;
 	    }
     if (outcome) {
@@ -2525,8 +2542,8 @@ DN.hud = (function () {
       </div>
       <div class="metrics">
         <div class="metric"><div class="mk">Forecast Acc</div><div class="mv">${(rec && rec.forecast_accuracy != null) ? Math.round(rec.forecast_accuracy * 100) : (a.accuracy || (52 + (a.inst % 30)))}<small>%</small></div></div>
-        <div class="metric"><div class="mk">Bankroll</div><div class="mv"><small>$</small>${rec && rec.bankroll != null ? Math.round(rec.bankroll) : (a.reputation || (30 + (a.inst % 50)))}</div></div>
-        <div class="metric"><div class="mk">USDC Staked</div><div class="mv"><small>$</small>${rec && rec.staked != null ? Math.round(rec.staked) : (a.staked || (10 + a.inst % 60) + '.0')}</div></div>
+        <div class="metric"><div class="mk">Bankroll</div><div class="mv">${rec && rec.bankroll != null ? Math.round(rec.bankroll) : (a.reputation || (30 + (a.inst % 50)))}<small>cr</small></div></div>
+        <div class="metric"><div class="mk">Credits Staked</div><div class="mv">${rec && rec.staked != null ? Math.round(rec.staked) : (a.staked || (10 + a.inst % 60) + '.0')}<small>cr</small></div></div>
         <div class="metric"><div class="mk">Generation</div><div class="mv">${rec && rec.generation != null ? rec.generation : (a.gen || (1 + a.inst % 8))}</div></div>
       </div>
       <div class="vital-bar"><div class="vlabel"><span>Home colony</span><span style="color:${c}">${a.col.name}</span></div></div>
@@ -2684,7 +2701,7 @@ DN.hud = (function () {
       Forecaster: 'Submitted a forecast on Round outcome — confidence rising as peers corroborate evidence.',
       Scout: 'Mapping fresh terrain and tagging resource caches for the foraging columns.',
       Debater: 'Challenging a low-evidence claim in the Debate Hall; staking reputation on the rebuttal.',
-      Treasurer: 'Rebalancing the colony vault and settling USDC stakes from the last round.',
+      Treasurer: 'Rebalancing the colony vault and settling credit stakes from the last round.',
       Archivist: 'Writing verified outcomes into the Memory Archive for future lineages.'
     };
     return lines[a.role] || 'Foraging along an active pheromone trail and relaying cache positions home.';
@@ -2703,7 +2720,7 @@ DN.hud = (function () {
     const blurbs = {
       queen: 'The queen seeds new forecasting agents. Genetics weight toward the round\'s best-performing lineages.',
       nursery: 'Young agents incubate here, inheriting priors from their lineage before their first forecast.',
-      forecast: 'Agents analyse live events and submit probability estimates. Glow intensity tracks confidence.',
+      forecast: 'Agents analyse live events, defend a pick, and size a survival stake.',
       debate: 'Agents contest each other\'s claims, exchanging evidence. Reputation is won and lost here.',
       storage: 'Verified data crystals and forage are stockpiled and rationed to active agents.',
       economy: 'The colony treasury. Resource flows and inter-colony trades are settled here.',
@@ -2711,7 +2728,7 @@ DN.hud = (function () {
       dorm: 'Agents rest and recover energy between forecasting rounds.',
       knowledge: 'Cross-colony knowledge exchange — evidence and models traded between civilizations.',
       lineage: 'The family tree of every agent. High performers found long, decorated lineages.',
-      stake: 'Agents stake USDC on their forecasts. Accurate calls compound; poor ones are slashed.'
+      stake: 'Agents stake credits on their forecasts. Accurate calls compound; poor ones are slashed.'
     };
     // live activity rows: count of ants currently in this room + last event
     let active = 0;
@@ -2725,7 +2742,7 @@ DN.hud = (function () {
     const activity = ({
       queen: 'Seeding new lineage',
       nursery: 'Incubating larvae',
-      forecast: 'Submitting probability estimates',
+      forecast: 'Submitting survival picks',
       debate: 'Exchanging evidence',
       storage: 'Rationing data crystals',
       economy: 'Settling treasury flows',
@@ -2733,7 +2750,7 @@ DN.hud = (function () {
       dorm: 'Resting between rounds',
       knowledge: 'Trading cross-colony models',
       lineage: 'Promoting top performers',
-      stake: 'Posting USDC stakes'
+      stake: 'Posting credit stakes'
     })[room.prop] || 'Active';
     const events = ({
       queen: 'Brood batch #' + (1200 + Math.floor(Math.random() * 99)) + ' seeded',
@@ -2741,12 +2758,12 @@ DN.hud = (function () {
       forecast: 'Edge +' + (Math.random() * 4 + 1).toFixed(2) + '% on round',
       debate: 'Reputation +' + Math.floor(Math.random() * 8 + 1),
       storage: '+' + Math.floor(Math.random() * 30 + 5) + ' crystals received',
-      economy: '+' + (Math.random() * 1200 + 200).toFixed(0) + ' USDC settled',
+      economy: '+' + (Math.random() * 1200 + 200).toFixed(0) + ' credits settled',
       memory: 'Round #' + Math.floor(Math.random() * 99 + 1) + ' archived',
       dorm: '14 agents resting',
       knowledge: 'Trade w/ Amber Canyon',
       lineage: 'New branch · gen ' + Math.floor(Math.random() * 8 + 4),
-      stake: 'Stake ' + (Math.random() * 60 + 10).toFixed(1) + ' USDC'
+      stake: 'Stake ' + (Math.random() * 60 + 10).toFixed(1) + ' credits'
     })[room.prop] || '—';
     $('inspector').innerHTML =
       `<div class="insp-head"><div class="insp-icon" style="background:${c}22;box-shadow:inset 0 0 0 1px ${c}66">

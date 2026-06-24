@@ -19,6 +19,7 @@ from colony_harness.identity import assign_ens_names, write_identity_records
 from colony_harness.live_scouts import public_match_context_from_tournament_match
 from colony_harness.models import Finding
 from colony_harness.population import load_population_state, normalize_agent_lineages, save_population_state
+from colony_harness.reasoning import CamelReasoner, CamelReasonerConfig
 from colony_harness.scouts import (
     mock_match_context_from_tournament_match,
     openfootball_match_context_from_tournament_match,
@@ -32,6 +33,33 @@ from colony_harness.world import DEFAULT_WORLD_VERIFICATION_STORE, apply_world_v
 DEFAULT_KG = Path(__file__).parent / "data" / "world_cup_kg.json"
 DEFAULT_LIVE_CACHE = Path(__file__).parent / "data" / "live_scouts"
 DEFAULT_OPENFOOTBALL_CACHE = Path(__file__).parent / "data" / "openfootball" / "worldcup_2026.json"
+CIVIC_ACTION_LABELS = {
+    "commit_stake": "commit stake",
+    "vote_only": "vote only",
+    "request_evidence": "request evidence",
+    "challenge_source": "challenge source",
+    "call_discussion": "call discussion",
+    "minority_report": "minority report",
+    "fund_scout": "fund scout",
+    "hold_position": "hold position",
+}
+CIVIC_EFFECT_LABELS = {
+    "stake_commitment": "stake commitment",
+    "civic_vote": "civic vote",
+    "evidence_request": "evidence request",
+    "source_audit": "source audit",
+    "discussion_call": "discussion call",
+    "minority_report": "minority report",
+    "scout_funding": "scout funding",
+    "observation": "observation",
+}
+INTENT_LABELS = {
+    "bet": "commit stake",
+    "pass": "vote only",
+    "buy_info": "request evidence",
+    "ask_debate": "ask debate",
+    "watch": "watch",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -230,6 +258,24 @@ def parse_args() -> argparse.Namespace:
         choices=["template", "llm"],
         default="template",
         help="Use deterministic templates or an OpenAI-compatible LLM for debate messages.",
+    )
+    parser.add_argument(
+        "--camel-judgment-agents",
+        type=int,
+        default=0,
+        help="Number of diverse ants whose final forecast uses CAMEL natural judgment instead of only the baseline formula.",
+    )
+    parser.add_argument(
+        "--camel-judgment-timeout",
+        type=int,
+        default=45,
+        help="Timeout in seconds for each CAMEL judgment call.",
+    )
+    parser.add_argument(
+        "--camel-judgment-concurrency",
+        type=int,
+        default=1,
+        help="Maximum parallel CAMEL judgment calls.",
     )
     parser.add_argument("--env", default="colony/.env", help="Optional .env path for LLM settings.")
     return parser.parse_args()
@@ -588,6 +634,12 @@ def main() -> None:
     population_size = args.agents or ant_count_from_config(colony_config, 40)
     expected_agents = population_size if colony_config is not None or args.agents is not None else None
     loaded_agents = _load_population_if_present(args.population_state, expected_agents=expected_agents)
+    judgment_agent_count = max(0, min(int(args.camel_judgment_agents or 0), population_size))
+    judgment_reasoner = (
+        CamelReasoner(CamelReasonerConfig(timeout_seconds=max(5, int(args.camel_judgment_timeout or 45))))
+        if judgment_agent_count > 0
+        else None
+    )
     harness = ColonyHarness(
         population_size=population_size,
         speaker_slots=room_budget,
@@ -600,6 +652,9 @@ def main() -> None:
         agents=loaded_agents,
         colony_config=colony_config,
         memory_write_enabled=not args.no_memory_writes,
+        judgment_reasoner=judgment_reasoner,
+        judgment_agent_count=judgment_agent_count,
+        judgment_concurrency=max(1, int(args.camel_judgment_concurrency or 1)),
     )
     _apply_world_agents(args, harness)
     ens_parent = _resolve_ens_parent(args)
@@ -677,6 +732,31 @@ def main() -> None:
         f"room_claims={result.summary['room_claims']} "
         f"final_claims={result.summary['final_claims']}"
     )
+    if judgment_agent_count:
+        print(
+            "Natural judgments: "
+            f"camel_agents={judgment_agent_count} "
+            f"actions={_labeled_counts(result.summary.get('judgment_actions', {}), CIVIC_ACTION_LABELS)} "
+            f"stakes={result.summary.get('judgment_stake_levels', {})} "
+            f"risk_reads={result.summary.get('judgment_risk_reads', {})} "
+            f"signals={result.summary.get('judgment_main_signals', {})} "
+            f"effects={_labeled_counts(result.summary.get('civic_effect_counts', {}), CIVIC_EFFECT_LABELS)} "
+            f"resources=ap:{result.summary.get('civic_action_points_spent', 0)} "
+            f"credits:{result.summary.get('civic_credits_spent', 0.0)} "
+            f"baseline={_labeled_counts(result.summary.get('judgment_intents', {}), INTENT_LABELS)}"
+        )
+        print(f"Civic layer: {_human_side_text(result.summary.get('civic_decision_note', 'n/a'), match)}")
+        print(
+            "Society posture: "
+            f"{result.summary.get('society_posture', 'n/a')} "
+            f"blockers={result.summary.get('society_open_blockers', [])}"
+        )
+        print(
+            "Financial execution: "
+            f"{result.summary.get('financial_execution_label', 'n/a')} "
+            f"stake_scale={result.summary.get('society_stake_scale', 'n/a')} "
+            f"single_bet={result.summary.get('society_authorized_single_bet', 'n/a')}"
+        )
     print_debate_quality(result)
     print(
         "Findings: "
@@ -691,21 +771,21 @@ def main() -> None:
         f"private={result.summary['private_views']}"
     )
     print(f"Risk profiles: {_risk_profile_summary(result.summary.get('risk_profiles', {}))}")
-    print(f"Market anchor: {_lean_label(result.summary['market_home_probability'])}")
-    print(f"Debate lean: {_lean_label(result.summary['debate_home_probability'])}")
+    print(f"Market anchor: {_lean_label(result.summary['market_home_probability'], match)}")
+    print(f"Debate lean: {_lean_label(result.summary['debate_home_probability'], match)}")
     print(
-        "Bets: "
-        f"home={result.summary['home_bets']} "
-        f"draw={result.summary.get('draw_bets', 0)} "
-        f"away={result.summary['away_bets']} "
+        "Financial commitments: "
+        f"{match.home_team}={result.summary['home_bets']} "
+        f"Draw={result.summary.get('draw_bets', 0)} "
+        f"{match.away_team}={result.summary['away_bets']} "
         f"participation={result.summary.get('participating_bets', 0)}/{result.summary['population']} "
-        f"total_staked={result.summary['total_staked']}"
+        f"total_committed={result.summary['total_staked']}"
     )
     decision = result.collective_decision
     print(
         "Decision: "
         f"{decision.prediction['sentence']} "
-        f"bet={decision.recommendation['side']} "
+        f"bet={_side_label(decision.recommendation['side'], match)} "
         f"value={decision.prediction['value']}"
     )
     if args.debug:
@@ -848,20 +928,50 @@ def _resolve_world_verifications(args: argparse.Namespace) -> str:
     return args.world_verifications or os.environ.get("COLONY_WORLD_VERIFICATIONS") or str(DEFAULT_WORLD_VERIFICATION_STORE)
 
 
-def _lean_label(value: float | None) -> str:
+def _lean_label(value: float | None, match) -> str:
     if value is None:
         return "unclear"
     if value >= 0.515:
-        return "leans_home"
+        return f"leans {match.home_team}"
     if value <= 0.485:
-        return "leans_away"
+        return f"leans {match.away_team}"
     return "contested"
+
+
+def _side_label(side: object, match) -> str:
+    labels = {
+        "home": match.home_team,
+        "draw": "Draw",
+        "away": match.away_team,
+    }
+    return labels.get(str(side), str(side))
+
+
+def _human_side_text(text: object, match) -> str:
+    value = str(text)
+    replacements = {
+        "leans home": f"leans {match.home_team}",
+        "leans away": f"leans {match.away_team}",
+        "leans draw": "leans Draw",
+        "choice=home": f"choice={match.home_team}",
+        "choice=away": f"choice={match.away_team}",
+        "choice=draw": "choice=Draw",
+    }
+    for old, new in replacements.items():
+        value = value.replace(old, new)
+    return value
 
 
 def _risk_profile_summary(profiles: dict) -> str:
     if not profiles:
         return "n/a"
     return " ".join(f"{key}={profiles.get(key, 0)}" for key in ("secure", "balanced", "risky"))
+
+
+def _labeled_counts(values: dict | None, labels: dict[str, str]) -> dict[str, int]:
+    if not values:
+        return {}
+    return {labels.get(str(key), str(key)): value for key, value in values.items()}
 
 
 def _load_graph(path: Path) -> dict:

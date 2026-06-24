@@ -137,6 +137,8 @@ class ScoutingRunRequest(BaseModel):
     refresh_data: bool = False
     include_deepseek_scout: bool = False
     include_camel: bool = False
+    camel_judgment_agents: int = Field(default=0, ge=0, le=12)
+    camel_judgment_concurrency: int = Field(default=1, ge=1, le=12)
     include_x: bool = False
     include_telegram: bool = False
     include_polygun: bool = False
@@ -206,6 +208,8 @@ class UserColonyRunRequest(BaseModel):
     voice_mode: Literal["template", "llm"] = "template"
     refresh_data: bool = False
     include_camel: bool = False
+    camel_judgment_agents: int = Field(default=0, ge=0, le=12)
+    camel_judgment_concurrency: int = Field(default=1, ge=1, le=12)
     include_x: bool = False
     include_telegram: bool = False
     include_polygun: bool = False
@@ -620,6 +624,7 @@ def _agent_predictions_with_forecasts(run_id: str, decision: dict | None) -> lis
         agent_id = str(item.get("agent_id") or "")
         forecast = forecasts_by_agent.get(agent_id)
         if forecast:
+            survival = _survival_thesis_from_forecast_event(forecast)
             item["forecast"] = {
                 "side": forecast.get("side"),
                 "stake": forecast.get("stake"),
@@ -627,11 +632,14 @@ def _agent_predictions_with_forecasts(run_id: str, decision: dict | None) -> lis
                 "edge": forecast.get("edge"),
                 "market_edge": forecast.get("market_edge"),
                 "bankroll": forecast.get("bankroll"),
+                "credits_balance": forecast.get("credits_balance", forecast.get("bankroll")),
+                **survival,
                 "decision_reason": forecast.get("decision_reason"),
             }
     for agent_id, forecast in sorted(forecasts_by_agent.items()):
         if agent_id in seen:
             continue
+        survival = _survival_thesis_from_forecast_event(forecast)
         predictions.append(
             {
                 "agent_id": agent_id,
@@ -651,11 +659,25 @@ def _agent_predictions_with_forecasts(run_id: str, decision: dict | None) -> lis
                     "edge": forecast.get("edge"),
                     "market_edge": forecast.get("market_edge"),
                     "bankroll": forecast.get("bankroll"),
+                    "credits_balance": forecast.get("credits_balance", forecast.get("bankroll")),
+                    **survival,
                     "decision_reason": forecast.get("decision_reason"),
                 },
             }
         )
     return predictions
+
+
+def _survival_thesis_from_forecast_event(forecast: dict) -> dict:
+    judgment = forecast.get("judgment") if isinstance(forecast.get("judgment"), dict) else {}
+    return {
+        "thesis": judgment.get("thesis") or "",
+        "main_signal": judgment.get("main_signal") or "",
+        "conviction": judgment.get("conviction") or "",
+        "risk_read": judgment.get("risk_read") or "",
+        "stake_level": judgment.get("stake_level") or "",
+        "survival_reason": judgment.get("survival_reason") or "",
+    }
 
 
 def _prediction_record(
@@ -1673,6 +1695,9 @@ def _build_scouting_command(request: ScoutingRunRequest, run_dir: Path) -> list[
         command.append("--include-deepseek-scout")
     if request.include_camel:
         command.append("--include-camel")
+    if request.camel_judgment_agents:
+        command.extend(["--camel-judgment-agents", str(request.camel_judgment_agents)])
+        command.extend(["--camel-judgment-concurrency", str(request.camel_judgment_concurrency)])
     if request.include_x:
         command.append("--include-x")
     if request.include_telegram:
@@ -1757,6 +1782,9 @@ def _build_colony_run_command(
         command.append("--refresh-data")
     if allow_live_scout_flags and request.include_camel:
         command.append("--include-camel")
+    if request.camel_judgment_agents:
+        command.extend(["--camel-judgment-agents", str(request.camel_judgment_agents)])
+        command.extend(["--camel-judgment-concurrency", str(request.camel_judgment_concurrency)])
     if allow_live_scout_flags and request.include_x:
         command.append("--include-x")
     if allow_live_scout_flags and request.include_telegram:
@@ -3090,6 +3118,8 @@ def get_config() -> dict:
             "rooms": _env_int("COLONY_API_DEFAULT_ROOMS", 12),
             "seed": _env_int("COLONY_API_DEFAULT_SEED", 205),
             "voice_mode": os.environ.get("COLONY_API_DEFAULT_VOICE_MODE", "llm"),
+            "camel_judgment_agents": _env_int("COLONY_API_DEFAULT_CAMEL_JUDGMENT_AGENTS", 0),
+            "camel_judgment_concurrency": _env_int("COLONY_API_DEFAULT_CAMEL_JUDGMENT_CONCURRENCY", 1),
             "agent_wallets": _env_bool("COLONY_API_DEFAULT_AGENT_WALLETS", True),
             "wallet_provider": wallet_provider,
             "wallet_store": _default_wallet_store(),

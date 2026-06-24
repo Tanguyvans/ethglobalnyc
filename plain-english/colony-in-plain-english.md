@@ -3,26 +3,27 @@
 *For the product side of the team. No technical background needed.*
 
 ## The idea in one breath
-We built a tiny **digital colony of "ant" forecasters**. Each ant bets play-money on World
-Cup matches. Ants that bet well get richer and have babies; ants that bet badly go broke and
-die. Babies inherit their parent's strategy with small random tweaks — so over many
-generations, the colony *evolves*: good betting strategies spread, bad ones die out. You can
-watch it happen on a chart in real time.
+We are building a **digital colony of "ant" forecasters** for the long term, not just a stage
+demo. Each ant reads reliable World Cup information, forms a thesis, chooses a team or draw, and
+decides how much fake money it can risk while trying to survive. Ants that reason and size risk well
+gain reputation and capital; ants that are reckless go broke over time. Future children inherit
+their parent's strategy with small random tweaks, so the colony can evolve across many matches.
 
 It's two things at once, and that's the point:
-- a **forecasting engine** (can our agents out-predict the betting market?), and
-- a **live experiment** about the future of AI agents handling money.
+- a **forecasting society** (can different agent personalities interpret the same match better
+  together?), and
+- a **long-running experiment** about AI agents handling scarce capital and reputation.
 
 ## How one ant lives (the loop)
 Picture a single ant going around a circle:
 
-1. **Born** with a starting balance of play money.
-2. **Buys data** — it pays a small fee to peek at our match/market database before deciding.
-   (Thinking costs money on purpose — it makes the ant's choices meaningful.)
-3. **Places a bet** on a match — how much and which side is driven by its "genes."
-4. **The match resolves** — real outcome comes in.
-5. **Gets paid or loses** — balance goes up or down.
-6. Then either:
+1. **Born** with a starting balance of fake credits.
+2. **Reads reliable match context** — form, tactics, players, market context, and debate notes.
+3. **Forms a thesis** — for example, "the attacker is in form, but the upset risk is still high."
+4. **Commits a stake level** — `micro`, `small`, `medium`, or rarely `high`.
+5. **The match resolves** — the real outcome comes in.
+6. **Gets paid or loses** — balance and reputation move up or down.
+7. Then either:
    - **survives** and goes around again,
    - **dies** if it ran out of money, or
    - **reproduces** if it got rich enough — spawning a baby that inherits its strategy
@@ -42,33 +43,31 @@ Two design rules keep it honest:
    so the impressive claim — "our agents out-forecast the market" — is real.
 
 ## The three "rails" (the moving parts), in plain terms
-- **Identity (ENS):** every ant gets a readable name and a stored life story. The magic demo
-  moment: a judge types an ant's name and reads its whole life — born, bets, wins, losses,
+- **Identity (ENS):** every ant gets a readable name and a stored life story. The product
+  moment: someone types an ant's name and reads its whole life — born, bets, wins, losses,
   kids, death.
 - **Personhood (Worldcoin):** we can prove a real human stands behind a founder ant. This
   powers our headline experiment (below). *We've tested this and it works — see
   `worldcoin-in-plain-english.md`.*
-- **Money (Arc + pay-to-read data):** all the play money, bets, and data fees settle on a
-  payment network. The ants literally pay to read our database. *See
-  `clickhouse-in-plain-english.md`.*
+- **Money (fake credits first, Arc later):** the active colony economy uses fake credits so we can
+  test survival behavior safely. Arc and pay-to-read data remain settlement rails for later
+  experiments. *See `clickhouse-in-plain-english.md`.*
 
 ## What the Run button does now
-The main `Run` button is wired into the money loop. It starts a fresh public-data run for the
-selected match in the dropdown, waits for the ants' actual choices, puts their USDC stakes into
-the Arc forecast smart contract, lets the selected match winner resolve, and claims the pot back
-to the winning ants.
+The main `Run` button starts a fresh colony run for the selected match. The ants read the match
+context, produce thesis-based judgments, debate, commit fake-credit stakes, and return a colony
+decision with the arguments behind it.
 
-So the stage demo is no longer just "ants talk, then we narrate a bet." It is:
+So the product is no longer just "ants talk, then we narrate a bet." It is:
 
-> **ants forecast -> ants stake USDC in the contract -> winner is chosen -> winning ants get paid**
+> **ants read -> ants argue -> ants commit scarce credits -> match resolves -> survivors learn**
 
-The manual `Stake demo` and `Settle` controls still exist for debugging, but the normal demo path
-is now one click.
+The manual on-chain staking and settlement controls can still exist for debugging or experiments,
+but they are not the default product loop while the society design is still being tested.
 
-One important honesty check: if the Railway backend does not have private signing wallets
-configured, the ants can still forecast and debate, but they cannot send Arc USDC transactions.
-In that case the Colony Log should say the forecast signing wallets are missing instead of
-pretending a contract transaction happened.
+One important honesty check: if an Arc/USDC route is enabled later and the backend does not have
+the required signing wallets configured, the ants can still forecast and debate with fake credits,
+but the app should clearly say that no on-chain transaction happened.
 
 For the full 200-ant colony on Railway, the private testnet wallet JSON is too large for one
 environment variable. The backend can now read it split across
@@ -81,7 +80,7 @@ directory, and its wallet is added to the selected reproduction wallet store. On
 API runs directory should be a mounted volume if we want the new colony members to survive
 restarts.
 
-## The headline experiment (our strongest demo moment)
+## The headline experiment
 We can mark some family lines as **human-verified** (a real person vouched for the founder)
 and give them a head start — more starting money. Then we let the colony run and ask a real,
 open question:
@@ -89,21 +88,20 @@ open question:
 > **Do the privileged human-backed family lines take over, or do lean anonymous ants
 > out-compete them on pure skill?**
 
-Whatever happens is a genuine finding about AI-agent economics, delivered live on stage. One
-chart — *"verified lines started with 3× the money; by generation 12, here's who survived"* —
-is more compelling than any architecture diagram.
+Whatever happens is a genuine finding about AI-agent economics. One chart — *"verified lines
+started with 3x the money; by generation 12, here's who survived"* — is more compelling than any
+architecture diagram.
 
 (One honesty note we're careful about: if verified ants win *only* because they started
 richer, we've measured "started richer," not "human-backing helps." So we control for the
 head start in how we set up the experiment.)
 
 ## What's real vs. what we just narrate
-Being upfront keeps the demo credible:
+Being upfront keeps the product credible:
 - **Real and working:** the ant loop, the genes/evolution, the play-money economy, the
   pay-to-read data gate, the human-verification, the live charts.
-- **Sped up but real:** we **replay** past matches at high speed so dozens of generations can
-  turn over during a 3-minute demo (the real tournament is far too slow to show evolution
-  live). The data is real; only the clock is fast.
+- **Sped up but real:** we can **replay** past matches at high speed so dozens of generations can
+  turn over during a short product preview. The data is real; only the clock is fast.
 - **Narrated only (future work):** thousands of ants, an 8-week live run on the real
   tournament, and a few sponsor integrations we describe but don't fully build.
 
