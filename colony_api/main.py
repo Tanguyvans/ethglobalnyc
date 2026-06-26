@@ -62,7 +62,8 @@ FUND_AGENTS_CLI = REPO_ROOT / "arc" / "fund-agents.mjs"
 REGISTER_ENS_IDENTITIES = REPO_ROOT / "colony" / "register_ens_identities.py"
 DEFAULT_PUBLIC_API_BASE_URL = "https://ethglobalnyc-production.up.railway.app"
 RUN_EVENT_LOCK = threading.Lock()
-DEFAULT_KG_RUN_MODULES = ["fixture", "public_x", "polymarket_market_context", "wikidata_profiles"]
+BASE_DEFAULT_KG_RUN_MODULES = ["fixture", "public_x", "polymarket_market_context", "wikidata_profiles"]
+OPTIONAL_DEFAULT_KG_RUN_MODULES = ["txline_full"]
 
 COLONY_SRC = REPO_ROOT / "colony"
 if str(COLONY_SRC) not in sys.path:
@@ -157,7 +158,7 @@ class KGRunRequest(BaseModel):
     match_id: str | None = None
     mode: Literal["fast", "deep"] = "fast"
     modules: list[str] = Field(
-        default_factory=lambda: list(DEFAULT_KG_RUN_MODULES),
+        default_factory=lambda: list(_default_kg_run_modules()),
         min_length=1,
         max_length=12,
     )
@@ -981,10 +982,25 @@ def _module_setup_state(module_id: str, modules: dict, configured_env: set[str])
     }
 
 
+def _default_kg_run_modules(
+    modules: dict | None = None,
+    configured_env: set[str] | None = None,
+) -> list[str]:
+    catalog_modules = modules if modules is not None else (_load_scouting_source_catalog().get("modules") or {})
+    env_names = configured_env if configured_env is not None else _configured_env_names()
+    defaults = list(BASE_DEFAULT_KG_RUN_MODULES)
+    for module_id in OPTIONAL_DEFAULT_KG_RUN_MODULES:
+        setup = _module_setup_state(module_id, catalog_modules, env_names)
+        if setup["configured"]:
+            defaults.append(module_id)
+    return defaults
+
+
 def _kg_module_records() -> list[dict]:
     catalog = _load_scouting_source_catalog()
     modules = catalog.get("modules") or {}
     configured_env = _configured_env_names()
+    default_modules = set(_default_kg_run_modules(modules, configured_env))
     records: list[dict] = []
     for module_id, module in modules.items():
         if not isinstance(module, dict):
@@ -1009,7 +1025,7 @@ def _kg_module_records() -> list[dict]:
                 "configured": setup["configured"],
                 "missing_env": setup["missing_env"],
                 "missing_any_env": setup["missing_any_env"],
-                "default_enabled": str(module_id) in DEFAULT_KG_RUN_MODULES,
+                "default_enabled": str(module_id) in default_modules,
                 "ui_order": module.get("ui_order", 999),
             }
         )
@@ -3126,7 +3142,7 @@ def get_config() -> dict:
         },
         "kg_run_defaults": {
             "mode": "fast",
-            "modules": DEFAULT_KG_RUN_MODULES,
+            "modules": _default_kg_run_modules(),
             "timeout": 120,
             "camel_agents": 4,
         },

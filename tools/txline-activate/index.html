@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TXLine Activation Helper</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0d10;
+        --panel: #151a20;
+        --line: #29313a;
+        --text: #eef3f8;
+        --muted: #9da7b3;
+        --accent: #70e1b3;
+        --danger: #ff7d7d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        width: min(920px, calc(100vw - 32px));
+        margin: 40px auto;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        letter-spacing: 0;
+      }
+      p { color: var(--muted); }
+      section {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 16px 0;
+      }
+      label {
+        display: block;
+        margin: 14px 0 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      input, select, textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #0f1318;
+        color: var(--text);
+        padding: 10px 12px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 132px;
+        resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      button {
+        border: 0;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #07100c;
+        padding: 11px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #252d36;
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .log {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        color: #c7d1dc;
+      }
+      .ok { color: var(--accent); }
+      .error { color: var(--danger); }
+      code {
+        color: #dce6ef;
+        background: #0f1318;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 2px 5px;
+      }
+      @media (max-width: 700px) {
+        .row { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TXLine Activation Helper</h1>
+      <p>
+        Local-only helper: Phantom signs the Solana subscription and message in your browser;
+        the local server only calls TXLine activation endpoints. Nothing is stored on disk.
+      </p>
+
+      <section>
+        <div class="row">
+          <div>
+            <label for="serviceLevel">Service level</label>
+            <select id="serviceLevel">
+              <option value="1">1 - World Cup, 60-second delay</option>
+              <option value="12">12 - World Cup, real-time</option>
+            </select>
+          </div>
+          <div>
+            <label for="weeks">Duration, weeks</label>
+            <input id="weeks" type="number" min="4" step="4" value="4" />
+          </div>
+        </div>
+
+        <label for="leagues">Selected leagues, comma-separated. Leave empty for standard free bundle.</label>
+        <input id="leagues" placeholder="empty" />
+
+        <label for="rpc">Solana RPC URL</label>
+        <input id="rpc" value="http://127.0.0.1:8788/rpc" />
+
+        <div class="actions">
+          <button id="connect">Connect Phantom</button>
+          <button id="activate" disabled>Subscribe + Activate API Token</button>
+        </div>
+      </section>
+
+      <section>
+        <p class="log" id="log">Waiting for Phantom...</p>
+      </section>
+
+      <section>
+        <label for="result">Railway variables</label>
+        <textarea id="result" readonly placeholder="TXLINE_JWT and TXLINE_API_TOKEN will appear here"></textarea>
+        <div class="actions">
+          <button class="secondary" id="copy" disabled>Copy variables</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/@solana/web3.js@1.98.4/lib/index.iife.min.js"></script>
+    <script>
+      const PROGRAM_ID = new solanaWeb3.PublicKey("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");
+      const TXL_TOKEN_MINT = new solanaWeb3.PublicKey("Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL");
+      const TOKEN_2022_PROGRAM_ID = new solanaWeb3.PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+      const ASSOCIATED_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+      const SUBSCRIBE_DISCRIMINATOR = [254, 28, 191, 138, 156, 179, 183, 53];
+
+      const $ = (id) => document.getElementById(id);
+      let walletPublicKey = null;
+      let txlineWalletProvider = null;
+
+      function phantomProvider() {
+        if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+        if (window.solana?.isPhantom) return window.solana;
+        return null;
+      }
+
+      function log(message, type = "") {
+        const prefix = type === "error" ? "[error] " : type === "ok" ? "[ok] " : "";
+        $("log").textContent += `\n${prefix}${message}`;
+        $("log").className = `log ${type}`;
+      }
+
+      function setLog(message) {
+        $("log").textContent = message;
+        $("log").className = "log";
+      }
+
+      function parseLeagues() {
+        const raw = $("leagues").value.trim();
+        if (!raw) return [];
+        return raw
+          .split(",")
+          .map((part) => Number(part.trim()))
+          .filter((value) => Number.isInteger(value));
+      }
+
+      function base64(bytes) {
+        let binary = "";
+        for (const byte of bytes) binary += String.fromCharCode(byte);
+        return btoa(binary);
+      }
+
+      function associatedTokenAddress(owner) {
+        return solanaWeb3.PublicKey.findProgramAddressSync(
+          [owner.toBuffer(), TOKEN_2022_PROGRAM_ID.toBuffer(), TXL_TOKEN_MINT.toBuffer()],
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        )[0];
+      }
+
+      function createAssociatedTokenAccountIdempotentInstruction(payer, owner) {
+        const userTokenAccount = associatedTokenAddress(owner);
+        return new solanaWeb3.TransactionInstruction({
+          programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+          keys: [
+            { pubkey: payer, isSigner: true, isWritable: true },
+            { pubkey: userTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: false, isWritable: false },
+            { pubkey: TXL_TOKEN_MINT, isSigner: false, isWritable: false },
+            { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+          ],
+          data: new Uint8Array([1]),
+        });
+      }
+
+      function subscribeInstruction(user, serviceLevel, weeks) {
+        const tokenTreasuryPda = solanaWeb3.PublicKey.findProgramAddressSync(
+          [new TextEncoder().encode("token_treasury_v2")],
+          PROGRAM_ID
+        )[0];
+        const pricingMatrixPda = solanaWeb3.PublicKey.findProgramAddressSync(
+          [new TextEncoder().encode("pricing_matrix")],
+          PROGRAM_ID
+        )[0];
+        const tokenTreasuryVault = associatedTokenAddress(tokenTreasuryPda);
+        const userTokenAccount = associatedTokenAddress(user);
+
+        const data = new Uint8Array(11);
+        data.set(SUBSCRIBE_DISCRIMINATOR, 0);
+        data[8] = serviceLevel & 255;
+        data[9] = (serviceLevel >> 8) & 255;
+        data[10] = weeks & 255;
+
+        return new solanaWeb3.TransactionInstruction({
+          programId: PROGRAM_ID,
+          keys: [
+            { pubkey: user, isSigner: true, isWritable: true },
+            { pubkey: pricingMatrixPda, isSigner: false, isWritable: false },
+            { pubkey: TXL_TOKEN_MINT, isSigner: false, isWritable: false },
+            { pubkey: userTokenAccount, isSigner: false, isWritable: true },
+            { pubkey: tokenTreasuryVault, isSigner: false, isWritable: true },
+            { pubkey: tokenTreasuryPda, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+            { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          ],
+          data,
+        });
+      }
+
+      async function waitForSignature(connection, signature) {
+        const startedAt = Date.now();
+        while (Date.now() - startedAt < 90_000) {
+          const statusResponse = await connection.getSignatureStatuses([signature], {
+            searchTransactionHistory: false,
+          });
+          const status = statusResponse.value[0];
+          if (status?.err) {
+            throw new Error(`Solana transaction failed: ${JSON.stringify(status.err)}`);
+          }
+          if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") {
+            return status;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1_000));
+        }
+        throw new Error(`Timed out waiting for Solana confirmation: ${signature}`);
+      }
+
+      async function postJson(path, body = {}) {
+        const response = await fetch(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `${path} failed`);
+        return payload;
+      }
+
+      $("connect").addEventListener("click", async () => {
+        try {
+          txlineWalletProvider = phantomProvider();
+          if (!txlineWalletProvider) {
+            throw new Error("Phantom is not injected on this page. Refresh the tab, or open this URL in the Brave profile where the Phantom extension is installed.");
+          }
+          const connected = await txlineWalletProvider.connect();
+          walletPublicKey = connected.publicKey;
+          setLog(`Connected: ${walletPublicKey.toBase58()}`);
+          $("activate").disabled = false;
+        } catch (error) {
+          setLog(String(error.message || error), "error");
+        }
+      });
+
+      $("activate").addEventListener("click", async () => {
+        $("activate").disabled = true;
+        $("copy").disabled = true;
+        $("result").value = "";
+        try {
+          if (!walletPublicKey) throw new Error("Connect Phantom first.");
+          const serviceLevel = Number($("serviceLevel").value);
+          const weeks = Number($("weeks").value);
+          const leagues = parseLeagues();
+          if (!Number.isInteger(weeks) || weeks < 4 || weeks % 4 !== 0) {
+            throw new Error("Duration must be a multiple of 4 weeks.");
+          }
+
+          setLog(`Building subscription transaction for ${walletPublicKey.toBase58()}...`);
+          txlineWalletProvider = txlineWalletProvider || phantomProvider();
+          if (!txlineWalletProvider) throw new Error("Phantom disconnected from this page. Refresh and connect again.");
+          const connection = new solanaWeb3.Connection($("rpc").value.trim(), "confirmed");
+          const latest = await connection.getLatestBlockhash("confirmed");
+          const tx = new solanaWeb3.Transaction({
+            feePayer: walletPublicKey,
+            recentBlockhash: latest.blockhash,
+          }).add(
+            createAssociatedTokenAccountIdempotentInstruction(walletPublicKey, walletPublicKey),
+            subscribeInstruction(walletPublicKey, serviceLevel, weeks)
+          );
+
+          log("Open Phantom and approve the subscription transaction.");
+          const sent = await txlineWalletProvider.signAndSendTransaction(tx);
+          const txSig = typeof sent === "string" ? sent : sent.signature;
+          log(`Subscription transaction sent: ${txSig}`);
+          await waitForSignature(connection, txSig);
+          log("Subscription confirmed.", "ok");
+
+          log("Requesting guest JWT from TXLine...");
+          const guest = await postJson("/guest");
+          const jwt = guest.token;
+          if (!jwt) throw new Error("TXLine did not return a guest JWT.");
+
+          const messageString = `${txSig}:${leagues.join(",")}:${jwt}`;
+          const message = new TextEncoder().encode(messageString);
+          log("Open Phantom and sign the activation message.");
+          const signed = await txlineWalletProvider.signMessage(message, "utf8");
+          const walletSignature = base64(signed.signature || signed);
+
+          log("Activating API token...");
+          const activated = await postJson("/activate", { jwt, txSig, walletSignature, leagues });
+          const apiToken = activated.apiToken;
+          if (!apiToken) throw new Error("TXLine did not return an API token.");
+
+          $("result").value = `TXLINE_JWT=${jwt}\nTXLINE_API_TOKEN=${apiToken}\n`;
+          $("copy").disabled = false;
+          log("API token activated. Add the variables below to Railway.", "ok");
+        } catch (error) {
+          log(String(error.message || error), "error");
+        } finally {
+          $("activate").disabled = false;
+        }
+      });
+
+      $("copy").addEventListener("click", async () => {
+        await navigator.clipboard.writeText($("result").value);
+        log("Variables copied to clipboard.", "ok");
+      });
+    </script>
+  </body>
+</html>
