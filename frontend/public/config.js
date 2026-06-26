@@ -11,7 +11,7 @@ window.DN_CONFIG = window.DN_CONFIG || {
   },
   KG_RUN: {
     mode: 'fast',
-    modules: ['fixture', 'public_x', 'polymarket_market_context', 'wikidata_profiles'],
+    modules: ['fixture', 'public_x', 'polymarket_market_context', 'wikidata_profiles', 'txline_full'],
     timeout: 120,
     camel_agents: 4,
   },

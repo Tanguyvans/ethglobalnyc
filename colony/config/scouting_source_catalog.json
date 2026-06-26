@@ -352,6 +352,9 @@
       "status": "implemented",
       "ui_order": 70,
       "source_family": "txline",
+      "docs_url": "https://txline-docs.txodds.com/documentation/worldcup",
+      "setup_url": "https://txline-docs.txodds.com/documentation/worldcup#getting-started",
+      "setup_hint": "Activate the World Cup free tier, then set TXLINE_JWT and TXLINE_API_TOKEN in Railway Variables.",
       "claim_types": [
         "match_schedule",
         "team_profile",
